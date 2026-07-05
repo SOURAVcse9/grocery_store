@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+define('BYPASS_AUTH', true);
+
 require_once __DIR__ . '/../public/dbconnect.php';
 require_once __DIR__ . '/middleware/auth_middleware.php';
 
@@ -33,6 +35,10 @@ try {
     error_log('[admin/login] Rate check fail: ' . $e->getMessage());
     $failedAttempts = 0;
 }
+// } catch (PDOException $e) {
+//     // আগের কোডটি মুছে দিন এবং এটি দিন
+//     die("Data Query Error: " . $e->getMessage() . "<br>File: " . $e->getFile() . " Line: " . $e->getLine());
+// }
 
 if ($failedAttempts >= 5) {
     $error = 'Too many login failures detected from your IP. Access locked for 15 minutes.';
@@ -57,10 +63,10 @@ if (method_is('post') && $failedAttempts < 5) {
                     SELECT a.*, r.name AS role_name 
                     FROM admins a
                     JOIN admin_roles r ON r.id = a.role_id
-                    WHERE (a.username = :identity OR a.email = :identity)
+                    WHERE (a.username = :identity1 OR a.email = :identity2)
                     LIMIT 1
                 ");
-                $stmt->execute(['identity' => $identity]);
+                $stmt->execute(['identity1' => $identity, 'identity2' => $identity]);
                 $admin = $stmt->fetch();
 
                 if ($admin && (int) $admin['is_active'] === 0) {
@@ -129,7 +135,7 @@ if (method_is('post') && $failedAttempts < 5) {
 
 // SEO Details
 $pageTitle = 'Admin Portal Login — ' . site_name();
-require_once __DIR__ . '/../public/header.php';
+require_once __DIR__ . '/layouts/header.php';
 ?>
 
 <div class="container" style="margin-top: 80px; margin-bottom: 80px; display: flex; justify-content: center;">
@@ -227,4 +233,4 @@ function showAdminLoader() {
 }
 </script>
 
-<?php require_once __DIR__ . '/../public/footer.php'; ?>
+<?php require_once __DIR__ . '/layouts/footer.php'; ?>

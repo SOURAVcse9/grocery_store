@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+define('BYPASS_AUTH', true);
+
 require_once __DIR__ . '/../public/dbconnect.php';
 require_once __DIR__ . '/middleware/auth_middleware.php';
 
@@ -69,7 +71,7 @@ if (method_is('post')) {
 }
 
 $pageTitle = 'Reset Password — ' . site_name();
-require_once __DIR__ . '/../public/header.php';
+require_once __DIR__ . '/layouts/header.php';
 ?>
 
 <div class="container" style="margin-top: 80px; margin-bottom: 80px; display: flex; justify-content: center;">
@@ -124,4 +126,4 @@ require_once __DIR__ . '/../public/header.php';
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../public/footer.php'; ?>
+<?php require_once __DIR__ . '/layouts/footer.php'; ?>

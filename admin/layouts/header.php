@@ -30,8 +30,8 @@ $__admin_avatar = !empty($__admin['avatar']) ? asset('uploads/users/' . $__admin
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Base Storefront stylesheet tokens + Dedicated Admin panel layout css -->
-    <link rel="stylesheet" href="<?= asset('assets/css/style.css') ?>">
-    <link rel="stylesheet" href="<?= asset('../admin/assets/css/admin.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/../admin/assets/css/admin.css">
     
     <!-- Chart.js CDN for responsive analytics widget integration -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

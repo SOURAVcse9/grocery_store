@@ -259,3 +259,16 @@ Stack trace:
 #0 Command line code(1): PDO->query('SELECT name FRO...')
 #1 {main}
   thrown in Command line code on line 1
+[05-Jul-2026 19:45:04 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:00:12 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:02:02 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:02:08 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:02:11 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:02:29 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:08:33 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:19:33 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:20:03 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:24:25 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:24:42 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:27:31 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 20:54:23 Asia/Dhaka] [merge_guest_data_into_user] There is already an active transaction

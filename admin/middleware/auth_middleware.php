@@ -15,6 +15,9 @@ require_once __DIR__ . '/../includes/auth_helpers.php';
  */
 function require_admin_auth(): void
 {
+    if (defined('BYPASS_AUTH') && BYPASS_AUTH === true) {
+        return;
+    }
     if (!is_admin_logged_in()) {
         redirect_to_admin_login();
     }

@@ -55,6 +55,10 @@ if (!defined('BASE_URL')) {
     $scriptDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
     // If the request is routed through api/ or ajax/ folders, strip them to keep BASE_URL unified
     $scriptDir = preg_replace('/\/(api|ajax)$/i', '', $scriptDir);
+    // If running from admin panel, redirect base URL to public storefront root
+    if (str_contains($scriptDir, '/admin')) {
+        $scriptDir = preg_replace('/\/admin(\/.*)?$/i', '', $scriptDir) . '/public';
+    }
     define('BASE_URL', $scheme . '://' . $host . $scriptDir);
 }
 
