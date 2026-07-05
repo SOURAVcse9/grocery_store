@@ -173,7 +173,7 @@ if (method_is('post')) {
             
             <div style="margin-top: 10px;">
                 <span style="font-size:10px; font-weight:700; color:var(--color-text-faint); text-transform:uppercase; display:block; margin-bottom:4px;">Current Image Preview:</span>
-                <img src="<?= asset('uploads/banners/' . $b['image_path']) ?>" alt="" style="max-width: 240px; max-height: 120px; border-radius:var(--radius-sm); border:1px solid var(--color-border); object-fit:cover;">
+                <img src="<?= image_url($b['image_path'], 'banners') ?>" alt="" style="max-width: 240px; max-height: 120px; border-radius:var(--radius-sm); border:1px solid var(--color-border); object-fit:cover;">
             </div>
         </div>
 

@@ -188,11 +188,7 @@ try {
 </div>
 
 <!-- Alert messages -->
-<?php if (has_flash('products_msg')): ?>
-    <div style="background:#e6fcf5; border:1px solid #c3fae8; color:#0ca678; padding:12px; border-radius:var(--radius-sm); font-size:var(--fs-sm); font-weight:600; margin-bottom:var(--space-4);">
-        <?= flash('products_msg') ?>
-    </div>
-<?php endif; ?>
+<?php display_flash_alerts('products_msg'); ?>
 
 <!-- Filters Form -->
 <div class="dashboard-card" style="padding:var(--space-5); margin-bottom:var(--space-4);">
@@ -330,7 +326,7 @@ try {
                                 $stockClass = 'color:#f59f00; font-weight:700;';
                             }
                             
-                            $imgUrl = !empty($p['thumbnail']) ? asset('uploads/products/' . $p['thumbnail']) : asset('images/ui/placeholder.png');
+                            $imgUrl = image_url($p['thumbnail'], 'products');
                         ?>
                             <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">
                                 <td style="padding:12px 20px; text-align:center;">

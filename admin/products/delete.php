@@ -54,7 +54,7 @@ if ($productId > 0) {
                 }
 
                 // 2. Fetch gallery images and delete
-                $galStmt = $pdo->prepare('SELECT image_path FROM product_images WHERE product_id = :pid');
+                $galStmt = $pdo->prepare('SELECT image_url AS image_path FROM product_images WHERE product_id = :pid');
                 $galStmt->execute(['pid' => $productId]);
                 $galImages = $galStmt->fetchAll();
                 

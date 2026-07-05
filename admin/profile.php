@@ -198,7 +198,7 @@ require_once __DIR__ . '/layouts/dashboard_layout.php';
             <div class="dashboard-card" style="text-align:center; padding:var(--space-6);">
                 <div style="width:120px; height:120px; border-radius:50%; overflow:hidden; border:3px solid var(--color-primary); display:inline-block; margin-bottom:12px; background:var(--color-bg);">
                     <?php 
-                    $avatarUrl = !empty($admin['avatar']) ? asset('uploads/users/' . $admin['avatar']) : asset('images/ui/placeholder.png');
+                    $avatarUrl = image_url($admin['avatar'] ?? null, 'users');
                     ?>
                     <img src="<?= e($avatarUrl) ?>" alt="Admin Avatar" style="width:100%; height:100%; object-fit:cover;">
                 </div>

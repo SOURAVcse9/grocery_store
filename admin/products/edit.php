@@ -7,8 +7,10 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Edit Product — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
+require_admin_auth();
 require_admin_permission('products.edit');
 
 $pdo = db();
@@ -250,6 +252,9 @@ if (method_is('post')) {
     }
 }
 
+$pageTitle = 'Edit Product — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
+
 // Fetch categories and brands list
 try {
     $categories = $pdo->query("SELECT id, name, parent_id FROM categories ORDER BY name ASC")->fetchAll();
@@ -379,7 +384,7 @@ try {
             <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px; border-bottom:1px dashed var(--color-border); padding-bottom:16px;">
                 <div style="width:70px; height:70px; border-radius:4px; border:1px solid var(--color-border); overflow:hidden; background:var(--color-bg);">
                     <?php 
-                    $thumbUrl = !empty($product['thumbnail']) ? asset('uploads/products/' . $product['thumbnail']) : asset('images/ui/placeholder.png');
+                    $thumbUrl = image_url($product['thumbnail'], 'products');
                     ?>
                     <img src="<?= e($thumbUrl) ?>" alt="Current Thumbnail" style="width:100%; height:100%; object-fit:cover;">
                 </div>
@@ -395,7 +400,7 @@ try {
                     <span style="font-weight:700; font-size:12px; display:block; margin-bottom:8px; color:var(--color-text);">Current Carousel Gallery (<?= count($gallery) ?> images)</span>
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
                         <?php foreach ($gallery as $img): 
-                            $galUrl = asset('uploads/products/' . $img['image_path']);
+                            $galUrl = image_url($img['image_path'], 'products');
                         ?>
                             <div style="position:relative; width:80px; height:80px; border:1px solid var(--color-border); border-radius:4px; overflow:hidden;">
                                 <img src="<?= e($galUrl) ?>" alt="" style="width:100%; height:100%; object-fit:cover;">

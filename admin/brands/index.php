@@ -75,11 +75,7 @@ try {
 </div>
 
 <!-- Alert messages -->
-<?php if (has_flash('brand_msg')): ?>
-    <div style="background:#e6fcf5; border:1px solid #c3fae8; color:#0ca678; padding:12px; border-radius:var(--radius-sm); font-size:var(--fs-sm); font-weight:600; margin-bottom:var(--space-4);">
-        <?= flash('brand_msg') ?>
-    </div>
-<?php endif; ?>
+<?php display_flash_alerts('brand_msg'); ?>
 
 <div class="dashboard-card" style="padding:0; overflow:hidden;">
     <div class="admin-table-wrapper" style="border:none;">
@@ -98,7 +94,7 @@ try {
             <tbody>
                 <?php if (!empty($brands)): ?>
                     <?php foreach ($brands as $b): 
-                        $logoUrl = !empty($b['logo']) ? asset('uploads/brands/' . $b['logo']) : asset('images/ui/placeholder.png');
+                        $logoUrl = image_url($b['logo'], 'brands');
                         $status = (bool) ($b['is_active'] ?? true);
                     ?>
                         <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">

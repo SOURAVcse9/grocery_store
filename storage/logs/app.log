@@ -275,3 +275,17 @@ Stack trace:
 [06-Jul-2026 00:19:52 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.image' in 'field list'
 [06-Jul-2026 00:24:41 Asia/Dhaka] [admin/products/edit] Load fail: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'image_path' in 'field list'
 [06-Jul-2026 00:26:17 Asia/Dhaka] [admin/products/edit] Load fail: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'image_path' in 'field list'
+[06-Jul-2026 00:38:42 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.image' in 'field list'
+[06-Jul-2026 00:40:58 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 00:41:12 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 00:41:52 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 00:44:18 Asia/Dhaka] [admin/brands/create] Save fail: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'description' in 'field list'
+[06-Jul-2026 01:17:42 Asia/Dhaka] [admin/products] Index fetch fail: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 01:18:33 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 01:19:33 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 01:23:42 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 01:23:48 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 01:26:35 Asia/Dhaka] [admin/orders/view] status update fail: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'courier' in 'field list'
+[06-Jul-2026 01:31:14 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 01:31:21 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 01:32:12 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number

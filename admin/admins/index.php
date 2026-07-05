@@ -60,7 +60,7 @@ try {
                 <?php if (!empty($admins)): ?>
                     <?php foreach ($admins as $ad): 
                         $status = (bool) $ad['is_active'];
-                        $avatarUrl = !empty($ad['avatar']) ? asset('uploads/admins/' . $ad['avatar']) : asset('images/ui/placeholder.png');
+                        $avatarUrl = image_url($ad['avatar'], 'users');
                     ?>
                         <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">
                             <td style="padding:12px 20px;">

@@ -288,7 +288,7 @@ log_admin_activity('invoices.print', "Printed invoice for Order Number: #{$order
                 <?php endif; ?>
                 <tr>
                     <td>Delivery Charge:</td>
-                    <td style="text-align: right;">৳<?= number_format((float)($order['shipping_charge'] ?? 0.0), 2) ?></td>
+                    <td style="text-align: right;">৳<?= number_format((float)($order['delivery_charge'] ?? 0.0), 2) ?></td>
                 </tr>
                 <?php if (!empty($order['tax_amount']) && (float)$order['tax_amount'] > 0): ?>
                     <tr>

@@ -76,11 +76,7 @@ try {
 </div>
 
 <!-- Alert messages -->
-<?php if (has_flash('cat_msg')): ?>
-    <div style="background:#e6fcf5; border:1px solid #c3fae8; color:#0ca678; padding:12px; border-radius:var(--radius-sm); font-size:var(--fs-sm); font-weight:600; margin-bottom:var(--space-4);">
-        <?= flash('cat_msg') ?>
-    </div>
-<?php endif; ?>
+<?php display_flash_alerts('cat_msg'); ?>
 
 <div class="dashboard-card" style="padding:0; overflow:hidden;">
     <div class="admin-table-wrapper" style="border:none;">
@@ -101,7 +97,7 @@ try {
                 <?php if (!empty($categories)): ?>
                     <?php foreach ($categories as $c): 
                         $isSub = ($c['parent_id'] !== null);
-                        $imgUrl = !empty($c['image']) ? asset('uploads/categories/' . $c['image']) : asset('images/ui/placeholder.png');
+                        $imgUrl = image_url($c['image'], 'categories');
                         $status = (bool) ($c['is_active'] ?? true);
                     ?>
                         <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">

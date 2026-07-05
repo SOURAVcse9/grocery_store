@@ -146,7 +146,7 @@ try {
 
     // Wishlist items
     $wishlist = $pdo->prepare("
-        SELECT w.product_id, w.created_at, p.name, p.price, p.image 
+        SELECT w.product_id, w.created_at, p.name, p.price, p.thumbnail AS image 
         FROM wishlists w
         JOIN products p ON p.id = w.product_id
         WHERE w.user_id = :id
@@ -156,7 +156,7 @@ try {
 
     // Cart items current details
     $cartItems = $pdo->prepare("
-        SELECT ci.quantity, ci.created_at, p.name, p.price, p.image
+        SELECT ci.quantity, ci.created_at, p.name, p.price, p.thumbnail AS image
         FROM cart_items ci
         JOIN carts c ON c.id = ci.cart_id
         JOIN products p ON p.id = ci.product_id
@@ -290,8 +290,8 @@ try {
                                     <span class="status-pill pill-pending" style="font-size:8px; margin-bottom:6px; display:inline-block;">DEFAULT</span>
                                 <?php endif; ?>
                                 <p style="margin:0 0 4px 0;"><strong>City:</strong> <?= e($addr['city']) ?> | <strong>Postal Code:</strong> <?= e($addr['postal_code'] ?? 'N/A') ?></p>
-                                <p style="margin:0 0 8px 0; color:var(--color-text-muted);"><?= e($addr['street_address']) ?></p>
-                                <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($addr['street_address'] . ', ' . $addr['city']) ?>" target="_blank" style="font-size:11px; color:var(--color-primary); font-weight:700;"><i class="fas fa-map-location-dot"></i> Google Map Link</a>
+                                <p style="margin:0 0 8px 0; color:var(--color-text-muted);"><?= e($addr['address_line1']) . (!empty($addr['address_line2']) ? ', ' . e($addr['address_line2']) : '') ?></p>
+                                <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($addr['address_line1'] . ', ' . $addr['city']) ?>" target="_blank" style="font-size:11px; color:var(--color-primary); font-weight:700;"><i class="fas fa-map-location-dot"></i> Google Map Link</a>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -441,7 +441,7 @@ try {
                 <tbody>
                     <?php if (!empty($wishlistItems)): ?>
                         <?php foreach ($wishlistItems as $wi): 
-                            $wiImg = !empty($wi['image']) ? asset('uploads/products/' . $wi['image']) : asset('images/ui/placeholder.png');
+                            $wiImg = image_url($wi['image'], 'products');
                         ?>
                             <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">
                                 <td style="padding:12px 20px;">

@@ -7,8 +7,10 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Add Product — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
+require_admin_auth();
 require_admin_permission('products.create');
 
 $pdo = db();
@@ -147,7 +149,7 @@ if (method_is('post')) {
                             $uploadDir = __DIR__ . '/../../public/uploads/products';
                             
                             $insGal = $pdo->prepare("
-                                INSERT INTO product_images (product_id, image_path, sort_order, created_at)
+                                INSERT INTO product_images (product_id, image_url, sort_order, created_at)
                                 VALUES (:pid, :path, :sort, NOW())
                             ");
 
@@ -182,6 +184,9 @@ if (method_is('post')) {
         }
     }
 }
+
+$pageTitle = 'Add Product — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 
 // Fetch categories and brands list
 try {

@@ -87,6 +87,8 @@ if (method_is('post') && isset($_POST['update_order_status'])) {
         $statusNote = trim(input('status_note', ''));
 
         try {
+            $pdo->beginTransaction();
+
             // A. Restock if Order is being Cancelled
             if ($newStatus === 'cancelled' && $order['status'] !== 'cancelled') {
                 foreach ($items as $item) {
@@ -158,6 +160,8 @@ if (method_is('post') && isset($_POST['update_order_status'])) {
                 'msg'   => "Your order #{$order['order_number']} is now: " . ucfirst($newStatus)
             ]);
 
+            $pdo->commit();
+
             log_admin_activity('orders.status_update', "Updated status of Order #{$order['order_number']} to: {$newStatus}");
             flash('orders_msg', 'Order status updated successfully.', 'success');
             
@@ -165,8 +169,11 @@ if (method_is('post') && isset($_POST['update_order_status'])) {
             redirect(current_url());
 
         } catch (PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             error_log('[admin/orders/view] status update fail: ' . $e->getMessage());
-            $error = 'Failed to update order status due to database transaction error.';
+            $error = 'Failed to update order status: ' . $e->getMessage();
         }
     }
 }
@@ -236,7 +243,7 @@ if (method_is('post') && isset($_POST['update_order_status'])) {
                     <?php if (!empty($order['discount_amount']) && (float)$order['discount_amount'] > 0): ?>
                         <div style="display:flex; justify-content:space-between; color:#f03e3e;"><span>Discount (<?= e($order['coupon_code']) ?>):</span><strong>-৳<?= number_format((float)$order['discount_amount'], 2) ?></strong></div>
                     <?php endif; ?>
-                    <div style="display:flex; justify-content:space-between;"><span>Shipping Charge:</span><strong>৳<?= number_format((float)$order['shipping_charge'], 2) ?></strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Shipping Charge:</span><strong>৳<?= number_format((float)$order['delivery_charge'], 2) ?></strong></div>
                     <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:800; border-top:1px solid var(--color-border); padding-top:8px; color:var(--color-primary);"><span>Grand Total:</span><strong>৳<?= number_format((float)$order['total_amount'], 2) ?></strong></div>
                 </div>
             </div>

@@ -7,8 +7,10 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Edit Brand — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
+require_admin_auth();
 require_admin_permission('brands.manage');
 
 $pdo = db();
@@ -120,6 +122,9 @@ if (method_is('post')) {
         }
     }
 }
+
+$pageTitle = 'Edit Brand — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 ?>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5);">
@@ -159,7 +164,7 @@ if (method_is('post')) {
         <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px; border-bottom:1px dashed var(--color-border); padding-bottom:16px;">
             <div style="width:70px; height:70px; border-radius:4px; border:1px solid var(--color-border); overflow:hidden; background:var(--color-bg);">
                 <?php 
-                $logoUrl = !empty($brand['logo']) ? asset('uploads/brands/' . $brand['logo']) : asset('images/ui/placeholder.png');
+                $logoUrl = image_url($brand['logo'], 'brands');
                 ?>
                 <img src="<?= e($logoUrl) ?>" alt="Current Logo" style="width:100%; height:100%; object-fit:cover;">
             </div>

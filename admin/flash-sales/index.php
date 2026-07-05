@@ -60,7 +60,7 @@ try {
                 <?php if (!empty($flashSales)): ?>
                     <?php foreach ($flashSales as $fs): 
                         $status = (bool) ($fs['is_active'] ?? true);
-                        $img = !empty($fs['product_image']) ? asset('uploads/products/' . $fs['product_image']) : asset('images/ui/placeholder.png');
+                        $img = image_url($fs['product_image'], 'products');
                         $normalPrice = (float) $fs['product_price'];
                         $discountPct = (float) $fs['discount_percent'];
                         $flashPrice = $normalPrice * (1 - ($discountPct / 100));

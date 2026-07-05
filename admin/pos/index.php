@@ -97,7 +97,7 @@ try {
             <!-- Touch product cells grid -->
             <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:10px; max-height: 520px; overflow-y: auto; padding:4px;" id="posCatalogGrid">
                 <?php foreach ($products as $p): 
-                    $img = !empty($p['image']) ? asset('uploads/products/' . $p['image']) : asset('images/ui/placeholder.png');
+                    $img = image_url($p['image'], 'products');
                 ?>
                     <div class="dashboard-card touch-product-cell" 
                          data-name="<?= strtolower($p['name']) ?>" 

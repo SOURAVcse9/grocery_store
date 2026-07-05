@@ -135,7 +135,7 @@ try {
                             $stockText = "LOW STOCK ({$stock})";
                         }
 
-                        $img = !empty($row['image']) ? asset('uploads/products/' . $row['image']) : asset('images/ui/placeholder.png');
+                        $img = image_url($row['image'], 'products');
                     ?>
                         <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">
                             <td style="padding:12px 20px;">

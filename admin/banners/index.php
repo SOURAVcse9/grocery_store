@@ -54,7 +54,7 @@ try {
                 <?php if (!empty($banners)): ?>
                     <?php foreach ($banners as $b): 
                         $status = (bool) ($b['is_active'] ?? true);
-                        $img = asset('uploads/banners/' . $b['image_path']);
+                        $img = image_url($b['image_path'], 'banners');
                     ?>
                         <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">
                             <td style="padding:12px 20px;">

@@ -327,7 +327,7 @@ try {
                                 $statusText = 'Suspended';
                             }
 
-                            $avatarUrl = !empty($u['avatar']) ? asset('uploads/users/' . $u['avatar']) : asset('images/ui/placeholder.png');
+                            $avatarUrl = image_url($u['avatar'], 'users');
                         ?>
                             <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">
                                 <td style="padding:12px 20px; text-align:center;">

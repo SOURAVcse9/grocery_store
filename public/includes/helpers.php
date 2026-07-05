@@ -55,26 +55,51 @@ function image_url(?string $path, string $placeholderCategory = 'ui'): string
             return $path;
         }
 
-        // If it starts with storage/ uploads path, resolve relative to project root
+        // 1. If it starts with uploads/
+        if (str_starts_with(ltrim($path, '/'), 'uploads/')) {
+            $cleaned = ltrim($path, '/');
+            $filePath = PUBLIC_PATH . '/' . $cleaned;
+            if (file_exists($filePath)) {
+                $mtime = filemtime($filePath);
+                return BASE_URL . '/' . $cleaned . '?v=' . $mtime;
+            }
+        }
+
+        // 2. If it is a filename and exists in uploads/<category>/
+        $folder = $placeholderCategory;
+        if ($folder === 'users') {
+            $folder = 'users';
+        }
+        $filePath = PUBLIC_PATH . '/uploads/' . $folder . '/' . ltrim($path, '/');
+        if (file_exists($filePath)) {
+            $mtime = filemtime($filePath);
+            return BASE_URL . '/uploads/' . $folder . '/' . ltrim($path, '/') . '?v=' . $mtime;
+        }
+
+        // 3. If it starts with storage/
         if (str_starts_with($path, 'storage/')) {
             $filePath = PUBLIC_PATH . '/../' . ltrim($path, '/');
             if (file_exists($filePath)) {
                 $mtime = filemtime($filePath);
                 return rtrim(dirname(BASE_URL), '/') . '/' . ltrim($path, '/') . '?v=' . $mtime;
             }
-        } else {
-            // For standard assets inside assets/images/
-            $filePath = PUBLIC_PATH . '/assets/images/' . ltrim($path, '/');
-            if (file_exists($filePath)) {
-                $mtime = filemtime($filePath);
-                return BASE_URL . '/assets/images/' . ltrim($path, '/') . '?v=' . $mtime;
-            }
+        }
+
+        // 4. For standard assets inside assets/images/
+        $filePath = PUBLIC_PATH . '/assets/images/' . ltrim($path, '/');
+        if (file_exists($filePath)) {
+            $mtime = filemtime($filePath);
+            return BASE_URL . '/assets/images/' . ltrim($path, '/') . '?v=' . $mtime;
         }
     }
 
     // Default Fallback
     $fallbackPath = 'assets/images/' . $placeholderCategory . '/placeholder.png';
     $filePath = PUBLIC_PATH . '/' . $fallbackPath;
+    if (!file_exists($filePath)) {
+        $fallbackPath = 'assets/images/ui/placeholder.png';
+        $filePath = PUBLIC_PATH . '/' . $fallbackPath;
+    }
     $mtime = file_exists($filePath) ? filemtime($filePath) : time();
     return BASE_URL . '/' . $fallbackPath . '?v=' . $mtime;
 }

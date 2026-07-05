@@ -79,13 +79,13 @@ if ($productId > 0) {
             $newProductId = (int) $pdo->lastInsertId();
 
             // Duplicate associated gallery images
-            $galStmt = $pdo->prepare('SELECT image_path, sort_order FROM product_images WHERE product_id = :pid');
+            $galStmt = $pdo->prepare('SELECT image_url AS image_path, sort_order FROM product_images WHERE product_id = :pid');
             $galStmt->execute(['pid' => $productId]);
             $galImages = $galStmt->fetchAll();
 
             if (!empty($galImages)) {
                 $insImg = $pdo->prepare("
-                    INSERT INTO product_images (product_id, image_path, sort_order, created_at)
+                    INSERT INTO product_images (product_id, image_url, sort_order, created_at)
                     VALUES (:pid, :path, :sort, NOW())
                 ");
                 foreach ($galImages as $img) {

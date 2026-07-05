@@ -13,7 +13,7 @@ require_once __DIR__ . '/../middleware/auth_middleware.php';
 require_admin_auth();
 
 $__admin = current_admin();
-$__admin_avatar = !empty($__admin['avatar']) ? asset('uploads/users/' . $__admin['avatar']) : asset('images/ui/placeholder.png');
+$__admin_avatar = image_url($__admin['avatar'] ?? null, 'users');
 ?>
 <!DOCTYPE html>
 <html lang="en">
