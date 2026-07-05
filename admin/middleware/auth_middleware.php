@@ -30,8 +30,7 @@ function require_admin_auth(): void
 function require_admin_guest(): void
 {
     if (is_admin_logged_in()) {
-        header('Location: ' . BASE_URL . '/../admin/index.php');
-        exit;
+        redirect_admin('index.php');
     }
 }
 
@@ -51,20 +50,26 @@ function require_admin_permission(string $permissionKey): void
         http_response_code(403);
         $pageTitle = '403 Access Denied — ' . site_name();
         
-        require_once __DIR__ . '/../../public/header.php';
+        require_once __DIR__ . '/../layouts/header.php';
+        require_once __DIR__ . '/../layouts/sidebar.php';
         ?>
-        <div class="container" style="margin-top: 80px; margin-bottom: 80px; text-align: center;">
-            <div class="dashboard-card" style="max-width: 500px; margin: 0 auto; padding: var(--space-6);">
-                <div style="font-size: 50px; color: var(--color-danger); margin-bottom: var(--space-3);"><i class="fas fa-lock"></i></div>
-                <h1 style="font-size: 20px; font-weight: 800; color: var(--color-text); margin-bottom: var(--space-2);">403 — Unauthorized Access</h1>
-                <p style="font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.5; margin-bottom: var(--space-5);">
-                    You do not have the required permission (<strong><?= htmlspecialchars($permissionKey) ?></strong>) to view this resource. If you believe this is an error, please contact your administrator.
-                </p>
-                <a href="<?= BASE_URL ?>/../admin/index.php" class="btn btn-primary" style="padding: 10px 24px; border-radius: var(--radius-pill); border:none; text-decoration:none; display:inline-block; font-weight:700;">Back to Dashboard</a>
-            </div>
+        <div class="admin-main-panel">
+            <?php require_once __DIR__ . '/../layouts/topbar.php'; ?>
+            <main class="admin-content-area" id="adminMainContent">
+                <div class="container" style="margin-top: 40px; margin-bottom: 40px; text-align: center;">
+                    <div class="dashboard-card" style="max-width: 500px; margin: 0 auto; padding: var(--space-6);">
+                        <div style="font-size: 50px; color: var(--color-danger); margin-bottom: var(--space-3);"><i class="fas fa-lock"></i></div>
+                        <h1 style="font-size: 20px; font-weight: 800; color: var(--color-text); margin-bottom: var(--space-2);">403 — Unauthorized Access</h1>
+                        <p style="font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.5; margin-bottom: var(--space-5);">
+                            You do not have the required permission (<strong><?= htmlspecialchars($permissionKey) ?></strong>) to view this resource. If you believe this is an error, please contact your administrator.
+                        </p>
+                        <a href="<?= BASE_URL ?>/../admin/index.php" class="btn btn-primary" style="padding: 10px 24px; border-radius: var(--radius-pill); border:none; text-decoration:none; display:inline-block; font-weight:700;">Back to Dashboard</a>
+                    </div>
+                </div>
+            </main>
+            <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
         </div>
         <?php
-        require_once __DIR__ . '/../../public/footer.php';
         exit;
     }
 }
@@ -83,20 +88,26 @@ function require_super_admin(): void
         
         http_response_code(403);
         $pageTitle = '403 Access Denied';
-        require_once __DIR__ . '/../../public/header.php';
+        require_once __DIR__ . '/../layouts/header.php';
+        require_once __DIR__ . '/../layouts/sidebar.php';
         ?>
-        <div class="container" style="margin-top: 80px; margin-bottom: 80px; text-align: center;">
-            <div class="dashboard-card" style="max-width: 500px; margin: 0 auto; padding: var(--space-6);">
-                <div style="font-size: 50px; color: var(--color-danger); margin-bottom: var(--space-3);"><i class="fas fa-shield-halved"></i></div>
-                <h1 style="font-size: 20px; font-weight: 800; color: var(--color-text); margin-bottom: var(--space-2);">Super Admin Access Required</h1>
-                <p style="font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.5; margin-bottom: var(--space-5);">
-                    This screen is restricted to Super Administrators only.
-                </p>
-                <a href="<?= BASE_URL ?>/../admin/index.php" class="btn btn-primary" style="padding: 10px 24px; border-radius: var(--radius-pill); border:none; text-decoration:none; display:inline-block; font-weight:700;">Back to Dashboard</a>
-            </div>
+        <div class="admin-main-panel">
+            <?php require_once __DIR__ . '/../layouts/topbar.php'; ?>
+            <main class="admin-content-area" id="adminMainContent">
+                <div class="container" style="margin-top: 40px; margin-bottom: 40px; text-align: center;">
+                    <div class="dashboard-card" style="max-width: 500px; margin: 0 auto; padding: var(--space-6);">
+                        <div style="font-size: 50px; color: var(--color-danger); margin-bottom: var(--space-3);"><i class="fas fa-shield-halved"></i></div>
+                        <h1 style="font-size: 20px; font-weight: 800; color: var(--color-text); margin-bottom: var(--space-2);">Super Admin Access Required</h1>
+                        <p style="font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.5; margin-bottom: var(--space-5);">
+                            This screen is restricted to Super Administrators only.
+                        </p>
+                        <a href="<?= BASE_URL ?>/../admin/index.php" class="btn btn-primary" style="padding: 10px 24px; border-radius: var(--radius-pill); border:none; text-decoration:none; display:inline-block; font-weight:700;">Back to Dashboard</a>
+                    </div>
+                </div>
+            </main>
+            <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
         </div>
         <?php
-        require_once __DIR__ . '/../../public/footer.php';
         exit;
     }
 }
@@ -107,6 +118,5 @@ function require_super_admin(): void
  */
 function redirect_to_admin_login(): void
 {
-    header('Location: ' . BASE_URL . '/../admin/login.php');
-    exit;
+    redirect_admin('login.php');
 }

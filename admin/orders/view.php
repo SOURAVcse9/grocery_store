@@ -7,8 +7,9 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Order Details — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
 require_admin_permission('orders.view');
 
 $pdo = db();
@@ -177,6 +178,8 @@ if (method_is('post') && isset($_POST['update_order_status'])) {
         }
     }
 }
+$pageTitle = 'Order Details — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 ?>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5); flex-wrap:wrap; gap:16px;">

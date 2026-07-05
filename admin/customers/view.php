@@ -7,8 +7,9 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Customer Profile — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
 require_admin_permission('customers.view');
 
 $pdo = db();
@@ -187,12 +188,16 @@ try {
             COUNT(o.id) AS total_orders,
             COALESCE(SUM(o.total_amount), 0) AS total_spent,
             COALESCE(AVG(o.total_amount), 0) AS aov,
-            (SELECT COUNT(*) FROM product_reviews WHERE user_id = :id) AS reviews_count,
-            (SELECT COUNT(*) FROM wishlists WHERE user_id = :id) AS wishlist_count
+            (SELECT COUNT(*) FROM product_reviews WHERE user_id = :id1) AS reviews_count,
+            (SELECT COUNT(*) FROM wishlists WHERE user_id = :id2) AS wishlist_count
         FROM orders o
-        WHERE o.user_id = :id AND o.status = 'delivered'
+        WHERE o.user_id = :id3 AND o.status = 'delivered'
     ");
-    $stats->execute(['id' => $userId]);
+    $stats->execute([
+        'id1' => $userId,
+        'id2' => $userId,
+        'id3' => $userId
+    ]);
     $analytics = $stats->fetch();
 
     // Activity timeline log
@@ -209,6 +214,8 @@ try {
     error_log('[admin/customers/view] failed aggregates load: ' . $e->getMessage());
     $error = 'Database connection error while loading customer profile aggregates.';
 }
+$pageTitle = 'Customer Profile — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 ?>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5); flex-wrap:wrap; gap:16px;">
@@ -223,6 +230,7 @@ try {
 </div>
 
 <!-- Alert messages -->
+<?php display_flash_alerts('cust_msg'); ?>
 <?php if ($error !== null): ?>
     <div style="background:#fff5f5; border:1px solid #ffe3e3; color:#e03131; padding:12px; border-radius:var(--radius-sm); font-size:var(--fs-sm); font-weight:600; margin-bottom:var(--space-4);">
         <i class="fas fa-circle-exclamation" style="margin-right:4px;"></i> <?= $error ?>

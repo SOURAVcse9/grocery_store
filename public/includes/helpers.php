@@ -120,8 +120,40 @@ function url_for(string $page): string
  */
 function current_url(): string
 {
-    $uri = $_SERVER['REQUEST_URI'] ?? '/';
-    return BASE_URL . $uri;
+    $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $uri     = $_SERVER['REQUEST_URI'] ?? '/';
+    return $scheme . '://' . $host . $uri;
+}
+
+/**
+ * admin_url() — builds an absolute URL to an administrative page.
+ */
+function admin_url(string $path = ''): string
+{
+    $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    $basePath = '/';
+    if (preg_match('/^(\/[^\/]+)/', $scriptName, $matches)) {
+        $firstSegment = $matches[1];
+        if ($firstSegment !== '/public' && $firstSegment !== '/admin') {
+            $basePath = $firstSegment;
+        }
+    }
+    
+    $basePath = rtrim($basePath, '/');
+    return $scheme . '://' . $host . $basePath . '/admin/' . ltrim($path, '/');
+}
+
+/**
+ * redirect_admin() — redirects to an administrative route.
+ */
+function redirect_admin(string $path): never
+{
+    header('Location: ' . admin_url($path));
+    exit;
 }
 
 /**

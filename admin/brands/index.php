@@ -7,8 +7,9 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Manage Brands — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
 require_admin_permission('brands.manage');
 
 $pdo = db();
@@ -51,7 +52,8 @@ if (method_is('post') && isset($_POST['action']) && $_POST['action'] === 'delete
     }
     redirect(current_url());
 }
-
+$pageTitle = 'Manage Brands — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 try {
     // Fetch all brands with product counts
     $brands = $pdo->query("

@@ -109,9 +109,7 @@ if (method_is('post') && $failedAttempts < 5) {
                     log_admin_login($adminId, $identity, true);
                     log_admin_activity('login', 'Administrator logged in successfully via Form');
 
-                    // Redirect to dashboard
-                    header('Location: ' . BASE_URL . '/../admin/index.php');
-                    exit;
+                    redirect_admin('index.php');
                 } else {
                     // Log failure details
                     $adminId = $admin ? (int) $admin['id'] : null;

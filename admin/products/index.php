@@ -7,8 +7,9 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Manage Products — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
 require_admin_permission('products.view');
 
 $pdo = db();
@@ -118,7 +119,8 @@ if ($sort === 'oldest') {
 } elseif ($sort === 'stock_asc') {
     $orderBy = 'p.stock ASC';
 }
-
+$pageTitle = 'Manage Products — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 try {
     // Count total matches
     $countSql = "

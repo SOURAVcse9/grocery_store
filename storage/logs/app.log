@@ -289,3 +289,4 @@ Stack trace:
 [06-Jul-2026 01:31:14 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
 [06-Jul-2026 01:31:21 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
 [06-Jul-2026 01:32:12 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 01:44:56 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number

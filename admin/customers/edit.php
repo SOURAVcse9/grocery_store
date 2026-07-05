@@ -7,8 +7,9 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Edit Customer — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
 require_admin_permission('customers.edit');
 
 $pdo = db();
@@ -98,6 +99,8 @@ if (method_is('post')) {
         }
     }
 }
+$pageTitle = 'Edit Customer — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 ?>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5);">

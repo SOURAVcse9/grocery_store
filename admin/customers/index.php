@@ -7,8 +7,9 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Customers Directory — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
 require_admin_permission('customers.view');
 
 $pdo = db();
@@ -143,7 +144,8 @@ if ($sortBy === 'oldest') {
 } elseif ($sortBy === 'top_buyers') {
     $orderClause = 'ORDER BY total_orders DESC';
 }
-
+$pageTitle = 'Customers Directory — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 try {
     // 1. Fetch total matching records
     $countSql = "SELECT COUNT(*) FROM users u {$whereClause}";
