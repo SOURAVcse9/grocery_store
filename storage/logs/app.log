@@ -272,3 +272,6 @@ Stack trace:
 [05-Jul-2026 20:24:42 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
 [05-Jul-2026 20:27:31 Asia/Dhaka] [admin/login] DB transaction failed: SQLSTATE[HY093]: Invalid parameter number
 [05-Jul-2026 20:54:23 Asia/Dhaka] [merge_guest_data_into_user] There is already an active transaction
+[06-Jul-2026 00:19:52 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.image' in 'field list'
+[06-Jul-2026 00:24:41 Asia/Dhaka] [admin/products/edit] Load fail: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'image_path' in 'field list'
+[06-Jul-2026 00:26:17 Asia/Dhaka] [admin/products/edit] Load fail: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'image_path' in 'field list'

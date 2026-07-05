@@ -162,10 +162,10 @@ try {
 }
 
 $pageTitle = 'My Profile Settings — ' . site_name();
-require_once __DIR__ . '/../public/header.php';
+require_once __DIR__ . '/layouts/dashboard_layout.php';
 ?>
 
-<div class="container" style="margin-top: var(--space-6); margin-bottom: var(--space-8);">
+<div style="margin-top: var(--space-6); margin-bottom: var(--space-8);">
     
     <!-- Header -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5); flex-wrap:wrap; gap:16px;">
@@ -317,4 +317,5 @@ require_once __DIR__ . '/../public/header.php';
 
 </div>
 
-<?php require_once __DIR__ . '/../public/footer.php'; ?>
+<?php require_once __DIR__ . '/layouts/footer.php'; ?>
+</div>

@@ -35,7 +35,7 @@ try {
     }
 
     // Fetch existing gallery images
-    $galStmt = $pdo->prepare("SELECT id, image_path FROM product_images WHERE product_id = :pid ORDER BY sort_order ASC");
+    $galStmt = $pdo->prepare("SELECT id, image_url AS image_path FROM product_images WHERE product_id = :pid ORDER BY sort_order ASC");
     $galStmt->execute(['pid' => $productId]);
     $gallery = $galStmt->fetchAll();
 
@@ -54,7 +54,7 @@ if (method_is('post')) {
         if (isset($_POST['delete_gallery_image_id'])) {
             $delImgId = (int) $_POST['delete_gallery_image_id'];
             try {
-                $imgQ = $pdo->prepare("SELECT image_path FROM product_images WHERE id = :id LIMIT 1");
+                $imgQ = $pdo->prepare("SELECT image_url AS image_path FROM product_images WHERE id = :id LIMIT 1");
                 $imgQ->execute(['id' => $delImgId]);
                 $imgName = $imgQ->fetchColumn();
                 
@@ -214,7 +214,7 @@ if (method_is('post')) {
                             $uploadDir = __DIR__ . '/../../public/uploads/products';
                             
                             $insGal = $pdo->prepare("
-                                INSERT INTO product_images (product_id, image_path, sort_order, created_at)
+                                INSERT INTO product_images (product_id, image_url, sort_order, created_at)
                                 VALUES (:pid, :path, :sort, NOW())
                             ");
 

@@ -33,8 +33,11 @@ if (method_is('post')) {
         $roleId = (int) input('role_id', '0');
         $isActive = (int) input('is_active', '1');
 
+        $__admin = current_admin();
         if (empty($fullName) || empty($username) || empty($email) || empty($password) || $roleId <= 0) {
             $error = 'Full Name, Username, Email Address, Password, and Role selection are required fields.';
+        } elseif ($roleId === 1 && $__admin['role_name'] !== 'Super Admin') {
+            $error = 'Unauthorized! Only Super Admin can assign the Super Admin role.';
         } else {
             try {
                 // Check uniqueness of username and email
@@ -123,6 +126,7 @@ if (method_is('post')) {
                 <select name="role_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
                     <option value="">Select role...</option>
                     <?php foreach ($roles as $r): ?>
+                        <?php if ((int)$r['id'] === 1 && $__admin['role_name'] !== 'Super Admin') continue; ?>
                         <option value="<?= $r['id'] ?>"><?= e($r['name']) ?></option>
                     <?php endforeach; ?>
                 </select>

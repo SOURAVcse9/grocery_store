@@ -23,12 +23,25 @@ $error = null;
 $success = null;
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM admins WHERE id = :id LIMIT 1");
+    $stmt = $pdo->prepare("
+        SELECT a.*, r.name AS role_name 
+        FROM admins a 
+        JOIN admin_roles r ON r.id = a.role_id 
+        WHERE a.id = :id 
+        LIMIT 1
+    ");
     $stmt->execute(['id' => $adminId]);
     $ad = $stmt->fetch();
 
     if (!$ad) {
         flash('admin_msg', 'Admin details not found.', 'error');
+        header('Location: index.php');
+        exit;
+    }
+
+    $__admin = current_admin();
+    if ($ad['role_name'] === 'Super Admin' && $__admin['role_name'] !== 'Super Admin') {
+        flash('admin_msg', 'Unauthorized! Non-Super Admins cannot edit a Super Admin account.', 'error');
         header('Location: index.php');
         exit;
     }
@@ -54,6 +67,8 @@ if (method_is('post')) {
 
         if (empty($fullName) || empty($username) || empty($email) || $roleId <= 0) {
             $error = 'Full Name, Username, Email Address, and Role selection are required fields.';
+        } elseif ($roleId === 1 && $__admin['role_name'] !== 'Super Admin') {
+            $error = 'Unauthorized! Only Super Admin can assign the Super Admin role.';
         } else {
             try {
                 // Check uniqueness excluding current ID
@@ -164,6 +179,7 @@ if (method_is('post')) {
                 <select name="role_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
                     <option value="">Select role...</option>
                     <?php foreach ($roles as $r): ?>
+                        <?php if ((int)$r['id'] === 1 && $__admin['role_name'] !== 'Super Admin') continue; ?>
                         <option value="<?= $r['id'] ?>" <?= $r['id'] === $ad['role_id'] ? 'selected' : '' ?>><?= e($r['name']) ?></option>
                     <?php endforeach; ?>
                 </select>

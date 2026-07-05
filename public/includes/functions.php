@@ -204,6 +204,14 @@ function flash(string $key, ?string $message = null, string $type = 'success'): 
 }
 
 /**
+ * has_flash() — checks if a flash message exists for a given key.
+ */
+function has_flash(string $key): bool
+{
+    return !empty($_SESSION['_flash'][$key]);
+}
+
+/**
  * display_flash_alerts()
  *
  * Renders HTML block for a given flash key if set.

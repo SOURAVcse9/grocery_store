@@ -103,7 +103,7 @@ $currentUri = $_SERVER['REQUEST_URI'];
             <!-- Reports -->
             <?php if (has_admin_permission('reports.view')): ?>
                 <li>
-                    <a href="<?= BASE_URL ?>/../admin/reports/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/reports/') ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>/../admin/reports/dashboard.php" class="sidebar-link <?= str_contains($currentUri, 'admin/reports/') ? 'active' : '' ?>">
                         <i class="fas fa-chart-line"></i>
                         <span>Reports</span>
                     </a>
@@ -133,9 +133,19 @@ $currentUri = $_SERVER['REQUEST_URI'];
             <!-- Administrators -->
             <?php if (has_admin_permission('admins.manage')): ?>
                 <li>
-                    <a href="<?= BASE_URL ?>/../admin/administrators/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/administrators/') ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>/../admin/admins/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/admins/') ? 'active' : '' ?>">
                         <i class="fas fa-user-shield"></i>
                         <span>Administrators</span>
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <!-- Role Permissions -->
+            <?php if (has_admin_permission('roles.manage')): ?>
+                <li>
+                    <a href="<?= BASE_URL ?>/../admin/roles/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/roles/') ? 'active' : '' ?>">
+                        <i class="fas fa-shield-halved"></i>
+                        <span>Role Permissions</span>
                     </a>
                 </li>
             <?php endif; ?>
