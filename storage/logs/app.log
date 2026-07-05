@@ -1,0 +1,261 @@
+[04-Jul-2026 23:55:38 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[04-Jul-2026 23:55:45 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[04-Jul-2026 23:57:27 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[04-Jul-2026 23:57:35 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[04-Jul-2026 23:59:37 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:04:19 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:06:23 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:02 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:05 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:35 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:36 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:36 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:37 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:37 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:37 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 00:17:37 Asia/Dhaka] PHP Fatal error:  Uncaught Error: Call to undefined function current_user_id() in C:\xampp\htdocs\grocery-store\public\includes\logger.php:31
+Stack trace:
+#0 C:\xampp\htdocs\grocery-store\public\includes\error_handler.php(34): log_action('FATAL_EXCEPTION', 'syntax error, u...')
+#1 [internal function]: exception_handler(Object(ParseError))
+#2 {main}
+  thrown in C:\xampp\htdocs\grocery-store\public\includes\logger.php on line 31
+[05-Jul-2026 01:15:31 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:15:31 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:15:32 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:15:32 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:15:55 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:15:57 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:15:59 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:01 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:03 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:05 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:07 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:09 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:17 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:19 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:21 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:23 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:26 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:32 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:34 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:36 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:38 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:40 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:42 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:46 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:48 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:56 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:16:58 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:00 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:14 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:16 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:18 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:20 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:22 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:24 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:26 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:28 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:30 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:32 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:34 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:36 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:39 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:46 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:54 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:56 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:17:58 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:01 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:04 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:06 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:15 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:17 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:19 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:21 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:23 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:25 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:49 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:51 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:18:53 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:19:12 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:19:14 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:19:38 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:19:40 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:19:43 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:19:45 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Jul-2026 01:24:47 Asia/Dhaka] [ajax/search.php] Error: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:24:49 Asia/Dhaka] [ajax/search.php] Error: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:25:28 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:25:33 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:25:49 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:25:51 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:25:53 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:26:10 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:26:33 Asia/Dhaka] [ajax/search.php] Error: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:26:44 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:27:50 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:31:01 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:31:02 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:31:04 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:31:06 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:31:16 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:32:09 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:32:15 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:32:17 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 01:32:18 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:09:17 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:09:17 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:13:41 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:13:52 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:13:55 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:14:01 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:14:02 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:14:02 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:14:02 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:14:03 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:14:28 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:28:34 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:28:36 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:28:39 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:28:39 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:43:49 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:43:50 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:43:51 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:43:51 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:45:10 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:45:11 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:45:23 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:50:58 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:51:13 Asia/Dhaka] [ajax/search.php] Error: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:05 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:05 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:05 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:07 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:09 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:28 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:28 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:43 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:52:46 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:53:03 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:53:30 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:53:35 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:53:38 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:53:47 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:53:59 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:58:48 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 11:59:34 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:05:30 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:05:36 Asia/Dhaka] [ajax/search.php] Error: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:05:44 Asia/Dhaka] [ajax/search.php] Error: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:06:13 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:06:14 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:06:40 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:06 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:06 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:07 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:07 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:20 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:20 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:20 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:21 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:21 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:22 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:57 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:28:58 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:29:00 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:29:07 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:29:08 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:29:35 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:29:49 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:30:43 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:30:43 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:30:48 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:30:56 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 12:30:56 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 13:36:26 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 13:36:41 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 13:36:41 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 13:36:45 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 13:36:54 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 13:37:51 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 13:37:52 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 13:37:57 Asia/Dhaka] [components/frequently-bought.php] Query failed: SQLSTATE[HY093]: Invalid parameter number
+[05-Jul-2026 18:24:03 Asia/Dhaka] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'name' in 'field list' in Command line code:1
+Stack trace:
+#0 Command line code(1): PDO->query('SELECT name FRO...')
+#1 {main}
+  thrown in Command line code on line 1

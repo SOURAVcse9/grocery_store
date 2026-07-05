@@ -1,0 +1,452 @@
+/* ==========================================================================
+   orders.css — Customer Orders & Timeline Styles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------- */
+/* 1. Order History Cards                                                 */
+/* --------------------------------------------------------------------- */
+.order-summary-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+}
+
+.order-card-header {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.order-header-meta {
+  display: flex;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.order-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  letter-spacing: 0.5px;
+}
+
+.meta-val {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.order-header-number {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.order-detail-link {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.order-detail-link:hover {
+  text-decoration: underline;
+}
+
+/* Card Body */
+.order-card-body {
+  padding: var(--space-4);
+}
+
+.order-status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+  padding-bottom: var(--space-3);
+}
+
+.order-status-desc {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* Thumbnail Gallery Preview */
+.order-gallery-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.order-gallery {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.order-gallery-img {
+  width: 54px;
+  height: 54px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  position: relative;
+  transition: transform var(--transition-fast);
+}
+
+.order-gallery-img:hover {
+  transform: scale(1.05);
+}
+
+.order-gallery-img img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.order-gallery-qty-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-size: 9px;
+  font-weight: 800;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-surface);
+}
+
+.order-gallery-more {
+  width: 54px;
+  height: 54px;
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+
+.order-card-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+@media (max-width: 576px) {
+  .order-gallery-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .order-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* --------------------------------------------------------------------- */
+/* 2. Order Tracking Timeline (Progress Steps)                           */
+/* --------------------------------------------------------------------- */
+.timeline-container {
+  padding: var(--space-3) 0 var(--space-4) 0;
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.timeline-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  width: 100%;
+}
+
+/* Connecting Horizontal Progress Bar behind steps */
+.timeline-steps::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 5%;
+  width: 90%;
+  height: 4px;
+  background: var(--color-border);
+  z-index: 1;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+
+.timeline-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 3px solid var(--color-border);
+  color: var(--color-text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 300ms ease;
+}
+
+.timeline-label {
+  margin-top: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: 140px;
+}
+
+.timeline-title {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+
+.timeline-desc {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  font-weight: 500;
+}
+
+.timeline-date {
+  font-size: 9px;
+  color: var(--color-primary);
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* Completed & Active Styles */
+.timeline-step.completed .timeline-icon-box {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.timeline-step.completed .timeline-title {
+  color: var(--color-text);
+}
+
+.timeline-step.active .timeline-icon-box {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-surface);
+  box-shadow: 0 0 0 4px var(--color-primary-light);
+}
+
+.timeline-step.active .timeline-title {
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+/* Cancelled timeline state alert */
+.timeline-cancelled-alert {
+  background: #fdf2f2;
+  border: 1px solid #f8b4b4;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-danger);
+}
+
+.timeline-cancelled-icon {
+  font-size: 28px;
+}
+
+.timeline-cancelled-details h4 {
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  margin: 0 0 4px 0;
+}
+
+.timeline-cancelled-details p {
+  font-size: var(--fs-xs);
+  margin: 0;
+  color: #7f1d1d;
+}
+
+@media (max-width: 768px) {
+  .timeline-steps {
+    flex-direction: column;
+    gap: var(--space-4);
+    align-items: flex-start;
+    padding-left: var(--space-4);
+  }
+  .timeline-steps::before {
+    top: 5%;
+    left: 36px;
+    width: 4px;
+    height: 90%;
+  }
+  .timeline-step {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  .timeline-label {
+    margin-top: 0;
+    text-align: left;
+    align-items: flex-start;
+  }
+}
+
+/* --------------------------------------------------------------------- */
+/* 3. Invoice View & Print Media Queries                                  */
+/* --------------------------------------------------------------------- */
+.invoice-wrapper {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+}
+
+.invoice-header-box {
+  border-bottom: 2px solid var(--color-border);
+  padding: var(--space-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.invoice-branding h2 {
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  color: var(--color-primary);
+  margin: 0 0 6px 0;
+}
+
+.invoice-branding p {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.invoice-meta-info {
+  text-align: right;
+}
+
+.invoice-meta-info h1 {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+}
+
+.invoice-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(0, 0, 0, 0.005);
+}
+
+@media (max-width: 576px) {
+  .invoice-details-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
+
+.invoice-address-card h4 {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-text-faint);
+  text-transform: uppercase;
+  margin: 0 0 var(--space-2) 0;
+}
+
+.invoice-address-card p {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.invoice-address-card strong {
+  color: var(--color-text);
+}
+
+/* Print Invoice Area layout */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12px !important;
+  }
+  
+  /* Hide standard page UI */
+  header, footer, nav, .account-sidebar, .no-print, .btn, .breadcrumb-nav {
+    display: none !important;
+  }
+
+  .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .account-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .invoice-wrapper {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .invoice-header-box,
+  .invoice-details-grid,
+  .invoice-items-table {
+    page-break-inside: avoid;
+  }
+}

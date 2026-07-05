@@ -1,0 +1,239 @@
+/* ==========================================================================
+   reviews.css — Customer Product Reviews Styles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------- */
+/* 1. Review List Cards                                                   */
+/* --------------------------------------------------------------------- */
+.review-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.review-card:last-child {
+  margin-bottom: 0;
+}
+
+.review-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.reviewer-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--color-border);
+  background: var(--color-bg);
+  flex-shrink: 0;
+}
+
+.reviewer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reviewer-meta {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.reviewer-name {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0 0 2px 0;
+}
+
+.reviewer-sub-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.review-date {
+  font-size: 11px;
+  color: var(--color-text-faint);
+  font-weight: 500;
+}
+
+/* Badges & Actions */
+.review-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.verified-purchase-badge {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.own-review-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-review-action {
+  background: none;
+  border: none;
+  color: var(--color-text-faint);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color var(--transition-fast);
+}
+
+.btn-review-action:hover {
+  color: var(--color-primary);
+}
+
+.btn-review-action.btn-delete-review:hover {
+  color: var(--color-danger);
+}
+
+/* Review Text */
+.review-card-body {
+  margin-bottom: var(--space-3);
+}
+
+.review-comment-text {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Review Footer / Votes */
+.review-card-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-top: 1px solid rgba(0, 0, 0, 0.02);
+  padding-top: var(--space-2);
+}
+
+.helpful-label {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  font-weight: 700;
+}
+
+.btn-helpful-vote {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-helpful-vote:hover,
+.btn-helpful-vote.voted {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------- */
+/* 2. Rating Distribution Graph Widget                                    */
+/* --------------------------------------------------------------------- */
+.rating-dist-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.rating-dist-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-xs);
+}
+
+.rating-dist-label {
+  width: 50px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.rating-dist-bar-bg {
+  flex-grow: 1;
+  background: var(--color-border);
+  height: 8px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.rating-dist-bar-fill {
+  background: var(--color-warning);
+  height: 100%;
+  border-radius: var(--radius-pill);
+  width: 0; /* dynamically updated in PHP */
+}
+
+.rating-dist-percent {
+  width: 34px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--color-text-faint);
+}
+
+/* Verified Buyer Lock warnings */
+.verified-purchaser-warning {
+  background: #fff9db;
+  border: 1px solid #ffe066;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  color: #856404;
+  font-size: var(--fs-xs);
+  display: flex;
+  align-items: start;
+  gap: var(--space-3);
+  line-height: 1.5;
+  margin-bottom: var(--space-3);
+}
+
+.verified-purchaser-warning i {
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.review-block-message {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-4) 0;
+  margin: 0;
+}
+
+.review-block-message a {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.review-block-message a:hover {
+  text-decoration: underline;
+}

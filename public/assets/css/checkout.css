@@ -1,0 +1,373 @@
+/* ==========================================================================
+   checkout.css — Checkout Details & Address Styles
+   ========================================================================== */
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: var(--space-5);
+  align-items: start;
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 992px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.checkout-main-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.checkout-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+.checkout-card-title {
+  font-size: var(--fs-base);
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-3);
+}
+
+.checkout-card-title i {
+  color: var(--color-primary);
+}
+
+.checkout-sub-title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: var(--space-4) 0 var(--space-3) 0;
+}
+
+/* --------------------------------------------------------------------- */
+/* 1. Saved Address Selector Grid                                         */
+/* --------------------------------------------------------------------- */
+.address-selector-group {
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-4);
+}
+
+.saved-addresses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.address-card-option {
+  position: relative;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  cursor: pointer;
+  background: var(--color-surface);
+  transition: all var(--transition-base);
+  user-select: none;
+  display: block;
+}
+
+.address-card-option input[type="radio"] {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  accent-color: var(--color-primary);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.address-card-option.selected,
+.address-card-option:has(input[type="radio"]:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.address-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.address-label-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--color-primary-dark);
+  color: var(--color-surface);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 2px;
+}
+
+.address-recipient {
+  font-size: var(--fs-xs);
+  color: var(--color-text);
+}
+
+.address-phone {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.address-text {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* Add New Address Card */
+.address-card-option.add-new-card {
+  border-style: dashed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 120px;
+  color: var(--color-text-faint);
+}
+
+.address-card-option.add-new-card input[type="radio"] {
+  top: 12px;
+  right: 12px;
+}
+
+.add-new-icon {
+  font-size: 24px;
+  margin-bottom: var(--space-2);
+}
+
+.add-new-text {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+.address-card-option.add-new-card:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------- */
+/* 2. Form Grid Fields                                                   */
+/* --------------------------------------------------------------------- */
+.checkout-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-4);
+}
+
+@media (max-width: 576px) {
+  .checkout-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+}
+
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.col-span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 576px) {
+  .col-span-2 {
+    grid-column: span 1;
+  }
+}
+
+.form-field-group label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+}
+
+.form-field-group input {
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  background: var(--color-bg);
+}
+
+.form-field-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.field-help-text {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------- */
+/* 3. Payment Card Selectors                                              */
+/* --------------------------------------------------------------------- */
+.payment-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+@media (max-width: 576px) {
+  .payment-methods-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.payment-card {
+  position: relative;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-3);
+  text-align: center;
+  cursor: pointer;
+  background: var(--color-surface);
+  transition: all var(--transition-base);
+  user-select: none;
+  display: block;
+}
+
+.payment-card input[type="radio"] {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  accent-color: var(--color-primary);
+}
+
+.payment-card.selected,
+.payment-card:has(input[type="radio"]:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.payment-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.payment-icon {
+  font-size: 28px;
+  color: var(--color-primary);
+  margin-bottom: var(--space-1);
+}
+
+.payment-name {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.payment-desc {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  line-height: 1.3;
+}
+
+/* Disabled payments */
+.payment-card.disabled {
+  opacity: 0.55;
+  background: var(--color-bg);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.payment-card.disabled .payment-icon {
+  color: var(--color-text-faint);
+}
+
+/* --------------------------------------------------------------------- */
+/* 4. Checkout Items Review Panel                                        */
+/* --------------------------------------------------------------------- */
+.checkout-items-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: var(--space-3);
+}
+
+.checkout-item-preview-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+
+.checkout-item-preview-row:last-child {
+  border-bottom: none;
+}
+
+.checkout-item-preview-img {
+  width: 40px;
+  height: 40px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.checkout-item-preview-img img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.checkout-item-preview-details {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.checkout-item-preview-name {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.checkout-item-preview-meta {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.checkout-item-preview-total {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--color-text);
+}

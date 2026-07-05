@@ -1,0 +1,239 @@
+/* ==========================================================================
+   auth.css — Authentication Styles
+   ========================================================================== */
+
+.auth-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 160px);
+  padding: var(--space-5) 0;
+}
+
+.auth-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 440px;
+  padding: var(--space-5) var(--space-6);
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: var(--space-4);
+    border: none;
+    box-shadow: none;
+  }
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.auth-logo {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin-bottom: var(--space-2);
+  display: block;
+}
+
+.auth-logo i {
+  margin-right: var(--space-1);
+}
+
+.auth-title {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0 0 6px 0;
+}
+
+.auth-subtext {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Form Styles */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Fields */
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.form-field-group label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+}
+
+.form-field-group input[type="text"],
+.form-field-group input[type="email"],
+.form-field-group input[type="tel"],
+.form-field-group input[type="password"] {
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  background: var(--color-bg);
+  transition: all var(--transition-fast);
+}
+
+.form-field-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+/* Password eye toggler */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.password-input-wrapper input {
+  padding-right: 40px !important;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: var(--space-1);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.password-toggle-btn:hover {
+  color: var(--color-text-muted);
+}
+
+/* Password Strength Meter */
+.strength-meter-container {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.strength-bar-bg {
+  background: var(--color-border);
+  height: 4px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.strength-bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--color-danger);
+  transition: width 300ms ease, background-color 300ms ease;
+}
+
+.strength-meter-text {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* Remember me row */
+.auth-remember-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-xs);
+  margin: var(--space-1) 0;
+}
+
+.auth-remember-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.auth-remember-checkbox input {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.forgot-password-link {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
+.btn-auth-submit {
+  width: 100%;
+  font-weight: 800;
+  padding: 12px;
+  border-radius: var(--radius-pill);
+  border: none;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  margin-top: var(--space-2);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: var(--space-4);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+}
+
+.auth-footer a {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Rate limit message block */
+.rate-limit-warning {
+  background: #fdf2f2;
+  border: 1px solid #f8b4b4;
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  color: var(--color-danger);
+  font-size: var(--fs-xs);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.rate-limit-warning i {
+  margin-top: 2px;
+}

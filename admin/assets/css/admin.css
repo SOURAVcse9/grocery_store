@@ -1,0 +1,493 @@
+/* ==========================================================================
+   admin/assets/css/admin.css — Enterprise Dashboard Style Sheet
+   ========================================================================== */
+
+:root {
+  --admin-sidebar-width: 260px;
+  --admin-sidebar-collapsed: 70px;
+  --admin-header-height: 70px;
+  
+  /* Modern clean color variables matching grocery store */
+  --admin-color-primary: #0ca678;
+  --admin-color-primary-dark: #098a62;
+  --admin-color-primary-light: #e6fcf5;
+  --admin-color-bg: #f8f9fa;
+  --admin-color-surface: #ffffff;
+  --admin-color-border: #e9ecef;
+  --admin-color-text: #212529;
+  --admin-color-text-muted: #495057;
+  --admin-color-text-faint: #adb5bd;
+}
+
+/* --------------------------------------------------------------------- */
+/* Layout & Container Base                                               */
+/* --------------------------------------------------------------------- */
+body.admin-body {
+  margin: 0;
+  font-family: var(--font-base);
+  background: var(--admin-color-bg);
+  color: var(--admin-color-text);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+.admin-layout-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* --------------------------------------------------------------------- */
+/* Sidebar Layout (Permission Aware & Collapsible)                       */
+/* --------------------------------------------------------------------- */
+.admin-sidebar {
+  width: var(--admin-sidebar-width);
+  background: #1e293b; /* Sleek slate dark background */
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.admin-sidebar.collapsed {
+  width: var(--admin-sidebar-collapsed);
+}
+
+.sidebar-brand {
+  height: var(--admin-header-height);
+  display: flex;
+  align-items: center;
+  padding-inline: var(--space-4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  white-space: nowrap;
+  gap: var(--space-2);
+}
+
+.sidebar-brand i {
+  color: var(--admin-color-primary);
+  font-size: 22px;
+}
+
+.sidebar-brand span {
+  font-weight: 800;
+  font-size: var(--fs-md);
+  letter-spacing: -0.5px;
+  transition: opacity 0.2s;
+}
+
+.admin-sidebar.collapsed .sidebar-brand span {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-menu {
+  flex: 1;
+  overflow-y: auto;
+  padding-block: var(--space-3);
+}
+
+.sidebar-menu-list li {
+  margin-bottom: 2px;
+  position: relative;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  gap: var(--space-3);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.sidebar-link i {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-link span {
+  transition: opacity 0.2s;
+}
+
+.admin-sidebar.collapsed .sidebar-link span {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--admin-color-primary);
+}
+
+/* --------------------------------------------------------------------- */
+/* Main Content Panel Layout                                              */
+/* --------------------------------------------------------------------- */
+.admin-main-panel {
+  flex: 1;
+  margin-left: var(--admin-sidebar-width);
+  min-width: 0; /* Prevents flex items from overflowing */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-sidebar.collapsed + .admin-main-panel {
+  margin-left: var(--admin-sidebar-collapsed);
+}
+
+/* --------------------------------------------------------------------- */
+/* Topbar Layout                                                         */
+/* --------------------------------------------------------------------- */
+.admin-topbar {
+  height: var(--admin-header-height);
+  background: var(--admin-color-surface);
+  border-bottom: 1px solid var(--admin-color-border);
+  display: flex;
+  align-items: center;
+  justify-content: justify;
+  padding-inline: var(--space-5);
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.sidebar-toggle-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--admin-color-text-muted);
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--admin-color-bg);
+}
+
+.topbar-search-form {
+  position: relative;
+  width: 280px;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-search-form input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  font-size: var(--fs-xs);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--radius-pill);
+  outline: none;
+  background: var(--admin-color-bg);
+}
+
+.topbar-search-form i {
+  position: absolute;
+  left: 14px;
+  color: var(--admin-color-text-faint);
+  font-size: 13px;
+}
+
+/* Action Icon Buttons */
+.topbar-action-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--admin-color-text-muted);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background var(--transition-fast);
+}
+
+.topbar-action-btn:hover {
+  background: var(--admin-color-bg);
+}
+
+.topbar-action-btn .badge-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: #f03e3e;
+  border-radius: 50%;
+  border: 2px solid var(--admin-color-surface);
+}
+
+/* User profile details in topbar */
+.topbar-user-profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  transition: background var(--transition-fast);
+  position: relative;
+}
+
+.topbar-user-profile:hover {
+  background: var(--admin-color-bg);
+}
+
+.topbar-avatar img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--admin-color-border);
+}
+
+.topbar-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar-username {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-color-text);
+  line-height: 1.2;
+}
+
+.topbar-role-badge {
+  font-size: 9px;
+  background: var(--admin-color-primary-light);
+  color: var(--admin-color-primary-dark);
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+}
+
+/* --------------------------------------------------------------------- */
+/* Main Body Area                                                        */
+/* --------------------------------------------------------------------- */
+.admin-content-area {
+  flex: 1;
+  padding: var(--space-5) var(--space-6) var(--space-7) var(--space-6);
+}
+
+.admin-footer {
+  background: var(--admin-color-surface);
+  border-top: 1px solid var(--admin-color-border);
+  padding: var(--space-4) var(--space-6);
+  font-size: 12px;
+  color: var(--admin-color-text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------------- */
+/* Stats Cards Grid Layout                                               */
+/* --------------------------------------------------------------------- */
+.stats-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.stat-widget-card {
+  background: var(--admin-color-surface);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: justify;
+  gap: var(--space-3);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.stat-widget-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.04);
+}
+
+.stat-widget-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.stat-widget-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-widget-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--admin-color-text-faint);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.stat-widget-value {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  color: var(--admin-color-text);
+  line-height: 1.2;
+}
+
+/* Color theme mappings */
+.theme-green { background: #e6fcf5; color: #0ca678; }
+.theme-blue { background: #edf2ff; color: #4263eb; }
+.theme-orange { background: #fff9db; color: #f59f00; }
+.theme-purple { background: #f3f0ff; color: #7048e8; }
+.theme-red { background: #fff5f5; color: #f03e3e; }
+.theme-teal { background: #e3fafc; color: #0b7285; }
+
+/* --------------------------------------------------------------------- */
+/* Dashboard Double Column Panels                                         */
+/* --------------------------------------------------------------------- */
+.dashboard-panels-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+  align-items: start;
+}
+
+/* Table styling in admin dashboard */
+.admin-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--admin-color-border);
+}
+
+.admin-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.admin-data-table th {
+  background: var(--admin-color-bg);
+  padding: 12px 16px;
+  font-weight: 700;
+  color: var(--admin-color-text-muted);
+  border-bottom: 1px solid var(--admin-color-border);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.admin-data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--admin-color-border);
+  color: var(--admin-color-text-muted);
+}
+
+.admin-data-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Pill Badges */
+.status-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.status-pill.pill-delivered,
+.status-pill.pill-completed { background: #e6fcf5; color: #0ca678; }
+.status-pill.pill-pending { background: #fff9db; color: #f59f00; }
+.status-pill.pill-processing { background: #edf2ff; color: #4263eb; }
+.status-pill.pill-cancelled { background: #fff5f5; color: #f03e3e; }
+
+/* --------------------------------------------------------------------- */
+/* Responsive Breakpoints & Overrides                                    */
+/* --------------------------------------------------------------------- */
+@media (max-width: 992px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    width: var(--admin-sidebar-width) !important;
+  }
+  
+  .admin-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  
+  .admin-main-panel {
+    margin-left: 0 !important;
+  }
+  
+  .dashboard-panels-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-search-form {
+    display: none; /* Hide topbar search bar on tiny mobile */
+  }
+  .admin-topbar {
+    padding-inline: var(--space-3);
+  }
+}

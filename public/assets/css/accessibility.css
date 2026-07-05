@@ -1,0 +1,76 @@
+/* ==========================================================================
+   accessibility.css — Accessibility (A11y) & Keyboard Navigation Styles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------- */
+/* 1. Screen Reader Utility                                               */
+/* --------------------------------------------------------------------- */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.sr-only-focusable:active,
+.sr-only-focusable:focus {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+/* --------------------------------------------------------------------- */
+/* 2. Keyboard Focus Rings                                                */
+/* --------------------------------------------------------------------- */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--color-primary-light, #1098ad) !important;
+  outline-offset: 3px !important;
+}
+
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  outline: none !important; /* hide outline for click triggers */
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-primary, #0b7285) !important;
+  outline-offset: 3px !important;
+}
+
+/* --------------------------------------------------------------------- */
+/* 3. Text Contrast & Sizing                                            */
+/* --------------------------------------------------------------------- */
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessible color contrast overrides if any */
+.text-contrast-high {
+  color: var(--color-text, #212529) !important;
+}
+
+/* ARIA tooltip help markers styling */
+[aria-describedby]:hover {
+  cursor: help;
+}

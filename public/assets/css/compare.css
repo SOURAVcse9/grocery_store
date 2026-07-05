@@ -1,0 +1,156 @@
+/* ==========================================================================
+   compare.css — Product Comparison Sheet Styles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------- */
+/* 1. Comparison Matrix Grid Table                                       */
+/* --------------------------------------------------------------------- */
+.compare-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  background: var(--color-surface);
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* locks column widths uniformly */
+  min-width: 720px; /* guarantees scroll-overflow behavior */
+}
+
+/* Feature Labels column (Sticky on scroll) */
+.compare-feature-label {
+  position: sticky;
+  left: 0;
+  background: var(--color-bg);
+  border-right: 2px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 16px;
+  width: 140px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  letter-spacing: 0.5px;
+  z-index: 10;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.01);
+}
+
+/* Value Columns */
+.compare-col-val {
+  border-bottom: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  padding: 16px;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--color-text);
+  transition: background var(--transition-fast);
+}
+
+.compare-col-val:hover {
+  background: rgba(0, 0, 0, 0.005);
+}
+
+.compare-col-val:last-child {
+  border-right: none;
+}
+
+/* Row-specific styles */
+.compare-row-image .compare-col-val {
+  padding-top: 24px;
+}
+
+.compare-product-img-link {
+  width: 100px;
+  height: 100px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  margin-top: 6px;
+}
+
+.compare-product-img-link img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.compare-product-title-link {
+  color: var(--color-text);
+  font-weight: 800;
+  text-decoration: none;
+  font-size: var(--fs-xs);
+  transition: color var(--transition-fast);
+}
+
+.compare-product-title-link:hover {
+  color: var(--color-primary);
+}
+
+/* Price typography */
+.compare-price-main {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.compare-price-sale {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-danger);
+}
+
+.compare-price-original {
+  font-size: 10px;
+  text-decoration: line-through;
+  color: var(--color-text-faint);
+  display: block;
+}
+
+/* Remove button */
+.btn-compare-remove {
+  background: none;
+  border: none;
+  color: var(--color-text-faint);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin: 0 auto 8px auto;
+  transition: color var(--transition-fast);
+}
+
+.btn-compare-remove:hover {
+  color: var(--color-danger);
+}
+
+/* Text alignments */
+.text-left {
+  text-align: left;
+}
+
+.font-bold {
+  font-weight: 800;
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.text-faint {
+  color: var(--color-text-faint);
+}
+
+.font-mono {
+  font-family: var(--font-mono, monospace);
+}

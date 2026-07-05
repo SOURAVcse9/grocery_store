@@ -1,0 +1,122 @@
+/* ==========================================================================
+   analytics.css — Analytics Dashboard & Chart visual layouts
+   ========================================================================== */
+
+/* --------------------------------------------------------------------- */
+/* 1. Dashboard Grids                                                    */
+/* --------------------------------------------------------------------- */
+.analytics-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.analytics-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+/* --------------------------------------------------------------------- */
+/* 2. Numeric Stat Cards                                                 */
+/* --------------------------------------------------------------------- */
+.analytics-stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.analytics-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Border Accent colors */
+.analytics-stat-card.border-primary { border-left: 4px solid var(--color-primary); }
+.analytics-stat-card.border-success { border-left: 4px solid #2b8a3e; }
+.analytics-stat-card.border-warning { border-left: 4px solid #e67e22; }
+.analytics-stat-card.border-danger { border-left: 4px solid #fa5252; }
+
+.stat-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.stat-card-details {
+  flex-grow: 1;
+}
+
+.stat-card-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  margin: 0 0 6px 0;
+  letter-spacing: 0.5px;
+}
+
+.stat-card-value {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-card-context {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.stat-card-icon-wrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  flex-shrink: 0;
+}
+
+/* Accent Icon circle backdrops */
+.stat-card-icon-wrapper.accent-primary { background: var(--color-primary-light); color: var(--color-primary); }
+.stat-card-icon-wrapper.accent-success { background: #eafaf1; color: #2b8a3e; }
+.stat-card-icon-wrapper.accent-warning { background: #fdf5e6; color: #e67e22; }
+.stat-card-icon-wrapper.accent-danger { background: #fdf2f2; color: #fa5252; }
+
+/* --------------------------------------------------------------------- */
+/* 3. Visual Chart Cards                                                */
+/* --------------------------------------------------------------------- */
+.analytics-chart-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card-heading {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+  margin: 0 0 var(--space-4) 0;
+}
+
+.chart-canvas-wrapper {
+  position: relative;
+  height: 200px;
+  width: 100%;
+}

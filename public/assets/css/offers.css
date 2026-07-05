@@ -1,0 +1,79 @@
+/* ==========================================================================
+   offers.css — Promotional Coupons & Offers Stylesheet
+   ========================================================================== */
+
+/* --------------------------------------------------------------------- */
+/* 1. Coupon Ticket Card notches                                          */
+/* --------------------------------------------------------------------- */
+.coupon-offer-card {
+  position: relative;
+  background: var(--color-surface);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Semi-circle cutouts (Notches) on both sides of the coupon ticket */
+.coupon-ticket-cutout {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 24px;
+  background: var(--color-bg); /* matches site page background */
+  border: 1px solid var(--color-border);
+  z-index: 5;
+}
+
+.coupon-ticket-cutout.left {
+  left: -8px;
+  border-radius: 0 12px 12px 0;
+  border-left: none;
+}
+
+.coupon-ticket-cutout.right {
+  right: -8px;
+  border-radius: 12px 0 0 12px;
+  border-right: none;
+}
+
+/* Copying feedback button states */
+.btn-copy-coupon {
+  transition: all var(--transition-fast);
+}
+
+.btn-copy-coupon.copied {
+  background: #2b8a3e !important;
+  color: var(--color-surface) !important;
+  border-color: #2b8a3e !important;
+}
+
+/* --------------------------------------------------------------------- */
+/* 2. Marketing Seasonal Gradient cards                                   */
+/* --------------------------------------------------------------------- */
+.seasonal-banner-card {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.seasonal-banner-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.seasonal-banner-card.card-blue {
+  background: linear-gradient(135deg, #0b7285 0%, #1098ad 100%) !important;
+}
+
+.seasonal-banner-card.card-orange {
+  background: linear-gradient(135deg, #d9480f 0%, #f76707 100%) !important;
+}
+
+/* Flash Sale Countdown clock additions */
+.flash-sale-countdown-wrapper .timer-box {
+  display: inline-block;
+  min-width: 28px;
+  text-align: center;
+  font-family: var(--font-mono, monospace);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}

@@ -1,0 +1,157 @@
+grocery-store/
+│
+├── public/
+│   │
+│   ├── index.php
+│   ├── header.php
+│   ├── footer.php
+│   ├── dbconnect.php
+│   ├── csrf.php
+│   │
+│   ├── login.php
+│   ├── register.php
+│   ├── forgot-password.php
+│   ├── reset-password.php
+│   ├── logout.php
+│   │
+│   ├── account.php
+│   ├── profile.php
+│   ├── update_profile.php
+│   ├── update_password.php
+│   ├── addresses.php
+│   ├── notifications.php
+│   ├── orders.php
+│   ├── order-details.php
+│   │
+│   ├── products.php
+│   ├── product.php
+│   ├── categories.php
+│   ├── search.php
+│   ├── wishlist.php
+│   ├── compare.php
+│   ├── cart.php
+│   ├── checkout.php
+│   ├── thank-you.php
+│   │
+│   ├── about.php
+│   ├── contact.php
+│   ├── faq.php
+│   ├── privacy.php
+│   ├── terms.php
+│   │
+│   ├── process_login.php
+│   ├── process_register.php
+│   ├── process_checkout.php
+│   │
+│   ├── ajax/
+│   │   ├── add_to_cart.php
+│   │   ├── update_cart.php
+│   │   ├── remove_cart.php
+│   │   ├── wishlist.php
+│   │   ├── compare.php
+│   │   ├── quickview.php
+│   │   ├── notification.php
+│   │   └── search.php
+│   │
+│   ├── api/
+│   │   ├── products.php
+│   │   ├── categories.php
+│   │   ├── cart.php
+│   │   ├── wishlist.php
+│   │   └── search.php
+│   │
+│   ├── components/
+│   │   ├── hero.php
+│   │   ├── product-card.php
+│   │   ├── category-card.php
+│   │   ├── banner.php
+│   │   ├── mini-cart.php
+│   │   ├── toast.php
+│   │   ├── breadcrumb.php
+│   │   ├── pagination.php
+│   │   └── modal-quickview.php
+│   │
+│   ├── includes/
+│   │   ├── auth.php
+│   │   ├── helpers.php
+│   │   ├── functions.php
+│   │   ├── validation.php
+│   │   └── pagination.php
+│   │
+│   ├── lang/
+│   │   ├── en.php
+│   │   └── bn.php
+│   │
+│   └── assets/
+│       ├── css/
+│       │   ├── style.css
+│       │   ├── header.css
+│       │   ├── footer.css
+│       │   ├── home.css
+│       │   ├── products.css
+│       │   ├── product.css
+│       │   ├── cart.css
+│       │   ├── checkout.css
+│       │   ├── account.css
+│       │   ├── auth.css
+│       │   ├── components.css
+│       │   └── responsive.css
+│       │
+│       ├── js/
+│       │   ├── app.js
+│       │   ├── cart.js
+│       │   ├── wishlist.js
+│       │   ├── compare.js
+│       │   ├── quickview.js
+│       │   ├── search.js
+│       │   ├── checkout.js
+│       │   ├── account.js
+│       │   ├── slider.js
+│       │   └── toast.js
+│       │
+│       ├── images/
+│       │   ├── banners/
+│       │   ├── brands/
+│       │   ├── categories/
+│       │   ├── products/
+│       │   ├── users/
+│       │   └── ui/
+│       │
+│       ├── fonts/
+│       └── icons/
+│
+├── admin/
+│   ├── index.php
+│   ├── dashboard.php
+│   ├── login.php
+│   ├── logout.php
+│   ├── includes/
+│   ├── assets/
+│   │   ├── css/
+│   │   └── js/
+│   ├── uploads/
+│   ├── products/
+│   ├── categories/
+│   ├── brands/
+│   ├── orders/
+│   ├── customers/
+│   ├── reviews/
+│   ├── coupons/
+│   ├── banners/
+│   ├── inventory/
+│   └── settings/
+│
+├── database/
+│   └── grocery_store.sql
+│
+├── storage/
+│   ├── cache/
+│   ├── logs/
+│   └── uploads/
+│
+├── docs/
+│
+├── tests/
+│
+├── README.md
+└── .htaccess

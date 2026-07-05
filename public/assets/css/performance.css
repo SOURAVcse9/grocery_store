@@ -1,0 +1,53 @@
+/* ==========================================================================
+   performance.css — SEO, Accessibility & Rendering Optimization Rules
+   ========================================================================== */
+
+/* --------------------------------------------------------------------- */
+/* 1. Progressive Image Blur-Up Lazy-loading                            */
+/* --------------------------------------------------------------------- */
+img.lazy {
+  opacity: 0;
+  filter: blur(12px);
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1), filter 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, filter;
+}
+
+img.lazy-loaded {
+  opacity: 1;
+  filter: blur(0);
+}
+
+/* --------------------------------------------------------------------- */
+/* 2. Hardware Acceleration & Rendering Performance                      */
+/* --------------------------------------------------------------------- */
+.hero-slider,
+.notification-dropdown-panel,
+.user-menu-dropdown,
+.modal {
+  will-change: transform, opacity;
+  transform: translateZ(0); /* forces GPU composite layer rendering */
+}
+
+/* --------------------------------------------------------------------- */
+/* 3. Accessibility & Keyboard Navigation Focus Rings                    */
+/* --------------------------------------------------------------------- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Hide content screen-reader labels visually but keep accessible to readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}

@@ -1,0 +1,50 @@
+/* ==========================================================================
+   responsive.css — Global breakpoint overrides.
+   Loaded LAST so it can override style.css / header.css / footer.css.
+   Page-specific responsive tweaks (products grid, product gallery, cart
+   layout, etc.) are added here as each module is built, grouped by
+   the same breakpoints used below for consistency:
+     Desktop:  > 1024px  (default, no media query needed)
+     Tablet:   768px – 1024px
+     Mobile:   < 768px
+     Small:    < 480px
+   ========================================================================== */
+
+/* ---------------- Tablet (<= 1024px) ---------------- */
+@media (max-width: 1024px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: repeat(3, 1fr); }
+  .grid-5 { grid-template-columns: repeat(3, 1fr); }
+  .grid-6 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ---------------- Mobile (<= 768px) ---------------- */
+@media (max-width: 768px) {
+  :root { --header-height: 64px; }
+
+  .container { padding-inline: var(--space-4); }
+
+  .header-search { display: none; }
+  .header-nav { display: none; }
+  .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; }
+
+  .header-actions .lang-switch,
+  .header-actions .icon-link.hide-mobile { display: none; }
+
+  .footer-grid { grid-template-columns: 1fr; gap: var(--space-6); }
+  .footer-bottom { flex-direction: column; align-items: flex-start; }
+
+  .grid-2, .grid-3, .grid-4, .grid-5, .grid-6 { grid-template-columns: repeat(2, 1fr); }
+
+  .section { padding-block: var(--space-6); }
+  .section-title { font-size: var(--fs-md); }
+
+  .back-to-top { bottom: 16px; right: 16px; width: 42px; height: 42px; }
+}
+
+/* ---------------- Small phones (<= 480px) ---------------- */
+@media (max-width: 480px) {
+  .grid-2, .grid-3, .grid-4, .grid-5, .grid-6 { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+  .header-brand span { display: none; }
+  .btn { padding: 10px 16px; }
+}

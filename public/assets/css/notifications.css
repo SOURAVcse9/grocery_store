@@ -1,0 +1,295 @@
+/* ==========================================================================
+   notifications.css — Customer Notifications Center Stylesheet
+   ========================================================================== */
+
+/* --------------------------------------------------------------------- */
+/* 1. Header Dropdown Container & Menu Panel                            */
+/* --------------------------------------------------------------------- */
+.header-notif-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.notification-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  display: none; /* toggled by .is-open in JS */
+  flex-direction: column;
+  z-index: 1050;
+  overflow: hidden;
+  animation: notifSlideDown 200ms ease;
+}
+
+.notification-dropdown-panel.is-open {
+  display: flex;
+}
+
+@keyframes notifSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.notification-dropdown-header {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-dropdown-header h4 {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.btn-mark-all-read {
+  background: none;
+  border: none;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.btn-mark-all-read:hover {
+  text-decoration: underline;
+}
+
+/* Dropdown Item Rows */
+.notification-dropdown-body {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-dropdown-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 12px var(--space-4);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  position: relative;
+  text-decoration: none;
+  transition: background var(--transition-fast);
+  cursor: pointer;
+}
+
+.notification-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.notification-dropdown-item:hover {
+  background: var(--color-bg);
+}
+
+.notification-dropdown-item.unread {
+  background: rgba(var(--color-primary-rgb), 0.02);
+}
+
+/* Details */
+.notif-dropdown-details {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.notif-dropdown-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notif-dropdown-msg {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+}
+
+.notif-dropdown-time {
+  font-size: 9px;
+  color: var(--color-text-faint);
+  font-weight: 500;
+}
+
+/* Unread Dot */
+.notif-dropdown-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Empty State inside dropdown */
+.notification-dropdown-empty {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  color: var(--color-text-faint);
+  font-size: var(--fs-xs);
+}
+
+.notification-dropdown-empty p {
+  margin: 4px 0 0 0;
+}
+
+/* Dropdown Footer */
+.notification-dropdown-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+  padding: 8px;
+  text-align: center;
+}
+
+.view-all-notif-link {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--color-primary);
+  text-decoration: none;
+  display: block;
+}
+
+.view-all-notif-link:hover {
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------- */
+/* 2. Notification Center list Cards                                      */
+/* --------------------------------------------------------------------- */
+.notif-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.notification-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  align-items: start;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.notification-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.notification-card.unread {
+  border-left: 4px solid var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.01);
+}
+
+.notification-card.read {
+  opacity: 0.85;
+}
+
+/* Details */
+.notification-card-details {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.notification-card-title {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0 0 4px 0;
+}
+
+.notification-card-message {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2) 0;
+  line-height: 1.5;
+}
+
+.notification-card-time {
+  font-size: 10px;
+  color: var(--color-text-faint);
+  font-weight: 500;
+}
+
+/* Actions Row buttons */
+.notification-card-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-self: center;
+}
+
+.btn-notif-card-action {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  transition: all var(--transition-fast);
+}
+
+.btn-notif-card-action:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.btn-notif-card-action.btn-delete-notif:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: #fdf2f2;
+}
+
+/* --------------------------------------------------------------------- */
+/* 3. Category Color Icons                                                */
+/* --------------------------------------------------------------------- */
+.notif-dropdown-icon-wrapper,
+.notification-card-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.notification-card-icon-box {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+
+/* Types styles details */
+.notif-type-order { background: #e7f5ff; color: #228be6; }
+.notif-type-promo { background: #fff0f6; color: #e64980; }
+.notif-type-coupon { background: #fff9db; color: #f59f00; }
+.notif-type-account { background: #f1f3f5; color: #495057; }
+.notif-type-security { background: #fff5f5; color: #fa5252; }
+.notif-type-general { background: #f3f0ff; color: #7950f2; }
