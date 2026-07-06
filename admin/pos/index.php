@@ -31,7 +31,7 @@ try {
     
     // Load products with active stock
     $products = $pdo->query("
-        SELECT p.id, p.name, p.price, p.stock, p.sku, p.barcode, p.image, c.id AS category_id, b.id AS brand_id
+        SELECT p.id, p.name, p.price, p.stock, p.sku, p.barcode, p.thumbnail AS image, c.id AS category_id, b.id AS brand_id
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
@@ -39,12 +39,35 @@ try {
         ORDER BY p.name ASC
     ")->fetchAll();
 
+    // Ensure default Walk-in Customer exists in the database
+    $walkinCheck = $pdo->prepare("SELECT id FROM users WHERE phone = '00000000000' LIMIT 1");
+    $walkinCheck->execute();
+    $walkinUser = $walkinCheck->fetch();
+    
+    if (!$walkinUser) {
+        // Create the Walk-in Customer
+        $password = password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT);
+        $stmtIns = $pdo->prepare("
+            INSERT INTO users (role_id, full_name, email, phone, password, is_verified, is_active, created_at, updated_at) 
+            VALUES (2, 'Walk-in Customer', 'walkin@grocery.store', '00000000000', ?, 1, 1, NOW(), NOW())
+        ");
+        $stmtIns->execute([$password]);
+        $walkinId = (int)$pdo->lastInsertId();
+    } else {
+        $walkinId = (int)$walkinUser['id'];
+    }
+
+    $walkinDetails = $pdo->prepare("SELECT id, full_name, phone, wallet_balance, reward_points FROM users WHERE id = ? LIMIT 1");
+    $walkinDetails->execute([$walkinId]);
+    $defaultWalkin = $walkinDetails->fetch();
+
     // Load registered customers for selection
     $customers = $pdo->query("SELECT id, full_name, phone, wallet_balance, reward_points FROM users WHERE role_id != 1 AND deleted_at IS NULL ORDER BY full_name ASC")->fetchAll();
 
 } catch (PDOException $e) {
     error_log('[admin/pos/index] option loading failed: ' . $e->getMessage());
     $categories = $brands = $products = $customers = [];
+    $defaultWalkin = ['id' => 0, 'full_name' => 'Walk-in Customer', 'phone' => '00000000000', 'wallet_balance' => 0.00, 'reward_points' => 0];
 }
 ?>
 
@@ -153,15 +176,17 @@ try {
             
             <!-- Cart & Customer Loyalty -->
             <div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--color-border); padding-bottom:6px;">
-                    <h3 style="font-size:14px; font-weight:800; margin:0;"><i class="fas fa-shopping-basket"></i> POS Cart</h3>
-                    <!-- Customer selector -->
-                    <select id="posCustomerSelect" onchange="updateLoyaltyUI();" style="width:180px; padding:4px 8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:#fff;">
-                        <option value="0">Walk-in Customer</option>
-                        <?php foreach ($customers as $c): ?>
-                            <option value="<?= $c['id'] ?>" data-wallet="<?= $c['wallet_balance'] ?>" data-points="<?= $c['reward_points'] ?>"><?= e($c['full_name']) ?> (<?= e($c['phone']) ?>)</option>
-                        <?php endforeach; ?>
-                    </select>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--color-border); padding-bottom:6px; flex-wrap:wrap; gap:6px;">
+                    <div>
+                        <h3 style="font-size:14px; font-weight:800; margin:0;"><i class="fas fa-shopping-basket"></i> POS Cart</h3>
+                        <span id="posCurrentCustomerLabel" style="font-size:10px; color:var(--color-primary); font-weight:700;">Walk-in Customer</span>
+                    </div>
+                    <!-- Customer search input and dropdown -->
+                    <div style="position:relative; width:160px;">
+                        <input type="text" id="posCustomerSearch" placeholder="Search Customer (F4)..." autocomplete="off" style="width:100%; padding:4px 8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:11px; outline:none;">
+                        <input type="hidden" id="posCustomerSelect" value="<?= $defaultWalkin['id'] ?>" data-wallet="<?= $defaultWalkin['wallet_balance'] ?>" data-points="<?= $defaultWalkin['reward_points'] ?>" data-name="Walk-in Customer">
+                        <div id="posCustomerAutocomplete" style="display:none; position:absolute; top:100%; right:0; width:220px; background:#fff; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1006; max-height:200px; overflow-y:auto; margin-top:2px;"></div>
+                    </div>
                 </div>
 
                 <!-- Customer loyalty widgets status -->
@@ -183,10 +208,15 @@ try {
                         <span>Subtotal:</span>
                         <strong id="posCartSubtotal">৳0.00</strong>
                     </div>
+
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>VAT (5%):</span>
+                        <strong id="posCartVat">৳0.00</strong>
+                    </div>
                     
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Discount Override (৳):</span>
-                        <input type="number" id="posCartDiscount" min="0" value="0" onchange="recalculatePOSBalances();" style="width:70px; padding:2px 6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); text-align:right;">
+                        <input type="number" id="posCartDiscount" min="0" value="0" onchange="recalculatePOSBalances();" onkeyup="recalculatePOSBalances();" style="width:70px; padding:2px 6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); text-align:right;">
                     </div>
 
                     <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-border); padding-top:6px; font-size:14px; color:var(--color-text);">
@@ -195,24 +225,11 @@ try {
                     </div>
                 </div>
 
-                <!-- Payment split fields -->
-                <div style="margin-bottom:12px; border-top:1px solid var(--color-border); padding-top:10px;">
-                    <span style="font-size:10px; font-weight:700; color:var(--color-text-faint); text-transform:uppercase; display:block; margin-bottom:6px;">Split payment methods (৳)</span>
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;" class="grid-2">
-                        <input type="number" id="splitCash" min="0" value="0" placeholder="Cash Amount" style="padding:6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:11px;">
-                        <input type="number" id="splitCard" min="0" value="0" placeholder="Card Amount" style="padding:6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:11px;">
-                    </div>
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;" class="grid-2">
-                        <input type="number" id="splitBkash" min="0" value="0" placeholder="bKash Amount" style="padding:6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:11px;">
-                        <input type="number" id="splitWallet" min="0" value="0" placeholder="Wallet Credit" style="padding:6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:11px;">
-                    </div>
-                </div>
+                <!-- Split Payment Modal triggers upon clicking Checkout below -->
 
                 <div style="display:grid; grid-template-columns: 1fr 2fr; gap:8px;" class="grid-2">
                     <button type="button" onclick="suspendPOSCart();" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700; padding:10px; font-size:12px;"><i class="fas fa-hand-holding"></i> Hold</button>
-                    <button type="button" onclick="submitPOSCheckoutFinalist();" class="btn btn-primary" style="border-radius:var(--radius-pill); font-weight:700; padding:10px; font-size:12px;"><i class="fas fa-shopping-bag"></i> Checkout & Print</button>
+                    <button type="button" id="btnPOSCheckoutTrigger" disabled onclick="checkoutProcess();" class="btn btn-primary" style="border-radius:var(--radius-pill); font-weight:700; padding:10px; font-size:12px;"><i class="fas fa-shopping-bag"></i> Checkout & Print</button>
                 </div>
             </div>
 
@@ -223,11 +240,17 @@ try {
 <script>
 let touchCart = {};
 window.touchCart = touchCart;
+window.csrfToken = '<?= csrf_token() ?>';
 
 function filterPOSCatalog() {
-    const search = document.getElementById('posFilterSearch').value.toLowerCase();
-    const cat = document.getElementById('posFilterCat').value;
-    const brand = document.getElementById('posFilterBrand').value;
+    const searchEl = document.getElementById('posFilterSearch');
+    const catEl = document.getElementById('posFilterCat');
+    const brandEl = document.getElementById('posFilterBrand');
+    if (!searchEl || !catEl || !brandEl) return;
+    
+    const search = searchEl.value.toLowerCase();
+    const cat = catEl.value;
+    const brand = brandEl.value;
     
     const items = document.querySelectorAll('.touch-product-cell');
     items.forEach(el => {
@@ -247,15 +270,23 @@ function filterPOSCatalog() {
 
 function updateLoyaltyUI() {
     const sel = document.getElementById('posCustomerSelect');
-    const val = sel.value;
     const widget = document.getElementById('loyaltyWidget');
+    if (!sel || !widget) return;
     
-    if (val === '0') {
+    const val = sel.value;
+    const name = sel.getAttribute('data-name') || '';
+    
+    if (name.includes('Walk-in') || val === '0' || val === '') {
         widget.style.display = 'none';
     } else {
-        const option = sel.options[sel.selectedIndex];
-        document.getElementById('lblWallet').innerText = '৳' + parseFloat(option.getAttribute('data-wallet')).toFixed(2);
-        document.getElementById('lblPoints').innerText = option.getAttribute('data-points') + ' pts';
+        const wallet = parseFloat(sel.getAttribute('data-wallet')) || 0;
+        const points = parseInt(sel.getAttribute('data-points')) || 0;
+        
+        const walletEl = document.getElementById('lblWallet');
+        const pointsEl = document.getElementById('lblPoints');
+        if (walletEl) walletEl.innerText = '৳' + wallet.toFixed(2);
+        if (pointsEl) pointsEl.innerText = points + ' pts';
+        
         widget.style.display = 'flex';
     }
 }
@@ -311,8 +342,10 @@ function renderTouchCart() {
     wrapper.innerHTML = '';
     
     const keys = Object.keys(touchCart);
+    const btnTrigger = document.getElementById('btnPOSCheckoutTrigger');
     if (keys.length === 0) {
         wrapper.innerHTML = '<p style="text-align:center; color:var(--color-text-faint); font-size:11px; margin:16px 0;">Checkout list is empty.</p>';
+        if (btnTrigger) btnTrigger.disabled = true;
         recalculatePOSBalances();
         return;
     }
@@ -342,6 +375,7 @@ function renderTouchCart() {
         wrapper.appendChild(row);
     });
     
+    if (btnTrigger) btnTrigger.disabled = false;
     recalculatePOSBalances();
 }
 
@@ -352,17 +386,60 @@ function recalculatePOSBalances() {
         subtotal += (touchCart[k].price * touchCart[k].qty);
     });
     
-    const discount = parseFloat(document.getElementById('posCartDiscount').value) || 0;
-    const total = Math.max(subtotal - discount, 0);
+    const discountEl = document.getElementById('posCartDiscount');
+    const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
+    const vat = Math.max(subtotal - discount, 0) * 0.05;
+    const total = Math.max(subtotal - discount, 0) + vat;
     
-    document.getElementById('posCartSubtotal').innerText = '৳' + subtotal.toFixed(2);
-    document.getElementById('posCartTotalPayable').innerText = '৳' + total.toFixed(2);
+    const subtotalEl = document.getElementById('posCartSubtotal');
+    const vatEl = document.getElementById('posCartVat');
+    const totalEl = document.getElementById('posCartTotalPayable');
     
-    // Default split values
-    document.getElementById('splitCash').value = total.toFixed(2);
-    document.getElementById('splitCard').value = '0';
-    document.getElementById('splitBkash').value = '0';
-    document.getElementById('splitWallet').value = '0';
+    if (subtotalEl) subtotalEl.innerText = '৳' + subtotal.toFixed(2);
+    if (vatEl) vatEl.innerText = '৳' + vat.toFixed(2);
+    if (totalEl) totalEl.innerText = '৳' + total.toFixed(2);
+    
+    // Default split values to cash pay full
+    const splitCash = document.getElementById('splitCash');
+    const splitCard = document.getElementById('splitCard');
+    const splitBkash = document.getElementById('splitBkash');
+    const splitWallet = document.getElementById('splitWallet');
+    
+    if (splitCash) splitCash.value = total.toFixed(2);
+    if (splitCard) splitCard.value = '0';
+    if (splitBkash) splitBkash.value = '0';
+    if (splitWallet) splitWallet.value = '0';
+    
+    updateChangeDue();
+}
+
+function updateChangeDue() {
+    let subtotal = 0;
+    Object.keys(touchCart).forEach(k => {
+        subtotal += (touchCart[k].price * touchCart[k].qty);
+    });
+    
+    const discountEl = document.getElementById('posCartDiscount');
+    const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
+    const vat = Math.max(subtotal - discount, 0) * 0.05;
+    const totalPayable = Math.max(subtotal - discount, 0) + vat;
+
+    const splitCash = document.getElementById('splitCash');
+    const splitCard = document.getElementById('splitCard');
+    const splitBkash = document.getElementById('splitBkash');
+    const splitWallet = document.getElementById('splitWallet');
+
+    const cash = splitCash ? parseFloat(splitCash.value) || 0 : 0;
+    const card = splitCard ? parseFloat(splitCard.value) || 0 : 0;
+    const bkash = splitBkash ? parseFloat(splitBkash.value) || 0 : 0;
+    const wallet = splitWallet ? parseFloat(splitWallet.value) || 0 : 0;
+
+    const nonCashPaid = card + bkash + wallet;
+    const cashNeeded = Math.max(totalPayable - nonCashPaid, 0);
+    const change = Math.max(cash - cashNeeded, 0);
+
+    const changeEl = document.getElementById('posChangeDue');
+    if (changeEl) changeEl.innerText = '৳' + change.toFixed(2);
 }
 
 function suspendPOSCart() {
@@ -399,59 +476,121 @@ function suspendPOSCart() {
         }
     });
 }
-
-function submitPOSCheckoutFinalist() {
-    const keys = Object.keys(touchCart);
-    if (keys.length === 0) {
-        alert('POS Cart is empty.');
-        return;
-    }
-    
-    const discount = parseFloat(document.getElementById('posCartDiscount').value) || 0;
-    const cash = parseFloat(document.getElementById('splitCash').value) || 0;
-    const card = parseFloat(document.getElementById('splitCard').value) || 0;
-    const bkash = parseFloat(document.getElementById('splitBkash').value) || 0;
-    const wallet = parseFloat(document.getElementById('splitWallet').value) || 0;
-    
-    const customerId = document.getElementById('posCustomerSelect').value;
-    const itemsData = keys.map(k => touchCart[k]);
-    
-    const formData = new FormData();
-    formData.append('items', JSON.stringify(itemsData));
-    formData.append('discount', discount.toString());
-    formData.append('cash', cash.toString());
-    formData.append('card', card.toString());
-    formData.append('bkash', bkash.toString());
-    formData.append('wallet', wallet.toString());
-    formData.append('customer_id', customerId);
-    formData.append('csrf_token', '<?= csrf_token() ?>');
-    
-    fetch('checkout.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Checkout finalized successfully!');
-            // Print receipt
-            window.open('receipts.php?id=' + data.order_id, '_blank', 'width=400,height=600');
-            touchCart = {};
-            renderTouchCart();
-            // Refresh customer balance indicators if applicable
-            if (customerId !== '0') {
-                location.reload();
-            }
-        } else {
-            alert('POS Checkout failed: ' + data.error);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Server communications error during checkout.');
-    });
-}
 </script>
+
+<!-- Checkout Split Payment Modal -->
+<div class="modal fade" id="checkoutPaymentModal" tabindex="-1" aria-hidden="true" style="z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:#fff;">
+            <div class="modal-header" style="border-bottom:1px solid var(--color-border); padding:16px 20px;">
+                <h5 class="modal-title" style="font-weight:800; font-size:15px; color:var(--color-text); margin:0;"><i class="fas fa-credit-card"></i> Split Payment Terminal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size:12px; border:none; background:transparent; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <!-- Summary of Payable -->
+                <div style="background:rgba(92,124,250,0.06); padding:12px; border-radius:var(--radius-sm); margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:12px; font-weight:700; color:var(--color-text-muted);">Total Amount Due:</span>
+                    <strong id="modalPayableTotal" style="font-size:18px; color:var(--color-primary);">৳0.00</strong>
+                </div>
+
+                <form id="frmPOSPayment" onsubmit="event.preventDefault(); confirmPOSSale();">
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <!-- Cash Row -->
+                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-money-bill-wave" style="color:#40c057;"></i> Cash (৳)</label>
+                            <input type="number" id="splitCash" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right;">
+                        </div>
+
+                        <!-- Card Row -->
+                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-credit-card" style="color:#228be6;"></i> Card (৳)</label>
+                            <input type="number" id="splitCard" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right; margin-bottom:4px;">
+                        </div>
+                        <div id="cardTxnRow" style="display:none; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); padding-left:15px;">Card Txn ID *</label>
+                            <input type="text" id="splitCardTxnId" placeholder="E.g. AX-98124" class="form-control" style="font-size:11px;">
+                        </div>
+
+                        <!-- Mobile Banking Row -->
+                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-mobile-alt" style="color:#e64980;"></i> Mobile Banking (৳)</label>
+                            <input type="number" id="splitBkash" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right; margin-bottom:4px;">
+                        </div>
+                        <div id="bkashTxnRow" style="display:none; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); padding-left:15px;">Mobile Txn ID *</label>
+                            <input type="text" id="splitBkashTxnId" placeholder="E.g. BK-20349" class="form-control" style="font-size:11px;">
+                        </div>
+
+                        <!-- Wallet Credit Row -->
+                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-wallet" style="color:#fcc419;"></i> Wallet Credit (৳)</label>
+                            <input type="number" id="splitWallet" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right;">
+                        </div>
+                    </div>
+
+                    <!-- Split calculations display -->
+                    <div style="margin-top:16px; border-top:1px dashed var(--color-border); padding-top:12px; font-size:12px; color:var(--color-text-muted); display:flex; flex-direction:column; gap:4px;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Total Entered:</span>
+                            <strong id="modalTotalEntered" style="color:var(--color-text);">৳0.00</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Remaining Due:</span>
+                            <strong id="modalRemainingDue" style="color:#e03131;">৳0.00</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-weight:700; font-size:13px; color:var(--color-primary); border-top:1px solid var(--color-border); padding-top:6px; margin-top:4px;">
+                            <span>Change Due:</span>
+                            <strong id="modalChangeDue">৳0.00</strong>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:end; gap:8px; margin-top:20px;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size:12px; padding:6px 12px; border-radius:var(--radius-pill); font-weight:700;">Cancel</button>
+                        <button type="submit" id="btnConfirmPOSSale" class="btn btn-primary" disabled style="font-size:12px; padding:6px 16px; border-radius:var(--radius-pill); font-weight:700;">Confirm Sale</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Create Customer Modal -->
+<div class="modal fade" id="createCustomerModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:#fff;">
+            <div class="modal-header" style="border-bottom:1px solid var(--color-border); padding:16px 20px;">
+                <h5 class="modal-title" style="font-weight:800; font-size:15px; color:var(--color-text); margin:0;">Create New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size:12px; border:none; background:transparent; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <form id="frmCreateCustomer">
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px; text-align:left;">Full Name *</label>
+                            <input type="text" id="custNewName" required placeholder="E.g. Sazzad Hossain" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+                        </div>
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px; text-align:left;">Mobile Number *</label>
+                            <input type="text" id="custNewPhone" required placeholder="E.g. 01712345678" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+                        </div>
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px; text-align:left;">Email (Optional)</label>
+                            <input type="email" id="custNewEmail" placeholder="E.g. sazzad@example.com" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+                        </div>
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px; text-align:left;">Address (Optional)</label>
+                            <textarea id="custNewAddress" placeholder="E.g. House 12, Road 5, Dhaka" rows="2" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; resize:none;"></textarea>
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:end; gap:8px; margin-top:20px;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size:12px; padding:6px 12px; border-radius:var(--radius-pill); font-weight:700;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="font-size:12px; padding:6px 16px; border-radius:var(--radius-pill); font-weight:700;">Save Customer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="<?= BASE_URL ?>/../admin/assets/js/pos.js"></script>
 
 <?php

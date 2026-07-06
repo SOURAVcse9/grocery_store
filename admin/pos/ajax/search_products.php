@@ -7,15 +7,30 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../public/dbconnect.php';
-require_once __DIR__ . '/../../middleware/auth_middleware.php';
-
-require_admin_auth();
-require_admin_permission('pos.sale');
-
+// Set JSON content-type header at the very top
 header('Content-Type: application/json');
 
-$query = trim(input('q', ''));
+require_once __DIR__ . '/../../../public/dbconnect.php';
+require_once __DIR__ . '/../../includes/auth_helpers.php';
+
+// Safe JSON auth validation checks
+if (!is_admin_logged_in()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
+}
+
+if (!has_admin_permission('pos.sale')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Forbidden']);
+    exit;
+}
+
+// Support both 'barcode' and 'q' parameters
+$query = trim(input('barcode', '', 'get'));
+if ($query === '') {
+    $query = trim(input('q', '', 'get'));
+}
 
 if ($query === '') {
     echo json_encode(['success' => true, 'products' => []]);
@@ -29,13 +44,17 @@ try {
     $stmt = $pdo->prepare("
         SELECT id, name, price, stock, sku, barcode, thumbnail, is_active, status 
         FROM products 
-        WHERE (barcode = :q_exact OR sku = :q_exact OR id = :q_exact OR name LIKE :q_like OR sku LIKE :q_like OR barcode LIKE :q_like)
+        WHERE (barcode = ? OR sku = ? OR id = ? OR name LIKE ? OR sku LIKE ? OR barcode LIKE ?)
           AND deleted_at IS NULL 
         LIMIT 25
     ");
     $stmt->execute([
-        'q_exact' => $query,
-        'q_like'  => '%' . $query . '%'
+        $query,
+        $query,
+        $query,
+        '%' . $query . '%',
+        '%' . $query . '%',
+        '%' . $query . '%'
     ]);
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

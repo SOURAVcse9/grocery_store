@@ -43,6 +43,7 @@ $cardPaid = (float) input('card', '0.00');
 $bkashPaid = (float) input('bkash', '0.00');
 $walletPaid = (float) input('wallet', '0.00');
 $customerId = (int) input('customer_id', '0');
+$note = trim(input('note', 'POS Checkout'));
 
 if (empty($items)) {
     echo json_encode(['success' => false, 'error' => 'Cart is empty.']);
@@ -52,8 +53,33 @@ if (empty($items)) {
 try {
     $pdo->beginTransaction();
 
+    // Verify or resolve customer_id to ensure it exists and is never NULL
+    $walkinId = 0;
+    $walkin = $pdo->query("SELECT id FROM users WHERE phone = '00000000000' LIMIT 1")->fetch();
+    if ($walkin) {
+        $walkinId = (int) $walkin['id'];
+    } else {
+        $password = password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT);
+        $insW = $pdo->prepare("
+            INSERT INTO users (role_id, full_name, email, phone, password, is_verified, is_active, created_at, updated_at) 
+            VALUES (2, 'Walk-in Customer', 'walkin@grocery.store', '00000000000', ?, 1, 1, NOW(), NOW())
+        ");
+        $insW->execute([$password]);
+        $walkinId = (int) $pdo->lastInsertId();
+    }
+
+    if ($customerId <= 0) {
+        $customerId = $walkinId;
+    } else {
+        $chkCust = $pdo->prepare("SELECT id FROM users WHERE id = ? LIMIT 1");
+        $chkCust->execute([$customerId]);
+        if (!$chkCust->fetch()) {
+            $customerId = $walkinId;
+        }
+    }
+
     // 1. Verify customer wallet balance if wallet payment used
-    if ($customerId > 0 && $walletPaid > 0) {
+    if ($customerId > 0 && $customerId !== $walkinId && $walletPaid > 0) {
         $stmtCust = $pdo->prepare("SELECT wallet_balance FROM users WHERE id = ? FOR UPDATE");
         $stmtCust->execute([$customerId]);
         $walletBal = (float) $stmtCust->fetchColumn();
@@ -82,8 +108,8 @@ try {
     }
     $totalAmount = max($subtotal - $discount, 0);
 
-    // 4. Update customer wallet and reward points
-    if ($customerId > 0) {
+    // 4. Update customer wallet and reward points (Only for registered customers, NOT Walk-in)
+    if ($customerId > 0 && $customerId !== $walkinId) {
         if ($walletPaid > 0) {
             $pdo->prepare("UPDATE users SET wallet_balance = wallet_balance - ? WHERE id = ?")->execute([$walletPaid, $customerId]);
         }
@@ -94,18 +120,19 @@ try {
         }
     }
 
-    // 5. Create POS Order
+    // 5. Create POS Order (user_id is never NULL)
     $orderNumber = 'POS-' . date('Ymd') . '-' . rand(1000, 9999);
     $stmtOrder = $pdo->prepare("
-        INSERT INTO orders (order_number, user_id, address_id, subtotal, discount_amount, total_amount, payment_method, payment_status, status, created_at)
-        VALUES (?, ?, NULL, ?, ?, ?, 'pos_split', 'paid', 'delivered', NOW())
+        INSERT INTO orders (order_number, user_id, address_id, subtotal, discount_amount, total_amount, payment_method, payment_status, status, note, created_at)
+        VALUES (?, ?, NULL, ?, ?, ?, 'pos_split', 'paid', 'delivered', ?, NOW())
     ");
     $stmtOrder->execute([
         $orderNumber,
-        $customerId > 0 ? $customerId : null,
+        $customerId,
         $subtotal,
         $discount,
-        $totalAmount
+        $totalAmount,
+        $note
     ]);
     $orderId = (int)$pdo->lastInsertId();
 

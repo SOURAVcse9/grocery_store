@@ -7,13 +7,24 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../public/dbconnect.php';
-require_once __DIR__ . '/../../middleware/auth_middleware.php';
-
-require_admin_auth();
-require_admin_permission('pos.manage');
-
+// Set JSON content-type header at the very top
 header('Content-Type: application/json');
+
+require_once __DIR__ . '/../../../public/dbconnect.php';
+require_once __DIR__ . '/../../includes/auth_helpers.php';
+
+// Safe JSON auth validation checks
+if (!is_admin_logged_in()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
+}
+
+if (!has_admin_permission('pos.manage')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Forbidden']);
+    exit;
+}
 
 $pdo = db();
 $adminId = current_admin_id();
