@@ -30,6 +30,16 @@ $currentUri = $_SERVER['REQUEST_URI'];
                 </li>
             <?php endif; ?>
 
+            <!-- POS Terminal -->
+            <?php if (has_admin_permission('pos.sale')): ?>
+                <li>
+                    <a href="<?= BASE_URL ?>/../admin/pos/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/pos/') ? 'active' : '' ?>">
+                        <i class="fas fa-cash-register"></i>
+                        <span>POS / Sales Terminal</span>
+                    </a>
+                </li>
+            <?php endif; ?>
+
             <!-- Products -->
             <?php if (has_admin_permission('products.view')): ?>
                 <li>

@@ -1,0 +1,64 @@
+<?php
+/**
+ * ==========================================================================
+ * admin/pos/ajax/search_products.php — Unified POS Product Search Endpoint
+ * ==========================================================================
+ */
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../../../public/dbconnect.php';
+require_once __DIR__ . '/../../middleware/auth_middleware.php';
+
+require_admin_auth();
+require_admin_permission('pos.sale');
+
+header('Content-Type: application/json');
+
+$query = trim(input('q', ''));
+
+if ($query === '') {
+    echo json_encode(['success' => true, 'products' => []]);
+    exit;
+}
+
+try {
+    $pdo = db();
+    
+    // Select matching active/inactive and in/out of stock products (exclude deleted)
+    $stmt = $pdo->prepare("
+        SELECT id, name, price, stock, sku, barcode, thumbnail, is_active, status 
+        FROM products 
+        WHERE (barcode = :q_exact OR sku = :q_exact OR id = :q_exact OR name LIKE :q_like OR sku LIKE :q_like OR barcode LIKE :q_like)
+          AND deleted_at IS NULL 
+        LIMIT 25
+    ");
+    $stmt->execute([
+        'q_exact' => $query,
+        'q_like'  => '%' . $query . '%'
+    ]);
+    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $formattedProducts = [];
+    foreach ($products as $p) {
+        $formattedProducts[] = [
+            'id' => (int) $p['id'],
+            'name' => $p['name'],
+            'price' => (float) $p['price'],
+            'stock' => (int) $p['stock'],
+            'image' => image_url($p['thumbnail'], 'products'),
+            'barcode' => $p['barcode'],
+            'sku' => $p['sku'],
+            'is_active' => (int) ($p['is_active'] ?? 1)
+        ];
+    }
+
+    echo json_encode([
+        'success' => true,
+        'products' => $formattedProducts
+    ]);
+
+} catch (PDOException $e) {
+    error_log('[admin/pos/ajax/search_products] query error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Database search error.']);
+}

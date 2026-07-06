@@ -108,6 +108,7 @@ if (method_is('post') && input('pos_action', '') === 'open_shift') {
         exit;
     } catch (PDOException $e) {
         error_log('[admin/pos/register] open failed: ' . $e->getMessage());
+        $error = 'Failed to open register: ' . $e->getMessage();
     }
 }
 

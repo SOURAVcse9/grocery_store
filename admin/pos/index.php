@@ -31,7 +31,7 @@ try {
     
     // Load products with active stock
     $products = $pdo->query("
-        SELECT p.id, p.name, p.price, p.stock, p.sku, p.image, c.id AS category_id, b.id AS brand_id
+        SELECT p.id, p.name, p.price, p.stock, p.sku, p.barcode, p.image, c.id AS category_id, b.id AS brand_id
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
@@ -63,11 +63,35 @@ try {
 </div>
 
 <?php if (!$activeShift): ?>
-    <!-- Open Cash Register drawer first -->
-    <div class="dashboard-card" style="max-width: 500px; padding:var(--space-6); margin: 40px auto 0 auto; text-align:center;">
-        <h3 style="font-size:16px; font-weight:800; margin-bottom:16px;"><i class="fas fa-lock"></i> Cash Drawer Closed</h3>
-        <p style="font-size:13px; color:var(--color-text-muted); margin-bottom:20px;">Open a new cash shift register to activate checkout terminals.</p>
-        <a href="register.php" class="btn btn-primary" style="border-radius:var(--radius-pill); font-weight:700; padding:10px 24px;"><i class="fas fa-cash-register"></i> Go to Register Settings</a>
+    <!-- Open Cash Register drawer form directly integrated -->
+    <div class="dashboard-card" style="max-width: 500px; padding:var(--space-6); margin: 40px auto 0 auto; border-radius:16px;">
+        <div style="text-align:center; margin-bottom:20px;">
+            <i class="fas fa-cash-register" style="font-size:48px; color:var(--admin-color-primary); margin-bottom:12px;"></i>
+            <h3 style="font-size:18px; font-weight:800; margin:0;">Open Cashier Register Shift</h3>
+            <p style="font-size:13px; color:var(--color-text-muted); margin:4px 0 0 0;">An active shift is required to perform sales operations.</p>
+        </div>
+        
+        <form method="post" action="register.php" class="auth-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="pos_action" value="open_shift">
+            
+            <div class="form-field-group" style="margin-bottom:16px;">
+                <label style="font-weight:700; display:block; margin-bottom:6px; font-size:12px;">Opening Drawer Cash (৳) *</label>
+                <input type="number" name="opening_cash" step="0.01" value="1000.00" required style="width:100%; padding:10px 12px; border:1.5px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+            </div>
+
+            <div class="form-field-group" style="margin-bottom:16px;">
+                <label style="font-weight:700; display:block; margin-bottom:6px; font-size:12px;">Register / Station Number *</label>
+                <input type="text" name="register_number" value="Register 01" required style="width:100%; padding:10px 12px; border:1.5px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+            </div>
+
+            <div class="form-field-group" style="margin-bottom:24px;">
+                <label style="font-weight:700; display:block; margin-bottom:6px; font-size:12px;">Shift Opening Notes</label>
+                <textarea name="notes" placeholder="E.g. Morning Shift opening drawer change..." style="width:100%; padding:10px 12px; border:1.5px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; font-family:inherit; resize:vertical;"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; border:none; border-radius:var(--radius-pill); font-weight:700; padding:12px; font-size:13px; background-color: var(--admin-color-primary); color: #fff;"><i class="fas fa-lock-open"></i> Initialize Shift Drawer</button>
+        </form>
     </div>
 <?php else: ?>
     <!-- Touch screen responsive layout -->
@@ -76,8 +100,11 @@ try {
         <!-- Left: Products selector block -->
         <div style="display:flex; flex-direction:column; gap:12px;">
             <!-- Filter toolbar -->
-            <div class="dashboard-card" style="padding:12px; margin:0; display:flex; gap:10px; flex-wrap:wrap;">
-                <input type="text" id="posFilterSearch" placeholder="Scan SKU/Barcode or type product name..." onkeyup="filterPOSCatalog();" style="flex:1.5; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+            <div class="dashboard-card" style="padding:12px; margin:0; display:flex; gap:10px; flex-wrap:wrap; position:relative;">
+                <div style="position:relative; flex:1.5; display:flex; align-items:center;">
+                    <input type="text" id="posFilterSearch" autocomplete="off" placeholder="Scan SKU/Barcode or type product name..." onkeyup="filterPOSCatalog();" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+                    <div id="posAutocompleteDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1005; max-height:250px; overflow-y:auto; margin-top:2px;"></div>
+                </div>
                 
                 <select id="posFilterCat" onchange="filterPOSCatalog();" style="flex:1; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:#fff;">
                     <option value="">All Categories</option>
@@ -100,8 +127,11 @@ try {
                     $img = image_url($p['image'], 'products');
                 ?>
                     <div class="dashboard-card touch-product-cell" 
+                         data-id="<?= $p['id'] ?>"
                          data-name="<?= strtolower($p['name']) ?>" 
+                         data-name-original="<?= e($p['name']) ?>"
                          data-sku="<?= strtolower($p['sku'] ?? '') ?>"
+                         data-barcode="<?= strtolower($p['barcode'] ?? '') ?>"
                          data-cat="<?= $p['category_id'] ?: '' ?>"
                          data-brand="<?= $p['brand_id'] ?: '' ?>"
                          onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e($p['name']) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>);" 
@@ -192,6 +222,7 @@ try {
 
 <script>
 let touchCart = {};
+window.touchCart = touchCart;
 
 function filterPOSCatalog() {
     const search = document.getElementById('posFilterSearch').value.toLowerCase();
@@ -230,6 +261,8 @@ function updateLoyaltyUI() {
 }
 
 function addTouchCartItem(id, name, price, stock) {
+    window.addTouchCartItem = addTouchCartItem;
+    window.updateTouchQty = updateTouchQty;
     if (touchCart[id]) {
         if (touchCart[id].qty < stock) {
             touchCart[id].qty++;
@@ -273,6 +306,7 @@ function triggerPriceOverride(id) {
 }
 
 function renderTouchCart() {
+    window.renderTouchCart = renderTouchCart;
     const wrapper = document.getElementById('posActiveCartList');
     wrapper.innerHTML = '';
     
@@ -312,6 +346,7 @@ function renderTouchCart() {
 }
 
 function recalculatePOSBalances() {
+    window.recalculatePOSBalances = recalculatePOSBalances;
     let subtotal = 0;
     Object.keys(touchCart).forEach(k => {
         subtotal += (touchCart[k].price * touchCart[k].qty);
@@ -417,6 +452,7 @@ function submitPOSCheckoutFinalist() {
     });
 }
 </script>
+<script src="<?= BASE_URL ?>/../admin/assets/js/pos.js"></script>
 
 <?php
 require_once __DIR__ . '/../layouts/footer.php';

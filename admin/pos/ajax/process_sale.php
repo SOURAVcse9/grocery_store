@@ -1,14 +1,14 @@
 <?php
 /**
  * ==========================================================================
- * admin/pos/checkout.php — Enterprise POS Checkout API (AJAX POST)
+ * admin/pos/ajax/process_sale.php — POS Process Sale API (AJAX POST)
  * ==========================================================================
  */
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../public/dbconnect.php';
-require_once __DIR__ . '/../middleware/auth_middleware.php';
+require_once __DIR__ . '/../../../public/dbconnect.php';
+require_once __DIR__ . '/../../middleware/auth_middleware.php';
 
 require_admin_auth();
 require_admin_permission('pos.sale');
@@ -168,6 +168,6 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log('[admin/pos/checkout] POS checkout failed: ' . $e->getMessage());
+    error_log('[admin/pos/ajax/process_sale] POS checkout failed: ' . $e->getMessage());
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

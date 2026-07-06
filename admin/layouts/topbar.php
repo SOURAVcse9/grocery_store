@@ -32,6 +32,13 @@ try {
     </div>
 
     <div class="topbar-right">
+        <!-- POS Terminal Quick Access -->
+        <?php if (has_admin_permission('pos.sale')): ?>
+            <a href="<?= BASE_URL ?>/../admin/pos/index.php" class="topbar-action-btn" title="Open POS / Sales Terminal" aria-label="Open POS Terminal" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-cash-register"></i>
+            </a>
+        <?php endif; ?>
+
         <!-- Fullscreen Button -->
         <button type="button" class="topbar-action-btn" id="btnFullscreen" title="Toggle Fullscreen" onclick="toggleFullscreen();" aria-label="Toggle Fullscreen">
             <i class="fas fa-expand"></i>
