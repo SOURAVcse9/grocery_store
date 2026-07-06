@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/dbconnect.php';
 
+$extraScripts = ['js/reviews.js'];
 $slug = input('slug', '', 'get');
 
 if (empty($slug)) {
@@ -58,12 +59,13 @@ try {
         $gallery[] = $product['thumbnail'];
     }
 
-    // 3. Handle Review Submission
     // 3. Check purchase verification & existing reviews for logged-in user
-    $existingReview = null;
+    $isLoggedIn = is_logged_in();
     $hasPurchased = false;
+    $isDelivered = false;
+    $existingReview = null;
 
-    if (is_logged_in()) {
+    if ($isLoggedIn) {
         $userId = current_user_id();
         
         // Fetch existing review
@@ -75,18 +77,26 @@ try {
         }
 
         // Verify purchase status
-        $purchaseStmt = $pdo->prepare('
-            SELECT o.id 
+        $orderStmt = $pdo->prepare('
+            SELECT o.status, o.payment_status, o.payment_method
             FROM orders o
             JOIN order_items oi ON oi.order_id = o.id
             WHERE o.user_id = :uid 
               AND oi.product_id = :pid 
-              AND o.status = \'delivered\'
+            ORDER BY (o.status = \'delivered\') DESC, o.id DESC
             LIMIT 1
         ');
-        $purchaseStmt->execute(['uid' => $userId, 'pid' => $productId]);
-        $hasPurchased = ($purchaseStmt->fetchColumn() !== false);
+        $orderStmt->execute(['uid' => $userId, 'pid' => $productId]);
+        $orderInfo = $orderStmt->fetch();
+
+        if ($orderInfo) {
+            $hasPurchased = true;
+            if ($orderInfo['status'] === 'delivered' && ($orderInfo['payment_status'] === 'paid' || $orderInfo['payment_method'] === 'cod')) {
+                $isDelivered = true;
+            }
+        }
     }
+    $currentUserId = is_logged_in() ? current_user_id() : null;
 
     // 4. Fetch Rating Distribution
     $distStmt = $pdo->prepare('

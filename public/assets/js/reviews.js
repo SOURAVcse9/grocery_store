@@ -145,6 +145,7 @@
         if (formTitle) formTitle.textContent = 'Update Your Review';
         btnSubmit.textContent = 'Update Review';
         btnCancel.style.display = 'block';
+        if (reviewForm) reviewForm.style.display = 'block';
 
         // Scroll smoothly to form
         formCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -172,6 +173,11 @@
         if (formTitle) formTitle.textContent = 'Write a Customer Review';
         btnSubmit.textContent = 'Submit Review';
         btnCancelEdit.style.display = 'none';
+        
+        const hasExistingReview = document.querySelector('.verified-purchaser-warning i.fa-circle-check');
+        if (hasExistingReview && reviewForm) {
+          reviewForm.style.display = 'none';
+        }
       }
     });
 

@@ -275,6 +275,11 @@ $breadcrumbs = [
                                     </td>
                                     <td>
                                         <a href="<?= $productUrl ?>" style="font-weight:700; color:var(--color-text);"><?= e($item['product_name']) ?></a>
+                                        <?php if ($order['status'] === 'delivered' && ($order['payment_status'] === 'paid' || $order['payment_method'] === 'cod')): ?>
+                                            <div style="margin-top: 6px;">
+                                                <a href="<?= $productUrl ?>#tabReviews" class="btn btn-primary no-print" style="padding: 4px 10px; font-size: 10px; border-radius: var(--radius-pill); border: none; text-decoration: none; display: inline-block; font-weight: 700;"><i class="far fa-star"></i> Review Product</a>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td><?= e($item['product_sku']) ?></td>
                                     <td style="text-align:right;"><?= format_price((float)$item['price']) ?></td>

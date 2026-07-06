@@ -290,3 +290,4 @@ Stack trace:
 [06-Jul-2026 01:31:21 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
 [06-Jul-2026 01:32:12 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
 [06-Jul-2026 01:44:56 Asia/Dhaka] [admin/customers/view] failed aggregates load: SQLSTATE[HY093]: Invalid parameter number
+[06-Jul-2026 10:39:57 Asia/Dhaka] PHP Fatal error:  Cannot redeclare sync_product_rating_stats() (previously declared in C:\xampp\htdocs\grocery-store\public\ajax\review.php:32) in C:\xampp\htdocs\grocery-store\public\ajax\review.php on line 43

@@ -113,7 +113,25 @@ try {
             require_admin_permission('reviews.manage');
             $revId = (int) input('review_id', '0');
             if ($revId > 0) {
+                $stmt = $pdo->prepare("SELECT product_id FROM product_reviews WHERE id = ? LIMIT 1");
+                $stmt->execute([$revId]);
+                $productId = (int) $stmt->fetchColumn();
+                
                 $pdo->prepare("DELETE FROM product_reviews WHERE id = ? AND user_id = ?")->execute([$revId, $userId]);
+                
+                if ($productId > 0) {
+                    $upd = $pdo->prepare("
+                        UPDATE products SET 
+                            avg_rating = COALESCE((SELECT ROUND(AVG(rating), 2) FROM product_reviews WHERE product_id = :pid AND status = \'approved\'), 0.00),
+                            review_count = (SELECT COUNT(*) FROM product_reviews WHERE product_id = :pid2 AND status = \'approved\')
+                        WHERE id = :pid3
+                    ");
+                    $upd->execute([
+                        'pid' => $productId,
+                        'pid2' => $productId,
+                        'pid3' => $productId
+                    ]);
+                }
                 $success = 'Product review deleted successfully.';
             }
         } elseif ($action === 'remove_wishlist') {
