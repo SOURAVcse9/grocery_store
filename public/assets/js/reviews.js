@@ -2,18 +2,14 @@
  * ==========================================================================
  * public/assets/js/reviews.js
  * ==========================================================================
- * Handle client-side product review interactions:
- *   - Clicking star inputs to select rating score
- *   - Edit Review trigger: prefill form inputs and scroll to form container
- *   - Delete Review trigger: call AJAX removal
- *   - Helpful Vote UI toggles (simulated counter)
+ * Handle client-side product review interactions securely.
  * ==========================================================================
  */
 
 (function () {
   'use strict';
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function initReviews() {
     // ---------------------------------------------------------------------
     // 1. Star Rating Input Selector in Form
     // ---------------------------------------------------------------------
@@ -76,6 +72,7 @@
       }
 
       const btn = document.getElementById('btnSubmitReview');
+      if (!btn) return;
       const origText = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -91,6 +88,11 @@
           headers: { 'X-Requested-With': 'XMLHttpRequest' },
           body: formData
         });
+        
+        if (!res.ok) {
+          throw new Error('Server returned error status ' + res.status);
+        }
+
         const json = await res.json();
 
         btn.disabled = false;
@@ -107,7 +109,7 @@
       } catch (err) {
         btn.disabled = false;
         btn.innerHTML = origText;
-        window.showToast?.('Connection error. Please try again.', 'error');
+        window.showToast?.('Connection error or invalid response. Please try again.', 'error');
       }
     });
 
@@ -212,7 +214,7 @@
     });
 
     // ---------------------------------------------------------------------
-    // 5. Helpful Vote Handler (UI Ready / Cookie Saved)
+    // 5. Helpful Vote Handler (UI Ready)
     // ---------------------------------------------------------------------
     document.body.addEventListener('click', (e) => {
       const voteBtn = e.target.closest('.btn-helpful-vote');
@@ -224,7 +226,7 @@
       // Mark voted in UI
       voteBtn.classList.add('voted');
       const icon = voteBtn.querySelector('i');
-      if (icon) icon.className = 'fas fa-thumbs-up'; // change outline to solid
+      if (icon) icon.className = 'fas fa-thumbs-up';
 
       const countEl = voteBtn.querySelector('.helpful-vote-count');
       if (countEl) {
@@ -234,6 +236,12 @@
 
       window.showToast?.('Thank you for your helpful vote!', 'success');
     });
+  }
 
-  });
+  // Safe DOM Load Trigger
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReviews);
+  } else {
+    initReviews();
+  }
 })();

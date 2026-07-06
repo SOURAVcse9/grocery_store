@@ -48,40 +48,48 @@ if (method_is('post')) {
             
             if ($reviewData) {
                 $productId = (int) $reviewData['product_id'];
-                
-                if ($action === 'approve') {
-                    $up = $pdo->prepare("UPDATE product_reviews SET status = 'approved', updated_at = NOW() WHERE id = :id");
-                    $up->execute(['id' => $reviewId]);
-                    sync_product_rating_stats($productId, $pdo);
-                    flash('reviews_admin', 'Review approved successfully.', 'success');
-                } elseif ($action === 'reject') {
-                    $up = $pdo->prepare("UPDATE product_reviews SET status = 'rejected', updated_at = NOW() WHERE id = :id");
-                    $up->execute(['id' => $reviewId]);
-                    sync_product_rating_stats($productId, $pdo);
-                    flash('reviews_admin', 'Review marked as rejected.', 'success');
-                } elseif ($action === 'hide') {
-                    $up = $pdo->prepare("UPDATE product_reviews SET status = 'hidden', updated_at = NOW() WHERE id = :id");
-                    $up->execute(['id' => $reviewId]);
-                    sync_product_rating_stats($productId, $pdo);
-                    flash('reviews_admin', 'Review hidden from catalog listings.', 'success');
-                } elseif ($action === 'delete') {
-                    // Delete images from disk
-                    if (!empty($reviewData['review_images'])) {
-                        $images = json_decode($reviewData['review_images'], true);
-                        if (is_array($images)) {
-                            foreach ($images as $img) {
-                                $fullPath = __DIR__ . '/../../' . $img;
-                                if (file_exists($fullPath)) {
-                                    @unlink($fullPath);
+                $pdo->beginTransaction();
+                try {
+                    if ($action === 'approve') {
+                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'approved', updated_at = NOW() WHERE id = :id");
+                        $up->execute(['id' => $reviewId]);
+                        sync_product_rating_stats($productId, $pdo);
+                        flash('reviews_admin', 'Review approved successfully.', 'success');
+                    } elseif ($action === 'reject') {
+                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'rejected', updated_at = NOW() WHERE id = :id");
+                        $up->execute(['id' => $reviewId]);
+                        sync_product_rating_stats($productId, $pdo);
+                        flash('reviews_admin', 'Review marked as rejected.', 'success');
+                    } elseif ($action === 'hide') {
+                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'hidden', updated_at = NOW() WHERE id = :id");
+                        $up->execute(['id' => $reviewId]);
+                        sync_product_rating_stats($productId, $pdo);
+                        flash('reviews_admin', 'Review hidden from catalog listings.', 'success');
+                    } elseif ($action === 'delete') {
+                        // Delete images from disk
+                        if (!empty($reviewData['review_images'])) {
+                            $images = json_decode($reviewData['review_images'], true);
+                            if (is_array($images)) {
+                                foreach ($images as $img) {
+                                    $fullPath = __DIR__ . '/../../' . $img;
+                                    if (file_exists($fullPath)) {
+                                        @unlink($fullPath);
+                                    }
                                 }
                             }
                         }
+                        
+                        $del = $pdo->prepare('DELETE FROM product_reviews WHERE id = :id');
+                        $del->execute(['id' => $reviewId]);
+                        sync_product_rating_stats($productId, $pdo);
+                        flash('reviews_admin', 'Review permanently deleted from database.', 'success');
                     }
-                    
-                    $del = $pdo->prepare('DELETE FROM product_reviews WHERE id = :id');
-                    $del->execute(['id' => $reviewId]);
-                    sync_product_rating_stats($productId, $pdo);
-                    flash('reviews_admin', 'Review permanently deleted from database.', 'success');
+                    $pdo->commit();
+                } catch (PDOException $e) {
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                    throw $e;
                 }
             }
         } catch (PDOException $e) {

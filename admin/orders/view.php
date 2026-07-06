@@ -26,9 +26,10 @@ $success = null;
 try {
     // 1. Fetch Order details
     $orderStmt = $pdo->prepare("
-        SELECT o.*, u.full_name, u.email, u.phone 
+        SELECT o.*, u.full_name, u.email, u.phone, c.code AS coupon_code
         FROM orders o
         JOIN users u ON u.id = o.user_id
+        LEFT JOIN coupons c ON c.id = o.coupon_id
         WHERE o.id = :oid LIMIT 1
     ");
     $orderStmt->execute(['oid' => $orderId]);
@@ -54,16 +55,12 @@ try {
     $addrStmt = $pdo->prepare("SELECT * FROM addresses WHERE id = :id LIMIT 1");
     
     $shippingAddr = null;
-    if (!empty($order['shipping_address_id'])) {
-        $addrStmt->execute(['id' => $order['shipping_address_id']]);
+    if (!empty($order['address_id'])) {
+        $addrStmt->execute(['id' => $order['address_id']]);
         $shippingAddr = $addrStmt->fetch();
     }
     
     $billingAddr = null;
-    if (!empty($order['billing_address_id'])) {
-        $addrStmt->execute(['id' => $order['billing_address_id']]);
-        $billingAddr = $addrStmt->fetch();
-    }
 
     // 4. Fetch status logs
     $histStmt = $pdo->prepare("SELECT * FROM order_status_history WHERE order_id = :oid ORDER BY created_at DESC");
@@ -340,7 +337,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
                 <?php if (!empty($shippingAddr['address_line2'])): ?>
                     <p style="margin: 0 0 4px 0; color:var(--color-text-muted);"><?= e($shippingAddr['address_line2']) ?></p>
                 <?php endif; ?>
-                <p style="margin: 0 0 6px 0; color:var(--color-text-muted);"><?= e($shippingAddr['city']) ?>, <?= e($shippingAddr['district']) ?> - <?= e($shippingAddr['postal_code']) ?></p>
+                <p style="margin: 0 0 6px 0; color:var(--color-text-muted);"><?= e($shippingAddr['city']) ?>, <?= e($shippingAddr['state'] ?? '') ?> - <?= e($shippingAddr['postal_code']) ?></p>
                 <p style="margin: 0; color:var(--color-text-muted);"><strong>Phone:</strong> <?= e($shippingAddr['phone']) ?></p>
             <?php else: ?>
                 <p style="color:var(--color-text-faint); margin:0;">No dedicated shipping address mapped. (Standard user phone: <?= e($order['phone']) ?>)</p>

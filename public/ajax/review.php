@@ -65,7 +65,7 @@ try {
             JOIN order_items oi ON oi.order_id = o.id
             WHERE o.user_id = :uid 
               AND oi.product_id = :pid 
-              AND o.status = \'delivered\'
+              AND LOWER(o.status) = \'delivered\'
               AND (o.payment_status = \'paid\' OR o.payment_method = \'cod\')
             LIMIT 1
         ');
@@ -88,22 +88,58 @@ try {
         }
 
         // 3. Prevent duplicate reviews (one review per product per user) - Update instead of insert!
-        $dupStmt = $pdo->prepare('SELECT id FROM product_reviews WHERE product_id = :pid AND user_id = :uid LIMIT 1');
+        $dupStmt = $pdo->prepare('SELECT id, review_images FROM product_reviews WHERE product_id = :pid AND user_id = :uid LIMIT 1');
         $dupStmt->execute(['pid' => $productId, 'uid' => $userId]);
         $existing = $dupStmt->fetch();
         if ($existing) {
-            $update = $pdo->prepare('
-                UPDATE product_reviews 
-                SET rating = :rating, review_title = :title, review_comment = :comment, updated_at = NOW() 
-                WHERE id = :id
-            ');
-            $update->execute([
-                'rating'  => $rating,
-                'title'   => $reviewTitle,
-                'comment' => $reviewComment,
-                'id'      => $existing['id']
-            ]);
-            sync_product_rating_stats($productId, $pdo);
+            // Handle duplicate update inside transaction
+            $pdo->beginTransaction();
+            try {
+                if ($imagesJson !== null) {
+                    // Delete old files from server
+                    if (!empty($existing['review_images'])) {
+                        $oldImages = json_decode($existing['review_images'], true);
+                        if (is_array($oldImages)) {
+                            foreach ($oldImages as $oldImg) {
+                                $fullPath = __DIR__ . '/../../' . $oldImg;
+                                if (file_exists($fullPath)) {
+                                    @unlink($fullPath);
+                                }
+                            }
+                        }
+                    }
+
+                    $update = $pdo->prepare('
+                        UPDATE product_reviews 
+                        SET rating = :rating, review_title = :title, review_comment = :comment, review_images = :images, updated_at = NOW() 
+                        WHERE id = :id
+                    ');
+                    $update->execute([
+                        'rating'  => $rating,
+                        'title'   => $reviewTitle,
+                        'comment' => $reviewComment,
+                        'images'  => $imagesJson,
+                        'id'      => $existing['id']
+                    ]);
+                } else {
+                    $update = $pdo->prepare('
+                        UPDATE product_reviews 
+                        SET rating = :rating, review_title = :title, review_comment = :comment, updated_at = NOW() 
+                        WHERE id = :id
+                    ');
+                    $update->execute([
+                        'rating'  => $rating,
+                        'title'   => $reviewTitle,
+                        'comment' => $reviewComment,
+                        'id'      => $existing['id']
+                    ]);
+                }
+                sync_product_rating_stats($productId, $pdo);
+                $pdo->commit();
+            } catch (PDOException $ex) {
+                $pdo->rollBack();
+                throw $ex;
+            }
             json_response(true, 'Review updated successfully!');
         }
 
@@ -153,23 +189,30 @@ try {
 
         $imagesJson = !empty($uploadedImages) ? json_encode($uploadedImages) : null;
 
-        // 5. Save review
-        $insert = $pdo->prepare('
-            INSERT INTO product_reviews (product_id, user_id, order_id, rating, review_title, review_comment, review_images, verified_purchase, status, created_at, updated_at)
-            VALUES (:pid, :uid, :oid, :rating, :title, :comment, :images, 1, \'approved\', NOW(), NOW())
-        ');
-        $insert->execute([
-            'pid'     => $productId,
-            'uid'     => $userId,
-            'oid'     => $orderId,
-            'rating'  => $rating,
-            'title'   => $reviewTitle,
-            'comment' => $reviewComment,
-            'images'  => $imagesJson
-        ]);
+        // 5. Save review inside transaction
+        $pdo->beginTransaction();
+        try {
+            $insert = $pdo->prepare('
+                INSERT INTO product_reviews (product_id, user_id, order_id, rating, review_title, review_comment, review_images, verified_purchase, status, created_at, updated_at)
+                VALUES (:pid, :uid, :oid, :rating, :title, :comment, :images, 1, \'approved\', NOW(), NOW())
+            ');
+            $insert->execute([
+                'pid'     => $productId,
+                'uid'     => $userId,
+                'oid'     => $orderId,
+                'rating'  => $rating,
+                'title'   => $reviewTitle,
+                'comment' => $reviewComment,
+                'images'  => $imagesJson
+            ]);
 
-        // Sync product counts
-        sync_product_rating_stats($productId, $pdo);
+            // Sync product counts
+            sync_product_rating_stats($productId, $pdo);
+            $pdo->commit();
+        } catch (PDOException $ex) {
+            $pdo->rollBack();
+            throw $ex;
+        }
 
         json_response(true, 'Review submitted successfully!');
     }

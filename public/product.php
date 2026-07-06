@@ -77,24 +77,51 @@ try {
         }
 
         // Verify purchase status
-        $orderStmt = $pdo->prepare('
-            SELECT o.status, o.payment_status, o.payment_method
-            FROM orders o
-            JOIN order_items oi ON oi.order_id = o.id
-            WHERE o.user_id = :uid 
-              AND oi.product_id = :pid 
-            ORDER BY (o.status = \'delivered\') DESC, o.id DESC
-            LIMIT 1
-        ');
-        $orderStmt->execute(['uid' => $userId, 'pid' => $productId]);
+        $targetOrderId = (int) input('order_id', '0', 'get');
+        if ($targetOrderId > 0) {
+            $orderStmt = $pdo->prepare('
+                SELECT o.status, o.payment_status, o.payment_method
+                FROM orders o
+                JOIN order_items oi ON oi.order_id = o.id
+                WHERE o.user_id = :uid 
+                  AND oi.product_id = :pid 
+                  AND o.id = :oid
+                LIMIT 1
+            ');
+            $orderStmt->execute(['uid' => $userId, 'pid' => $productId, 'oid' => $targetOrderId]);
+        } else {
+            $orderStmt = $pdo->prepare('
+                SELECT o.status, o.payment_status, o.payment_method
+                FROM orders o
+                JOIN order_items oi ON oi.order_id = o.id
+                WHERE o.user_id = :uid 
+                  AND oi.product_id = :pid 
+                ORDER BY (LOWER(o.status) = \'delivered\') DESC, o.id DESC
+                LIMIT 1
+            ');
+            $orderStmt->execute(['uid' => $userId, 'pid' => $productId]);
+        }
         $orderInfo = $orderStmt->fetch();
 
         if ($orderInfo) {
             $hasPurchased = true;
-            if ($orderInfo['status'] === 'delivered' && ($orderInfo['payment_status'] === 'paid' || $orderInfo['payment_method'] === 'cod')) {
+            if (strtolower($orderInfo['status']) === 'delivered' && ($orderInfo['payment_status'] === 'paid' || $orderInfo['payment_method'] === 'cod')) {
                 $isDelivered = true;
             }
         }
+
+        // STEP 8: Debug log
+        error_log(sprintf(
+            "[Verified Purchase Review Debug] customer_id: %d, product_id: %d, order_id: %d, slug: %s, review_exists: %d, purchase_exists: %d, delivered_exists: %d, permission_result: %d",
+            $userId,
+            $productId,
+            $targetOrderId,
+            $slug,
+            $existingReview ? 1 : 0,
+            $hasPurchased ? 1 : 0,
+            $isDelivered ? 1 : 0,
+            ($isLoggedIn && $hasPurchased && $isDelivered && !$existingReview) ? 1 : 0
+        ));
     }
     $currentUserId = is_logged_in() ? current_user_id() : null;
 
