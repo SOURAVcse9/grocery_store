@@ -184,7 +184,15 @@ try {
                     <!-- Customer search input and dropdown -->
                     <div style="position:relative; width:160px;">
                         <input type="text" id="posCustomerSearch" placeholder="Search Customer (F4)..." autocomplete="off" style="width:100%; padding:4px 8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:11px; outline:none;">
-                        <input type="hidden" id="posCustomerSelect" value="<?= $defaultWalkin['id'] ?>" data-wallet="<?= $defaultWalkin['wallet_balance'] ?>" data-points="<?= $defaultWalkin['reward_points'] ?>" data-name="Walk-in Customer">
+                        <input type="hidden" id="posCustomerSelect" 
+                               value="<?= $defaultWalkin['id'] ?>" 
+                               data-wallet="<?= $defaultWalkin['wallet_balance'] ?>" 
+                               data-points="<?= $defaultWalkin['reward_points'] ?>" 
+                               data-name="Walk-in Customer"
+                               data-default-id="<?= $defaultWalkin['id'] ?>"
+                               data-default-wallet="<?= $defaultWalkin['wallet_balance'] ?>"
+                               data-default-points="<?= $defaultWalkin['reward_points'] ?>"
+                               data-default-name="Walk-in Customer">
                         <div id="posCustomerAutocomplete" style="display:none; position:absolute; top:100%; right:0; width:220px; background:#fff; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1006; max-height:200px; overflow-y:auto; margin-top:2px;"></div>
                     </div>
                 </div>
@@ -217,6 +225,11 @@ try {
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Discount Override (৳):</span>
                         <input type="number" id="posCartDiscount" min="0" value="0" onchange="recalculatePOSBalances();" onkeyup="recalculatePOSBalances();" style="width:70px; padding:2px 6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); text-align:right;">
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                        <span>Coupon Discount (৳):</span>
+                        <input type="number" id="posCartCoupon" min="0" value="0" onchange="recalculatePOSBalances();" onkeyup="recalculatePOSBalances();" style="width:70px; padding:2px 6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); text-align:right;">
                     </div>
 
                     <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-border); padding-top:6px; font-size:14px; color:var(--color-text);">
@@ -304,6 +317,7 @@ function addTouchCartItem(id, name, price, stock) {
         touchCart[id] = { id, name, price, qty: 1, stock };
     }
     renderTouchCart();
+    document.getElementById('posFilterSearch')?.focus();
 }
 
 function updateTouchQty(id, change) {
@@ -317,6 +331,7 @@ function updateTouchQty(id, change) {
         }
     }
     renderTouchCart();
+    document.getElementById('posFilterSearch')?.focus();
 }
 
 const canOverridePrice = <?= has_admin_permission('pos.override') ? 'true' : 'false' ?>;
@@ -387,9 +402,14 @@ function recalculatePOSBalances() {
     });
     
     const discountEl = document.getElementById('posCartDiscount');
+    const couponEl = document.getElementById('posCartCoupon');
     const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
-    const vat = Math.max(subtotal - discount, 0) * 0.05;
-    const total = Math.max(subtotal - discount, 0) + vat;
+    const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
+    
+    const totalDiscounts = discount + coupon;
+    const taxableAmount = Math.max(subtotal - totalDiscounts, 0);
+    const vat = taxableAmount * 0.05;
+    const total = taxableAmount + vat;
     
     const subtotalEl = document.getElementById('posCartSubtotal');
     const vatEl = document.getElementById('posCartVat');
@@ -398,49 +418,9 @@ function recalculatePOSBalances() {
     if (subtotalEl) subtotalEl.innerText = '৳' + subtotal.toFixed(2);
     if (vatEl) vatEl.innerText = '৳' + vat.toFixed(2);
     if (totalEl) totalEl.innerText = '৳' + total.toFixed(2);
-    
-    // Default split values to cash pay full
-    const splitCash = document.getElementById('splitCash');
-    const splitCard = document.getElementById('splitCard');
-    const splitBkash = document.getElementById('splitBkash');
-    const splitWallet = document.getElementById('splitWallet');
-    
-    if (splitCash) splitCash.value = total.toFixed(2);
-    if (splitCard) splitCard.value = '0';
-    if (splitBkash) splitBkash.value = '0';
-    if (splitWallet) splitWallet.value = '0';
-    
-    updateChangeDue();
 }
 
-function updateChangeDue() {
-    let subtotal = 0;
-    Object.keys(touchCart).forEach(k => {
-        subtotal += (touchCart[k].price * touchCart[k].qty);
-    });
-    
-    const discountEl = document.getElementById('posCartDiscount');
-    const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
-    const vat = Math.max(subtotal - discount, 0) * 0.05;
-    const totalPayable = Math.max(subtotal - discount, 0) + vat;
 
-    const splitCash = document.getElementById('splitCash');
-    const splitCard = document.getElementById('splitCard');
-    const splitBkash = document.getElementById('splitBkash');
-    const splitWallet = document.getElementById('splitWallet');
-
-    const cash = splitCash ? parseFloat(splitCash.value) || 0 : 0;
-    const card = splitCard ? parseFloat(splitCard.value) || 0 : 0;
-    const bkash = splitBkash ? parseFloat(splitBkash.value) || 0 : 0;
-    const wallet = splitWallet ? parseFloat(splitWallet.value) || 0 : 0;
-
-    const nonCashPaid = card + bkash + wallet;
-    const cashNeeded = Math.max(totalPayable - nonCashPaid, 0);
-    const change = Math.max(cash - cashNeeded, 0);
-
-    const changeEl = document.getElementById('posChangeDue');
-    if (changeEl) changeEl.innerText = '৳' + change.toFixed(2);
-}
 
 function suspendPOSCart() {
     const keys = Object.keys(touchCart);
@@ -488,9 +468,27 @@ function suspendPOSCart() {
             </div>
             <div class="modal-body" style="padding:20px;">
                 <!-- Summary of Payable -->
-                <div style="background:rgba(92,124,250,0.06); padding:12px; border-radius:var(--radius-sm); margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:12px; font-weight:700; color:var(--color-text-muted);">Total Amount Due:</span>
-                    <strong id="modalPayableTotal" style="font-size:18px; color:var(--color-primary);">৳0.00</strong>
+                <div style="background:rgba(92,124,250,0.06); padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:16px; display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--color-text-muted);">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Subtotal:</span>
+                        <span id="modalSubtotal" style="font-weight:700; color:var(--color-text);">৳0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>VAT (5%):</span>
+                        <span id="modalVat" style="font-weight:700; color:var(--color-text);">৳0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Discount Override:</span>
+                        <span id="modalDiscount" style="font-weight:700; color:var(--color-text);">৳0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Coupon Discount:</span>
+                        <span id="modalCoupon" style="font-weight:700; color:var(--color-text);">৳0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-border); padding-top:6px; font-size:14px; font-weight:800; color:var(--color-text);">
+                        <span style="color:var(--color-text);">Grand Total:</span>
+                        <strong id="modalPayableTotal" style="color:var(--color-primary); font-size:16px;">৳0.00</strong>
+                    </div>
                 </div>
 
                 <form id="frmPOSPayment" onsubmit="event.preventDefault(); confirmPOSSale();">
@@ -506,9 +504,19 @@ function suspendPOSCart() {
                             <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-credit-card" style="color:#228be6;"></i> Card (৳)</label>
                             <input type="number" id="splitCard" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right; margin-bottom:4px;">
                         </div>
-                        <div id="cardTxnRow" style="display:none; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
-                            <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); padding-left:15px;">Card Txn ID *</label>
-                            <input type="text" id="splitCardTxnId" placeholder="E.g. AX-98124" class="form-control" style="font-size:11px;">
+                        <div id="cardDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
+                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Card Number (opt)</label>
+                                <input type="text" id="splitCardNo" placeholder="Last 4 digits or Full" class="form-control" style="font-size:11px;">
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Reference Number *</label>
+                                <input type="text" id="splitCardRef" placeholder="Approval code / Txn Ref" class="form-control" style="font-size:11px;">
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Bank Name *</label>
+                                <input type="text" id="splitCardBank" placeholder="E.g. DBBL, Brac Bank" class="form-control" style="font-size:11px;">
+                            </div>
                         </div>
 
                         <!-- Mobile Banking Row -->
@@ -516,9 +524,20 @@ function suspendPOSCart() {
                             <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-mobile-alt" style="color:#e64980;"></i> Mobile Banking (৳)</label>
                             <input type="number" id="splitBkash" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right; margin-bottom:4px;">
                         </div>
-                        <div id="bkashTxnRow" style="display:none; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
-                            <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); padding-left:15px;">Mobile Txn ID *</label>
-                            <input type="text" id="splitBkashTxnId" placeholder="E.g. BK-20349" class="form-control" style="font-size:11px;">
+                        <div id="mobileDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
+                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Provider *</label>
+                                <select id="splitMobileProvider" class="form-control" style="font-size:11px; background:#fff; height:auto; padding:4px 8px;">
+                                    <option value="bKash">bKash</option>
+                                    <option value="Nagad">Nagad</option>
+                                    <option value="Rocket">Rocket</option>
+                                    <option value="Other">Other Mobile</option>
+                                </select>
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Transaction ID *</label>
+                                <input type="text" id="splitBkashTxnId" placeholder="E.g. TRX-8921B" class="form-control" style="font-size:11px;">
+                            </div>
                         </div>
 
                         <!-- Wallet Credit Row -->
@@ -575,6 +594,21 @@ function suspendPOSCart() {
                         <div>
                             <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px; text-align:left;">Email (Optional)</label>
                             <input type="email" id="custNewEmail" placeholder="E.g. sazzad@example.com" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <div>
+                                <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px;">Birthday (Optional)</label>
+                                <input type="date" id="custNewBirthday" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+                            </div>
+                            <div>
+                                <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px;">Gender (Optional)</label>
+                                <select id="custNewGender" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:#fff;">
+                                    <option value="">— Select —</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px; text-align:left;">Address (Optional)</label>

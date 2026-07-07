@@ -34,6 +34,18 @@ $name = trim(input('name', ''));
 $mobile = trim(input('mobile', ''));
 $email = trim(input('email', ''));
 $address = trim(input('address', ''));
+$gender = trim(input('gender', ''));
+$dob = trim(input('birthday', ''));
+
+// Validate dob format
+if ($dob !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob)) {
+    $dob = '';
+}
+// Validate gender
+$allowedGenders = ['male', 'female', 'other'];
+if (!in_array($gender, $allowedGenders)) {
+    $gender = '';
+}
 
 if ($name === '' || $mobile === '') {
     echo json_encode(['success' => false, 'error' => 'Name and Mobile Number are required.']);
@@ -67,10 +79,10 @@ try {
     // Create customer record with safe default values
     $password = password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT);
     $stmt = $pdo->prepare("
-        INSERT INTO users (role_id, full_name, email, phone, password, is_verified, is_active, created_at, updated_at) 
-        VALUES (2, ?, ?, ?, ?, 1, 1, NOW(), NOW())
+        INSERT INTO users (role_id, full_name, email, phone, password, gender, dob, is_verified, is_active, created_at, updated_at) 
+        VALUES (2, ?, ?, ?, ?, ?, ?, 1, 1, NOW(), NOW())
     ");
-    $stmt->execute([$name, $email, $mobile, $password]);
+    $stmt->execute([$name, $email, $mobile, $password, $gender ?: null, $dob ?: null]);
     $newId = (int)$pdo->lastInsertId();
 
     // Optionally save address record

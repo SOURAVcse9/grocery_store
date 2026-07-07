@@ -12,6 +12,9 @@
   let lastKeyTime = Date.now();
 
   window.addEventListener('keypress', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+      return;
+    }
     const threshold = 50; // Scan key interval threshold in milliseconds
     const now = Date.now();
 
@@ -252,13 +255,28 @@
           fetch('ajax/search_customer.php?q=' + encodeURIComponent(val))
             .then(r => r.json())
             .then(data => {
-              if (data.success && data.customers) {
-                currentCustomers = data.customers;
+              if (data.success) {
+                currentCustomers = data.customers || [];
                 custActiveIndex = -1;
-                renderCustomerDropdown(custDropdown, currentCustomers);
+
+                // Auto-select on exact phone match — no dropdown needed
+                const exactPhone = currentCustomers.find(c => c.phone === val);
+                if (exactPhone) {
+                  selectPOSCustomer(exactPhone);
+                  custSearch.value = '';
+                  custDropdown.innerHTML = '';
+                  custDropdown.style.display = 'none';
+                  currentCustomers = [];
+                  return;
+                }
+
+                renderCustomerDropdown(custDropdown, currentCustomers, val);
               }
+            })
+            .catch(() => {
+              renderCustomerDropdown(custDropdown, [], val);
             });
-        }, 150);
+        }, 250);
       });
 
       custSearch.addEventListener('keydown', (e) => {
@@ -281,26 +299,31 @@
             custDropdown.style.display = 'none';
             currentCustomers = [];
             custActiveIndex = -1;
-          } else if (custSearch.value.trim() !== '') {
+          } else if (currentCustomers.length === 1) {
+            selectPOSCustomer(currentCustomers[0]);
+            custSearch.value = '';
+            custDropdown.innerHTML = '';
+            custDropdown.style.display = 'none';
+            currentCustomers = [];
+            custActiveIndex = -1;
+          } else if (currentCustomers.length === 0) {
             const val = custSearch.value.trim();
-            let phoneMatch = currentCustomers.find(c => c.phone === val);
-            if (phoneMatch) {
-              selectPOSCustomer(phoneMatch);
+            if (val !== '') {
               custSearch.value = '';
               custDropdown.innerHTML = '';
               custDropdown.style.display = 'none';
               currentCustomers = [];
               custActiveIndex = -1;
-            } else {
-              if (confirm(`Customer "${val}" not found. Create new customer?`)) {
-                document.getElementById('custNewPhone').value = /^\d+$/.test(val) ? val : '';
-                document.getElementById('custNewName').value = /^\d+$/.test(val) ? '' : val;
-                
-                const modalEl = document.getElementById('createCustomerModal');
-                if (modalEl && typeof bootstrap !== 'undefined') {
-                  const modal = new bootstrap.Modal(modalEl);
-                  modal.show();
-                }
+
+              const phoneEl = document.getElementById('custNewPhone');
+              const nameEl = document.getElementById('custNewName');
+              if (phoneEl) phoneEl.value = /^\d+$/.test(val) ? val : '';
+              if (nameEl) nameEl.value = /^\d+$/.test(val) ? '' : val;
+
+              const modalEl = document.getElementById('createCustomerModal');
+              if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
               }
             }
           }
@@ -313,20 +336,37 @@
       });
     }
 
-    // Bind real-time input change listeners for payment splits in the popup modal
-    const splitCash = document.getElementById('splitCash');
-    const splitCard = document.getElementById('splitCard');
-    const splitBkash = document.getElementById('splitBkash');
-    const splitWallet = document.getElementById('splitWallet');
-    const splitCardTxn = document.getElementById('splitCardTxnId');
-    const splitBkashTxn = document.getElementById('splitBkashTxnId');
+    // Focus barcode search input initially
+    if (searchInput) {
+      searchInput.focus();
+    }
 
-    if (splitCash) splitCash.addEventListener('input', updateModalChangeDue);
-    if (splitCard) splitCard.addEventListener('input', updateModalChangeDue);
-    if (splitBkash) splitBkash.addEventListener('input', updateModalChangeDue);
-    if (splitWallet) splitWallet.addEventListener('input', updateModalChangeDue);
-    if (splitCardTxn) splitCardTxn.addEventListener('input', updateModalChangeDue);
-    if (splitBkashTxn) splitBkashTxn.addEventListener('input', updateModalChangeDue);
+    // Bind real-time input change listeners for payment splits in the popup modal
+    const inputsToBind = [
+      'splitCash', 'splitCard', 'splitCardNo', 'splitCardRef', 'splitCardBank',
+      'splitBkash', 'splitMobileProvider', 'splitBkashTxnId', 'splitWallet'
+    ];
+    inputsToBind.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', updateModalChangeDue);
+        el.addEventListener('change', updateModalChangeDue);
+      }
+    });
+
+    // Autofocus barcode search input when modals are closed
+    const custModalEl = document.getElementById('createCustomerModal');
+    if (custModalEl) {
+      custModalEl.addEventListener('hidden.bs.modal', () => {
+        document.getElementById('posFilterSearch')?.focus();
+      });
+    }
+    const payModalEl = document.getElementById('checkoutPaymentModal');
+    if (payModalEl) {
+      payModalEl.addEventListener('hidden.bs.modal', () => {
+        document.getElementById('posFilterSearch')?.focus();
+      });
+    }
 
     // Close all dropdowns on clicking outside
     document.addEventListener('click', (e) => {
@@ -436,24 +476,51 @@
   }
 
   // Customer Autocomplete Render Helpers
-  function renderCustomerDropdown(dropdown, customers) {
+  function renderCustomerDropdown(dropdown, customers, searchVal) {
     dropdown.innerHTML = '';
+
     if (customers.length === 0) {
-      dropdown.style.display = 'none';
+      // Show "not found → create" row
+      const notFound = document.createElement('div');
+      notFound.style.cssText = 'padding:10px 14px; cursor:pointer; font-size:11px; display:flex; justify-content:space-between; align-items:center; background:#fff3f3; color:#c0392b;';
+      notFound.innerHTML = `
+        <span><i class="fas fa-user-plus" style="margin-right:6px;"></i>No customer found. <strong>Create new customer?</strong></span>
+        <span style="font-size:9px; border:1px solid #c0392b; padding:2px 6px; border-radius:10px;">+ New</span>
+      `;
+      notFound.addEventListener('click', () => {
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
+        currentCustomers = [];
+
+        const custSearch = document.getElementById('posCustomerSearch');
+        const phoneEl = document.getElementById('custNewPhone');
+        const nameEl = document.getElementById('custNewName');
+        const val = custSearch ? custSearch.value.trim() : (searchVal || '');
+        if (phoneEl) phoneEl.value = /^\d+$/.test(val) ? val : '';
+        if (nameEl) nameEl.value = /^\d+$/.test(val) ? '' : val;
+
+        const modalEl = document.getElementById('createCustomerModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+        }
+      });
+      dropdown.appendChild(notFound);
+      dropdown.style.display = 'block';
       return;
     }
 
     customers.forEach((c) => {
       const div = document.createElement('div');
       div.className = 'cust-autocomplete-item';
-      div.style.cssText = 'padding:6px 12px; cursor:pointer; font-size:11px; border-bottom:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center; background:#fff;';
+      div.style.cssText = 'padding:7px 12px; cursor:pointer; font-size:11px; border-bottom:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center; background:#fff;';
       
       div.innerHTML = `
         <div>
           <strong>${c.full_name}</strong><br>
-          <span style="font-size:9px; color:var(--color-text-faint);">Phone: ${c.phone} | Email: ${c.email}</span>
+          <span style="font-size:9px; color:var(--color-text-faint);">📱 ${c.phone} &nbsp;|&nbsp; 💰 ৳${parseFloat(c.wallet_balance).toFixed(2)}</span>
         </div>
-        <div style="text-align:right; font-weight:700;">৳${parseFloat(c.wallet_balance).toFixed(2)}</div>
+        <div style="text-align:right; font-size:9px; color:var(--color-primary); font-weight:700;">Select ✓</div>
       `;
 
       div.addEventListener('click', () => {
@@ -508,6 +575,8 @@
     const mobileEl = document.getElementById('custNewPhone');
     const emailEl = document.getElementById('custNewEmail');
     const addressEl = document.getElementById('custNewAddress');
+    const genderEl = document.getElementById('custNewGender');
+    const birthdayEl = document.getElementById('custNewBirthday');
 
     if (!nameEl || !mobileEl) {
       alert('Name and Mobile number input fields are missing.');
@@ -518,6 +587,8 @@
     const mobile = mobileEl.value.trim();
     const email = emailEl ? emailEl.value.trim() : '';
     const address = addressEl ? addressEl.value.trim() : '';
+    const gender = genderEl ? genderEl.value.trim() : '';
+    const birthday = birthdayEl ? birthdayEl.value.trim() : '';
 
     if (name === '' || mobile === '') {
       alert('Name and Mobile number are required.');
@@ -529,6 +600,8 @@
     formData.append('mobile', mobile);
     formData.append('email', email);
     formData.append('address', address);
+    formData.append('gender', gender);
+    formData.append('birthday', birthday);
     formData.append('csrf_token', window.csrfToken || '');
 
     fetch('ajax/create_customer.php', {
@@ -547,7 +620,15 @@
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
           }
-          alert('Customer created and selected successfully!');
+          // Brief non-blocking success toast
+          const label = document.getElementById('posCurrentCustomerLabel');
+          if (label) {
+            label.style.color = '#2b9348';
+            label.innerText = `\u2713 ${data.customer.full_name} selected`;
+            setTimeout(() => {
+              label.style.color = 'var(--color-primary)';
+            }, 2000);
+          }
         } else {
           alert('Failed to register customer: ' + data.error);
         }
@@ -557,6 +638,7 @@
         alert('Communication error while saving customer.');
       });
   }
+
 
   // Split Checkout Popup Handlers
   function submitPOSCheckoutFinalist() {
@@ -572,31 +654,54 @@
     });
     
     const discountEl = document.getElementById('posCartDiscount');
+    const couponEl = document.getElementById('posCartCoupon');
     const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
-    const vat = Math.max(subtotal - discount, 0) * 0.05;
-    const totalPayable = Math.max(subtotal - discount, 0) + vat;
+    const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
     
-    const payableTotalEl = document.getElementById('modalPayableTotal');
-    if (payableTotalEl) payableTotalEl.innerText = '৳' + totalPayable.toFixed(2);
+    const totalDiscounts = discount + coupon;
+    const taxableAmount = Math.max(subtotal - totalDiscounts, 0);
+    const vat = taxableAmount * 0.05;
+    const totalPayable = taxableAmount + vat;
+    
+    // Set breakdown text elements inside modal
+    const modalSubtotal = document.getElementById('modalSubtotal');
+    const modalVat = document.getElementById('modalVat');
+    const modalDiscount = document.getElementById('modalDiscount');
+    const modalCoupon = document.getElementById('modalCoupon');
+    const modalPayableTotal = document.getElementById('modalPayableTotal');
+    
+    if (modalSubtotal) modalSubtotal.innerText = '৳' + subtotal.toFixed(2);
+    if (modalVat) modalVat.innerText = '৳' + vat.toFixed(2);
+    if (modalDiscount) modalDiscount.innerText = '৳' + discount.toFixed(2);
+    if (modalCoupon) modalCoupon.innerText = '৳' + coupon.toFixed(2);
+    if (modalPayableTotal) modalPayableTotal.innerText = '৳' + totalPayable.toFixed(2);
     
     // Reset payment fields safely
     const splitCash = document.getElementById('splitCash');
     const splitCard = document.getElementById('splitCard');
-    const splitCardTxn = document.getElementById('splitCardTxnId');
+    const splitCardNo = document.getElementById('splitCardNo');
+    const splitCardRef = document.getElementById('splitCardRef');
+    const splitCardBank = document.getElementById('splitCardBank');
+    
     const splitBkash = document.getElementById('splitBkash');
-    const splitBkashTxn = document.getElementById('splitBkashTxnId');
+    const splitMobileProvider = document.getElementById('splitMobileProvider');
+    const splitBkashTxnId = document.getElementById('splitBkashTxnId');
+    const splitWallet = document.getElementById('splitWallet');
     
     if (splitCash) splitCash.value = totalPayable.toFixed(2);
     if (splitCard) splitCard.value = '0';
-    if (splitCardTxn) splitCardTxn.value = '';
+    if (splitCardNo) splitCardNo.value = '';
+    if (splitCardRef) splitCardRef.value = '';
+    if (splitCardBank) splitCardBank.value = '';
+    
     if (splitBkash) splitBkash.value = '0';
-    if (splitBkashTxn) splitBkashTxn.value = '';
+    if (splitMobileProvider) splitMobileProvider.value = 'bKash';
+    if (splitBkashTxnId) splitBkashTxnId.value = '';
     
     // Sync wallet details
     const selectEl = document.getElementById('posCustomerSelect');
     if (selectEl) {
       const walletBalance = parseFloat(selectEl.getAttribute('data-wallet')) || 0;
-      const splitWallet = document.getElementById('splitWallet');
       if (splitWallet) {
         splitWallet.value = '0';
         splitWallet.max = walletBalance.toFixed(2);
@@ -618,9 +723,14 @@
       subtotal += (window.touchCart[k].price * window.touchCart[k].qty);
     });
     const discountEl = document.getElementById('posCartDiscount');
+    const couponEl = document.getElementById('posCartCoupon');
     const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
-    const vat = Math.max(subtotal - discount, 0) * 0.05;
-    const totalPayable = Math.max(subtotal - discount, 0) + vat;
+    const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
+    
+    const totalDiscounts = discount + coupon;
+    const taxableAmount = Math.max(subtotal - totalDiscounts, 0);
+    const vat = taxableAmount * 0.05;
+    const totalPayable = taxableAmount + vat;
 
     const splitCash = document.getElementById('splitCash');
     const splitCard = document.getElementById('splitCard');
@@ -632,11 +742,11 @@
     const bkash = splitBkash ? parseFloat(splitBkash.value) || 0 : 0;
     const wallet = splitWallet ? parseFloat(splitWallet.value) || 0 : 0;
 
-    // Toggle Transaction ID inputs visibility
-    const cardTxnRow = document.getElementById('cardTxnRow');
-    const bkashTxnRow = document.getElementById('bkashTxnRow');
-    if (cardTxnRow) cardTxnRow.style.display = card > 0 ? 'grid' : 'none';
-    if (bkashTxnRow) bkashTxnRow.style.display = bkash > 0 ? 'grid' : 'none';
+    // Toggle Details fields visibility
+    const cardDetailsRow = document.getElementById('cardDetailsRow');
+    const mobileDetailsRow = document.getElementById('mobileDetailsRow');
+    if (cardDetailsRow) cardDetailsRow.style.display = card > 0 ? 'flex' : 'none';
+    if (mobileDetailsRow) mobileDetailsRow.style.display = bkash > 0 ? 'flex' : 'none';
 
     const nonCashPaid = card + bkash + wallet;
     const totalEntered = cash + nonCashPaid;
@@ -654,17 +764,25 @@
     // Validate inputs
     let isValid = true;
     
-    if (totalEntered < totalPayable) {
+    if (totalEntered < totalPayable - 0.01) {
       isValid = false;
     }
-    const splitCardTxn = document.getElementById('splitCardTxnId');
-    if (card > 0 && splitCardTxn && splitCardTxn.value.trim() === '') {
-      isValid = false;
+    
+    // Card field validations
+    if (card > 0) {
+      const splitCardRef = document.getElementById('splitCardRef');
+      const splitCardBank = document.getElementById('splitCardBank');
+      if (!splitCardRef || splitCardRef.value.trim() === '') isValid = false;
+      if (!splitCardBank || splitCardBank.value.trim() === '') isValid = false;
     }
-    const splitBkashTxn = document.getElementById('splitBkashTxnId');
-    if (bkash > 0 && splitBkashTxn && splitBkashTxn.value.trim() === '') {
-      isValid = false;
+    
+    // Mobile banking validations
+    if (bkash > 0) {
+      const splitBkashTxn = document.getElementById('splitBkashTxnId');
+      if (!splitBkashTxn || splitBkashTxn.value.trim() === '') isValid = false;
     }
+    
+    // Wallet credit validation
     const selectEl = document.getElementById('posCustomerSelect');
     if (selectEl) {
       const walletMax = parseFloat(selectEl.getAttribute('data-wallet')) || 0;
@@ -680,20 +798,31 @@
   function confirmPOSSale() {
     const keys = Object.keys(window.touchCart || {});
     const discountEl = document.getElementById('posCartDiscount');
+    const couponEl = document.getElementById('posCartCoupon');
     const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
+    const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
+    const totalDiscounts = discount + coupon;
     
     const splitCash = document.getElementById('splitCash');
     const splitCard = document.getElementById('splitCard');
-    const splitCardTxn = document.getElementById('splitCardTxnId');
+    const splitCardNo = document.getElementById('splitCardNo');
+    const splitCardRef = document.getElementById('splitCardRef');
+    const splitCardBank = document.getElementById('splitCardBank');
+    
     const splitBkash = document.getElementById('splitBkash');
-    const splitBkashTxn = document.getElementById('splitBkashTxnId');
+    const splitMobileProvider = document.getElementById('splitMobileProvider');
+    const splitBkashTxnId = document.getElementById('splitBkashTxnId');
     const splitWallet = document.getElementById('splitWallet');
 
     const cash = splitCash ? parseFloat(splitCash.value) || 0 : 0;
     const card = splitCard ? parseFloat(splitCard.value) || 0 : 0;
-    const cardTxnId = splitCardTxn ? splitCardTxn.value.trim() : '';
+    const cardNo = splitCardNo ? splitCardNo.value.trim() : '';
+    const cardRef = splitCardRef ? splitCardRef.value.trim() : '';
+    const cardBank = splitCardBank ? splitCardBank.value.trim() : '';
+    
     const bkash = splitBkash ? parseFloat(splitBkash.value) || 0 : 0;
-    const bkashTxnId = splitBkashTxn ? splitBkashTxn.value.trim() : '';
+    const mobileProvider = splitMobileProvider ? splitMobileProvider.value : 'bKash';
+    const bkashTxnId = splitBkashTxnId ? splitBkashTxnId.value.trim() : '';
     const wallet = splitWallet ? parseFloat(splitWallet.value) || 0 : 0;
     
     const selectEl = document.getElementById('posCustomerSelect');
@@ -702,19 +831,25 @@
     
     // Assemble transaction details for storage in note
     let paymentNote = 'POS checkout.';
-    if (card > 0) paymentNote += ` Card: ৳${card} (Txn: ${cardTxnId}).`;
-    if (bkash > 0) paymentNote += ` Mobile Banking: ৳${bkash} (Txn: ${bkashTxnId}).`;
-    if (wallet > 0) paymentNote += ` Wallet: ৳${wallet}.`;
-    if (cash > 0) paymentNote += ` Cash: ৳${cash}.`;
+    if (card > 0) {
+      paymentNote += ` Card: ৳${card.toFixed(2)} (Bank: ${cardBank}, Ref: ${cardRef}, CardNo: ${cardNo}).`;
+    }
+    if (bkash > 0) {
+      paymentNote += ` Mobile Banking (${mobileProvider}): ৳${bkash.toFixed(2)} (Txn: ${bkashTxnId}).`;
+    }
+    if (wallet > 0) {
+      paymentNote += ` Wallet: ৳${wallet.toFixed(2)}.`;
+    }
+    if (cash > 0) {
+      paymentNote += ` Cash: ৳${cash.toFixed(2)}.`;
+    }
 
     const formData = new FormData();
     formData.append('items', JSON.stringify(itemsData));
-    formData.append('discount', discount.toString());
+    formData.append('discount', totalDiscounts.toString());
     formData.append('cash', cash.toString());
     formData.append('card', card.toString());
-    formData.append('card_txn', cardTxnId);
     formData.append('bkash', bkash.toString());
-    formData.append('bkash_txn', bkashTxnId);
     formData.append('wallet', wallet.toString());
     formData.append('customer_id', customerId);
     formData.append('note', paymentNote);
@@ -744,11 +879,43 @@
                 if (modal) modal.hide();
             }
             
+            // Reset customer selection programmatically
             if (selectEl) {
-              const walkin = selectEl.getAttribute('data-name') || '';
-              if (!walkin.includes('Walk-in')) {
-                  location.reload();
-              }
+              const defaultId = selectEl.getAttribute('data-default-id') || '0';
+              const defaultName = selectEl.getAttribute('data-default-name') || 'Walk-in Customer';
+              const defaultWallet = selectEl.getAttribute('data-default-wallet') || '0.00';
+              const defaultPoints = selectEl.getAttribute('data-default-points') || '0';
+
+              selectEl.value = defaultId;
+              selectEl.setAttribute('data-wallet', defaultWallet);
+              selectEl.setAttribute('data-points', defaultPoints);
+              selectEl.setAttribute('data-name', defaultName);
+            }
+
+            const labelEl = document.getElementById('posCurrentCustomerLabel');
+            if (labelEl) {
+              labelEl.innerText = 'Walk-in Customer';
+            }
+
+            const custSearch = document.getElementById('posCustomerSearch');
+            if (custSearch) {
+              custSearch.value = '';
+            }
+
+            const loyaltyWidget = document.getElementById('loyaltyWidget');
+            if (loyaltyWidget) {
+              loyaltyWidget.style.display = 'none';
+            }
+
+            // Reset discount and coupon fields
+            if (discountEl) discountEl.value = '0';
+            if (couponEl) couponEl.value = '0';
+            
+            // Focus barcode input input field
+            const searchInput = document.getElementById('posFilterSearch');
+            if (searchInput) {
+              searchInput.value = '';
+              searchInput.focus();
             }
         } else {
             alert('POS Checkout failed: ' + data.error);
