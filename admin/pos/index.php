@@ -155,6 +155,8 @@ try {
                          data-name-original="<?= e($p['name']) ?>"
                          data-sku="<?= strtolower($p['sku'] ?? '') ?>"
                          data-barcode="<?= strtolower($p['barcode'] ?? '') ?>"
+                         data-price="<?= $p['price'] ?>"
+                         data-stock="<?= $p['stock'] ?>"
                          data-cat="<?= $p['category_id'] ?: '' ?>"
                          data-brand="<?= $p['brand_id'] ?: '' ?>"
                          onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e($p['name']) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>);" 
@@ -198,7 +200,7 @@ try {
                 </div>
 
                 <!-- Customer loyalty widgets status -->
-                <div id="loyaltyWidget" style="display:none; background:rgba(92,124,250,0.06); padding:8px; border-radius:var(--radius-sm); font-size:11px; margin-bottom:12px; display:flex; justify-content:space-between;">
+                <div id="loyaltyWidget" style="display:none; background:rgba(92,124,250,0.06); padding:8px; border-radius:var(--radius-sm); font-size:11px; margin-bottom:12px; justify-content:space-between;">
                     <span>Wallet Balance: <strong id="lblWallet">৳0.00</strong></span>
                     <span>Reward Points: <strong id="lblPoints">0 pts</strong></span>
                 </div>
@@ -305,8 +307,6 @@ function updateLoyaltyUI() {
 }
 
 function addTouchCartItem(id, name, price, stock) {
-    window.addTouchCartItem = addTouchCartItem;
-    window.updateTouchQty = updateTouchQty;
     if (touchCart[id]) {
         if (touchCart[id].qty < stock) {
             touchCart[id].qty++;
@@ -352,7 +352,6 @@ function triggerPriceOverride(id) {
 }
 
 function renderTouchCart() {
-    window.renderTouchCart = renderTouchCart;
     const wrapper = document.getElementById('posActiveCartList');
     wrapper.innerHTML = '';
     
@@ -456,6 +455,13 @@ function suspendPOSCart() {
         }
     });
 }
+
+// Export cart functions to window scope immediately
+window.addTouchCartItem = addTouchCartItem;
+window.updateTouchQty = updateTouchQty;
+window.renderTouchCart = renderTouchCart;
+window.suspendPOSCart = suspendPOSCart;
+window.updateLoyaltyUI = updateLoyaltyUI;
 </script>
 
 <!-- Checkout Split Payment Modal -->

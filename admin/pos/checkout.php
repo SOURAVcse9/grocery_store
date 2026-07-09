@@ -110,12 +110,14 @@ try {
         $productDetails[(int)$item['id']] = $prod;
     }
 
-    // 3. Compute totals
+    // 3. Compute totals (with VAT, matching frontend calculation)
     $subtotal = 0.0;
     foreach ($items as $item) {
         $subtotal += ((float)$item['price'] * (int)$item['qty']);
     }
-    $totalAmount = max($subtotal - $discount, 0);
+    $taxableAmount = max($subtotal - $discount, 0);
+    $vat = round($taxableAmount * 0.05, 2);
+    $totalAmount = $taxableAmount + $vat;
 
     // 4. Update customer wallet and reward points (Only for registered customers, NOT Walk-in)
     if ($customerId > 0 && $customerId !== $walkinId) {

@@ -104,6 +104,14 @@ if ($orderId > 0) {
             <span>Discount:</span>
             <span>-৳<?= number_format((float)$order['discount_amount'], 2) ?></span>
         </div>
+        <?php
+            $taxable = max((float)$order['subtotal'] - (float)$order['discount_amount'], 0);
+            $vat = round($taxable * 0.05, 2);
+        ?>
+        <div class="summary-row">
+            <span>VAT (5%):</span>
+            <span>৳<?= number_format($vat, 2) ?></span>
+        </div>
         <div class="line"></div>
         <div class="summary-row" style="font-size: 14px;">
             <span>TOTAL DUE:</span>

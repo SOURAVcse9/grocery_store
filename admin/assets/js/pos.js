@@ -131,6 +131,9 @@
     }
     // ESC: Cancel Sale / Reset Cart
     if (e.key === 'Escape') {
+      // Don't intercept ESC if a Bootstrap modal is open
+      const anyOpenModal = document.querySelector('.modal.show');
+      if (anyOpenModal) return;
       e.preventDefault();
       if (confirm('Are you sure you want to cancel the current sale and empty the cart?')) {
         if (typeof window.touchCart !== 'undefined') {

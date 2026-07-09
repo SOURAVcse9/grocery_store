@@ -438,3 +438,5 @@ Stack trace:
 #0 Command line code(1): PDO->query('SELECT p.id, p....')
 #1 {main}
   thrown in Command line code on line 1
+[09-Jul-2026 12:51:44 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[09-Jul-2026 12:51:56 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
