@@ -99,16 +99,46 @@ try {
         }
     }
 
-    // 2. Validate stocks
-    $stmtCheck = $pdo->prepare("SELECT stock, name, sku FROM products WHERE id = ? FOR UPDATE");
+    // 2. Validate stocks, prices, and permissions
+    $stmtCheck = $pdo->prepare("SELECT stock, name, sku, price, discount_price FROM products WHERE id = ? FOR UPDATE");
     $productDetails = [];
     foreach ($items as $item) {
-        $stmtCheck->execute([(int)$item['id']]);
+        $pid = (int)$item['id'];
+        $qty = (int)$item['qty'];
+        $price = (float)$item['price'];
+
+        $stmtCheck->execute([$pid]);
         $prod = $stmtCheck->fetch();
-        if (!$prod || (int)$prod['stock'] < (int)$item['qty']) {
-            throw new Exception("Product '" . ($prod['name'] ?? 'Unknown') . "' has insufficient stock.");
+        if (!$prod) {
+            throw new Exception("Product ID #{$pid} not found in system catalog.");
         }
-        $productDetails[(int)$item['id']] = $prod;
+        
+        if ((int)$prod['stock'] < $qty) {
+            throw new Exception("Product '" . $prod['name'] . "' has insufficient stock. Available: " . $prod['stock'] . ", Requested: " . $qty);
+        }
+
+        if ($price < 0) {
+            throw new Exception("Product price for '" . $prod['name'] . "' cannot be negative.");
+        }
+
+        // Validate cashier pricing permission (pos.override / pos.discount)
+        $catalogPrice = ($prod['discount_price'] !== null && (float)$prod['discount_price'] > 0 && (float)$prod['discount_price'] < (float)$prod['price']) ? (float)$prod['discount_price'] : (float)$prod['price'];
+        
+        if (abs($price - $catalogPrice) > 0.01) {
+            if ($price < $catalogPrice) {
+                // Discount / override
+                if (!has_admin_permission('pos.override') && !has_admin_permission('pos.discount')) {
+                    throw new Exception("You do not have permission to discount or override prices (Product: '{$prod['name']}').");
+                }
+            } else {
+                // Markup / override
+                if (!has_admin_permission('pos.override')) {
+                    throw new Exception("You do not have permission to override prices (Product: '{$prod['name']}').");
+                }
+            }
+        }
+
+        $productDetails[$pid] = $prod;
     }
 
     // 3. Compute totals (with VAT, matching frontend calculation)

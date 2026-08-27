@@ -33,7 +33,7 @@ try {
             SELECT SUM(total_amount) 
             FROM orders 
             WHERE status = 'delivered' 
-              AND payment_method = 'pos_split'
+              AND order_number LIKE 'POS-%'
               AND created_at >= ?
         ");
         $stmtSales->execute([$activeShift['start_time']]);

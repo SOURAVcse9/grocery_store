@@ -912,12 +912,22 @@
     formData.append('note', paymentNote);
     formData.append('csrf_token', window.csrfToken || '');
     
+    const confirmBtn = document.getElementById('btnConfirmPOSSale');
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerText = 'Processing...';
+    }
+    
     fetch('checkout.php', {
         method: 'POST',
         body: formData
     })
     .then(r => r.json())
     .then(data => {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = 'Confirm Sale';
+        }
         if (data.success) {
             alert('Checkout finalized successfully!');
             // Print receipt
@@ -979,6 +989,10 @@
         }
     })
     .catch(err => {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = 'Confirm Sale';
+        }
         console.error(err);
         alert('Server communications error during checkout.');
     });
