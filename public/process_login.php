@@ -73,7 +73,8 @@ if ($user === false) {
         flash('auth', 'Too many invalid attempts. Access throttled for 60 seconds.', 'error');
     } else {
         $remaining = 5 - $_SESSION['login_attempts'];
-        flash('auth', "Invalid email or password. {$remaining} attempts remaining.", 'error');
+        $attemptsText = $remaining === 1 ? 'attempt' : 'attempts';
+        flash('auth', "Invalid email or password. {$remaining} {$attemptsText} remaining.", 'error');
     }
 
     set_old_input(['email' => $email]);

@@ -35,7 +35,8 @@ if ($query === '') {
 try {
     $pdo = db();
     $stmt = $pdo->prepare("
-        SELECT id, full_name, phone, email, wallet_balance, reward_points 
+        SELECT id, full_name, phone, email, wallet_balance, reward_points,
+               (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) AS total_orders
         FROM users 
         WHERE (phone LIKE ? OR full_name LIKE ? OR id = ?)
           AND deleted_at IS NULL 

@@ -32,19 +32,12 @@ if (method_is('post')) {
         $dbEnds = !empty($endsAt) ? $endsAt : null;
 
         // Image file validation
-        $file = $_FILES['image'] ?? null;
-        
-        if (empty($title) || !$file || $file['error'] !== UPLOAD_ERR_OK) {
-            $error = 'Banner Title and Image file are required fields.';
+        if (empty($_FILES['image']['name'])) {
+            $error = 'Banner image is required.';
         } else {
-            $allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-            $fileType = mime_content_type($file['tmp_name']);
-            $fileSize = $file['size'];
-
-            if (!in_array($fileType, $allowedMimes, true)) {
-                $error = 'Invalid file type. Only PNG, JPEG, JPG, and WEBP formats are allowed.';
-            } elseif ($fileSize > 3 * 1024 * 1024) {
-                $error = 'File size is too large. Maximum allowed size is 3MB.';
+            $file = $_FILES['image'];
+            if (!validate_uploaded_image($file, 3 * 1024 * 1024)) {
+                $error = 'Invalid image file. Must be PNG, JPEG, or WEBP under 3MB.';
             } else {
                 try {
                     // Save file to destination directory

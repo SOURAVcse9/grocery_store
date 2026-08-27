@@ -15,6 +15,14 @@ require_admin_permission('contacts.manage');
 
 $pdo = db();
 $msgId = (int) input('id', '0', 'get');
+$token = input('csrf_token', '', 'get');
+
+// Validate CSRF token in GET parameter
+if (empty($token) || !hash_equals(csrf_token(), $token)) {
+    flash('contact_msg', 'Security key verification failed. Action aborted.', 'error');
+    header('Location: index.php');
+    exit;
+}
 
 if ($msgId > 0) {
     try {

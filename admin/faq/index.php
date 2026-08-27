@@ -65,7 +65,7 @@ try {
                             <td style="padding:12px 20px; text-align:right;">
                                 <div style="display:inline-flex; gap:6px;">
                                     <a href="edit.php?id=<?= $f['id'] ?>" class="btn btn-primary" style="padding:4px 10px; font-size:11px; border-radius:var(--radius-sm); text-decoration:none;"><i class="fas fa-pen"></i> Edit</a>
-                                    <a href="delete.php?id=<?= $f['id'] ?>" onclick="return confirm('Permanently delete this FAQ?');" class="btn btn-secondary" style="padding:4px 10px; font-size:11px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;"><i class="fas fa-trash"></i> Delete</a>
+                                    <a href="delete.php?id=<?= $f['id'] ?>&csrf_token=<?= csrf_token() ?>" onclick="return confirm('Permanently delete this FAQ?');" class="btn btn-secondary" style="padding:4px 10px; font-size:11px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;"><i class="fas fa-trash"></i> Delete</a>
                                 </div>
                             </td>
                         </tr>

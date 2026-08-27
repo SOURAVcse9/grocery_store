@@ -57,8 +57,10 @@
         const name = el.getAttribute('data-name-original') || el.getAttribute('data-name');
         const price = parseFloat(el.getAttribute('data-price'));
         const stock = parseInt(el.getAttribute('data-stock'));
+        const image = el.getAttribute('data-image') || '';
+        const itemSku = el.getAttribute('data-sku') || '';
         if (typeof window.addTouchCartItem === 'function') {
-          window.addTouchCartItem(prodId, name, price, stock);
+          window.addTouchCartItem(prodId, name, price, stock, image, itemSku);
           found = true;
         }
       }
@@ -346,8 +348,9 @@
 
     // Bind real-time input change listeners for payment splits in the popup modal
     const inputsToBind = [
-      'splitCash', 'splitCard', 'splitCardNo', 'splitCardRef', 'splitCardBank',
-      'splitBkash', 'splitMobileProvider', 'splitBkashTxnId', 'splitWallet'
+      'splitCash', 'splitCard', 'splitCardNo', 'splitCardRef', 'splitCardBank', 'splitCardType',
+      'splitBkash', 'splitMobileProvider', 'splitBkashTxnId', 'splitWallet',
+      'splitBank', 'splitBankName', 'splitBankRef'
     ];
     inputsToBind.forEach(id => {
       const el = document.getElementById(id);
@@ -416,7 +419,7 @@
       return;
     }
     if (typeof window.addTouchCartItem === 'function') {
-      window.addTouchCartItem(p.id, p.name, p.price, p.stock);
+      window.addTouchCartItem(p.id, p.name, p.price, p.stock, p.image || '', p.sku || '');
     }
   }
 
@@ -521,7 +524,7 @@
       div.innerHTML = `
         <div>
           <strong>${c.full_name}</strong><br>
-          <span style="font-size:9px; color:var(--color-text-faint);">📱 ${c.phone} &nbsp;|&nbsp; 💰 ৳${parseFloat(c.wallet_balance).toFixed(2)}</span>
+          <span style="font-size:9px; color:var(--color-text-faint);">📱 ${c.phone} &nbsp;|&nbsp; 💰 Wallet: ৳${parseFloat(c.wallet_balance).toFixed(2)} &nbsp;|&nbsp; ⭐ Points: ${c.reward_points || 0} &nbsp;|&nbsp; 📦 Orders: ${c.total_orders || 0}</span>
         </div>
         <div style="text-align:right; font-size:9px; color:var(--color-primary); font-weight:700;">Select ✓</div>
       `;
@@ -580,6 +583,7 @@
     const addressEl = document.getElementById('custNewAddress');
     const genderEl = document.getElementById('custNewGender');
     const birthdayEl = document.getElementById('custNewBirthday');
+    const loyaltyEl = document.getElementById('custNewLoyalty');
 
     if (!nameEl || !mobileEl) {
       alert('Name and Mobile number input fields are missing.');
@@ -592,6 +596,7 @@
     const address = addressEl ? addressEl.value.trim() : '';
     const gender = genderEl ? genderEl.value.trim() : '';
     const birthday = birthdayEl ? birthdayEl.value.trim() : '';
+    const loyalty = loyaltyEl && loyaltyEl.checked ? '1' : '0';
 
     if (name === '' || mobile === '') {
       alert('Name and Mobile number are required.');
@@ -605,6 +610,7 @@
     formData.append('address', address);
     formData.append('gender', gender);
     formData.append('birthday', birthday);
+    formData.append('loyalty_enrollment', loyalty);
     formData.append('csrf_token', window.csrfToken || '');
 
     fetch('ajax/create_customer.php', {
@@ -672,6 +678,7 @@
     const modalDiscount = document.getElementById('modalDiscount');
     const modalCoupon = document.getElementById('modalCoupon');
     const modalPayableTotal = document.getElementById('modalPayableTotal');
+    const modalCustomerInfo = document.getElementById('modalCustomerInfo');
     
     if (modalSubtotal) modalSubtotal.innerText = '৳' + subtotal.toFixed(2);
     if (modalVat) modalVat.innerText = '৳' + vat.toFixed(2);
@@ -679,9 +686,15 @@
     if (modalCoupon) modalCoupon.innerText = '৳' + coupon.toFixed(2);
     if (modalPayableTotal) modalPayableTotal.innerText = '৳' + totalPayable.toFixed(2);
     
+    const selectEl = document.getElementById('posCustomerSelect');
+    if (modalCustomerInfo && selectEl) {
+      modalCustomerInfo.innerText = selectEl.getAttribute('data-name') || 'Walk-in Customer';
+    }
+    
     // Reset payment fields safely
     const splitCash = document.getElementById('splitCash');
     const splitCard = document.getElementById('splitCard');
+    const splitCardType = document.getElementById('splitCardType');
     const splitCardNo = document.getElementById('splitCardNo');
     const splitCardRef = document.getElementById('splitCardRef');
     const splitCardBank = document.getElementById('splitCardBank');
@@ -691,8 +704,13 @@
     const splitBkashTxnId = document.getElementById('splitBkashTxnId');
     const splitWallet = document.getElementById('splitWallet');
     
+    const splitBank = document.getElementById('splitBank');
+    const splitBankName = document.getElementById('splitBankName');
+    const splitBankRef = document.getElementById('splitBankRef');
+    
     if (splitCash) splitCash.value = totalPayable.toFixed(2);
     if (splitCard) splitCard.value = '0';
+    if (splitCardType) splitCardType.value = 'Visa';
     if (splitCardNo) splitCardNo.value = '';
     if (splitCardRef) splitCardRef.value = '';
     if (splitCardBank) splitCardBank.value = '';
@@ -701,8 +719,11 @@
     if (splitMobileProvider) splitMobileProvider.value = 'bKash';
     if (splitBkashTxnId) splitBkashTxnId.value = '';
     
+    if (splitBank) splitBank.value = '0';
+    if (splitBankName) splitBankName.value = '';
+    if (splitBankRef) splitBankRef.value = '';
+    
     // Sync wallet details
-    const selectEl = document.getElementById('posCustomerSelect');
     if (selectEl) {
       const walletBalance = parseFloat(selectEl.getAttribute('data-wallet')) || 0;
       if (splitWallet) {
@@ -739,19 +760,24 @@
     const splitCard = document.getElementById('splitCard');
     const splitBkash = document.getElementById('splitBkash');
     const splitWallet = document.getElementById('splitWallet');
+    const splitBank = document.getElementById('splitBank');
 
     const cash = splitCash ? parseFloat(splitCash.value) || 0 : 0;
     const card = splitCard ? parseFloat(splitCard.value) || 0 : 0;
     const bkash = splitBkash ? parseFloat(splitBkash.value) || 0 : 0;
     const wallet = splitWallet ? parseFloat(splitWallet.value) || 0 : 0;
+    const bank = splitBank ? parseFloat(splitBank.value) || 0 : 0;
 
     // Toggle Details fields visibility
     const cardDetailsRow = document.getElementById('cardDetailsRow');
     const mobileDetailsRow = document.getElementById('mobileDetailsRow');
+    const bankDetailsRow = document.getElementById('bankDetailsRow');
+    
     if (cardDetailsRow) cardDetailsRow.style.display = card > 0 ? 'flex' : 'none';
     if (mobileDetailsRow) mobileDetailsRow.style.display = bkash > 0 ? 'flex' : 'none';
+    if (bankDetailsRow) bankDetailsRow.style.display = bank > 0 ? 'flex' : 'none';
 
-    const nonCashPaid = card + bkash + wallet;
+    const nonCashPaid = card + bkash + wallet + bank;
     const totalEntered = cash + nonCashPaid;
     const remainingDue = Math.max(totalPayable - totalEntered, 0);
     const change = Math.max(cash - Math.max(totalPayable - nonCashPaid, 0), 0);
@@ -773,8 +799,12 @@
     
     // Card field validations
     if (card > 0) {
+      const splitCardType = document.getElementById('splitCardType');
+      const splitCardNo = document.getElementById('splitCardNo');
       const splitCardRef = document.getElementById('splitCardRef');
       const splitCardBank = document.getElementById('splitCardBank');
+      if (!splitCardType || splitCardType.value.trim() === '') isValid = false;
+      if (!splitCardNo || splitCardNo.value.trim() === '') isValid = false;
       if (!splitCardRef || splitCardRef.value.trim() === '') isValid = false;
       if (!splitCardBank || splitCardBank.value.trim() === '') isValid = false;
     }
@@ -782,6 +812,8 @@
     // Mobile banking validations
     if (bkash > 0) {
       const splitBkashTxn = document.getElementById('splitBkashTxnId');
+      const splitMobileProvider = document.getElementById('splitMobileProvider');
+      if (!splitMobileProvider || splitMobileProvider.value.trim() === '') isValid = false;
       if (!splitBkashTxn || splitBkashTxn.value.trim() === '') isValid = false;
     }
     
@@ -792,6 +824,14 @@
       if (wallet > walletMax) {
         isValid = false;
       }
+    }
+    
+    // Bank transfer validations
+    if (bank > 0) {
+      const splitBankName = document.getElementById('splitBankName');
+      const splitBankRef = document.getElementById('splitBankRef');
+      if (!splitBankName || splitBankName.value.trim() === '') isValid = false;
+      if (!splitBankRef || splitBankRef.value.trim() === '') isValid = false;
     }
 
     const confirmBtn = document.getElementById('btnConfirmPOSSale');
@@ -808,6 +848,7 @@
     
     const splitCash = document.getElementById('splitCash');
     const splitCard = document.getElementById('splitCard');
+    const splitCardType = document.getElementById('splitCardType');
     const splitCardNo = document.getElementById('splitCardNo');
     const splitCardRef = document.getElementById('splitCardRef');
     const splitCardBank = document.getElementById('splitCardBank');
@@ -816,9 +857,14 @@
     const splitMobileProvider = document.getElementById('splitMobileProvider');
     const splitBkashTxnId = document.getElementById('splitBkashTxnId');
     const splitWallet = document.getElementById('splitWallet');
+    
+    const splitBank = document.getElementById('splitBank');
+    const splitBankName = document.getElementById('splitBankName');
+    const splitBankRef = document.getElementById('splitBankRef');
 
     const cash = splitCash ? parseFloat(splitCash.value) || 0 : 0;
     const card = splitCard ? parseFloat(splitCard.value) || 0 : 0;
+    const cardType = splitCardType ? splitCardType.value : '';
     const cardNo = splitCardNo ? splitCardNo.value.trim() : '';
     const cardRef = splitCardRef ? splitCardRef.value.trim() : '';
     const cardBank = splitCardBank ? splitCardBank.value.trim() : '';
@@ -828,6 +874,10 @@
     const bkashTxnId = splitBkashTxnId ? splitBkashTxnId.value.trim() : '';
     const wallet = splitWallet ? parseFloat(splitWallet.value) || 0 : 0;
     
+    const bank = splitBank ? parseFloat(splitBank.value) || 0 : 0;
+    const bankName = splitBankName ? splitBankName.value.trim() : '';
+    const bankRef = splitBankRef ? splitBankRef.value.trim() : '';
+    
     const selectEl = document.getElementById('posCustomerSelect');
     const customerId = selectEl ? selectEl.value : '0';
     const itemsData = keys.map(k => window.touchCart[k]);
@@ -835,10 +885,13 @@
     // Assemble transaction details for storage in note
     let paymentNote = 'POS checkout.';
     if (card > 0) {
-      paymentNote += ` Card: ৳${card.toFixed(2)} (Bank: ${cardBank}, Ref: ${cardRef}, CardNo: ${cardNo}).`;
+      paymentNote += ` Card: ৳${card.toFixed(2)} (Type: ${cardType}, Bank: ${cardBank}, Ref: ${cardRef}, Last4: ${cardNo}).`;
     }
     if (bkash > 0) {
       paymentNote += ` Mobile Banking (${mobileProvider}): ৳${bkash.toFixed(2)} (Txn: ${bkashTxnId}).`;
+    }
+    if (bank > 0) {
+      paymentNote += ` Bank Transfer: ৳${bank.toFixed(2)} (Bank: ${bankName}, Ref: ${bankRef}).`;
     }
     if (wallet > 0) {
       paymentNote += ` Wallet: ৳${wallet.toFixed(2)}.`;
@@ -854,6 +907,7 @@
     formData.append('card', card.toString());
     formData.append('bkash', bkash.toString());
     formData.append('wallet', wallet.toString());
+    formData.append('bank_transfer', bank.toString());
     formData.append('customer_id', customerId);
     formData.append('note', paymentNote);
     formData.append('csrf_token', window.csrfToken || '');

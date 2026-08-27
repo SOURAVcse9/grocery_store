@@ -126,11 +126,11 @@ try {
         }
 
         $avatarFilename = 'avatar_' . $userId . '_' . time() . '.' . $ext;
-        $uploadDir = PUBLIC_PATH . '/../storage/uploads/users';
+        $uploadDir = PUBLIC_PATH . '/uploads/users';
 
         // Create uploads folder if missing
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+            mkdir($uploadDir, 0775, true);
         }
 
         // Move temporary file
@@ -138,16 +138,18 @@ try {
         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
             // Delete old avatar if it exists
             if (!empty($user['avatar'])) {
-                if (str_starts_with($user['avatar'], 'storage/')) {
+                if (str_starts_with($user['avatar'], 'uploads/users/')) {
+                    $oldPath = PUBLIC_PATH . '/' . $user['avatar'];
+                } elseif (str_starts_with($user['avatar'], 'storage/')) {
                     $oldPath = PUBLIC_PATH . '/../' . $user['avatar'];
                 } else {
-                    $oldPath = PUBLIC_PATH . '/uploads/avatars/' . $user['avatar'];
+                    $oldPath = PUBLIC_PATH . '/uploads/users/' . $user['avatar'];
                 }
                 if (file_exists($oldPath)) {
                     @unlink($oldPath);
                 }
             }
-            $avatarDbValue = 'storage/uploads/users/' . $avatarFilename;
+            $avatarDbValue = 'uploads/users/' . $avatarFilename;
         } else {
             flash('profile', 'Failed to save uploaded file.', 'error');
             set_old_input($_POST);

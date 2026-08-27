@@ -104,20 +104,27 @@ try {
     }
 
     // ---- B. Enforce Stock Locks & Availability ----
-    foreach ($cartItems as $item) {
-        if ((int) $item['is_active'] === 0) {
+    $lockStmt = $pdo->prepare('SELECT stock, name, is_active FROM products WHERE id = :id FOR UPDATE');
+    foreach ($cartItems as &$item) {
+        $lockStmt->execute(['id' => (int)$item['product_id']]);
+        $prod = $lockStmt->fetch();
+
+        if (!$prod || (int) $prod['is_active'] === 0) {
             $pdo->rollBack();
             json_response(false, sprintf('Order failed: "%s" is no longer available.', $item['name']), [], 422);
         }
 
-        $stockAvailable = (int) $item['stock'];
+        $stockAvailable = (int) $prod['stock'];
         $qtyRequested = (int) $item['quantity'];
 
         if ($qtyRequested > $stockAvailable) {
             $pdo->rollBack();
-            json_response(false, sprintf('Order failed: "%s" only has %d units left in stock, but you requested %d.', $item['name'], $stockAvailable, $qtyRequested), [], 422);
+            json_response(false, sprintf('Order failed: "%s" only has %d units left in stock, but you requested %d.', $prod['name'], $stockAvailable, $qtyRequested), [], 422);
         }
+        
+        $item['stock'] = $stockAvailable;
     }
+    unset($item);
 
     // ---- C. Resolve User ID (Seamless Guest Account Registration) ----
     $userId = null;

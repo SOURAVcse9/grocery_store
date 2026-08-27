@@ -82,7 +82,7 @@ try {
                                 <?php if ((int)$ad['id'] !== current_admin_id()): ?>
                                     <div style="display:inline-flex; gap:6px;">
                                         <a href="edit.php?id=<?= $ad['id'] ?>" class="btn btn-primary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;"><i class="fas fa-pen"></i> Edit</a>
-                                        <a href="delete.php?id=<?= $ad['id'] ?>" onclick="return confirm('Permanently remove this administrator account?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete Admin"><i class="fas fa-trash"></i></a>
+                                        <a href="delete.php?id=<?= $ad['id'] ?>&csrf_token=<?= csrf_token() ?>" onclick="return confirm('Permanently remove this administrator account?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete Admin"><i class="fas fa-trash"></i></a>
                                     </div>
                                 <?php else: ?>
                                     <span style="font-size:11px; color:var(--color-text-faint); font-weight:600;">Current User</span>

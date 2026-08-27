@@ -16,6 +16,14 @@ require_admin_permission('purchases.manage');
 $pdo = db();
 $poId = (int) input('id', '0', 'get');
 $action = input('action', 'cancel', 'get');
+$token = input('csrf_token', '', 'get');
+
+// Validate CSRF token in GET parameter
+if (empty($token) || !hash_equals(csrf_token(), $token)) {
+    flash('purchase_msg', 'Security key verification failed. Action aborted.', 'error');
+    header('Location: index.php');
+    exit;
+}
 
 if ($poId > 0) {
     try {

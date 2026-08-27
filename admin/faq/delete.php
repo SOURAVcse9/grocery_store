@@ -15,6 +15,14 @@ require_admin_permission('faq.manage');
 
 $pdo = db();
 $faqId = (int) input('id', '0', 'get');
+$token = input('csrf_token', '', 'get');
+
+// Validate CSRF token in GET parameter
+if (empty($token) || !hash_equals(csrf_token(), $token)) {
+    flash('faq_msg', 'Security key verification failed. Action aborted.', 'error');
+    header('Location: index.php');
+    exit;
+}
 
 if ($faqId > 0) {
     try {

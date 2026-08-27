@@ -15,7 +15,7 @@
     if (!checkoutForm) return;
 
     const addressFormBox = document.getElementById('newAddressFormBox');
-    const requiredInputs = addressFormBox?.querySelectorAll('input[required]');
+    const requiredInputs = addressFormBox?.querySelectorAll('#recipient_name, #phone, #address_line1, #city');
 
     // ---------------------------------------------------------------------
     // 1. Saved Address Selector Toggles

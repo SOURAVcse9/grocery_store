@@ -35,7 +35,7 @@ try {
     $pdo = db();
 
     // Check if product exists, is active, and check stock
-    $stmt = $pdo->prepare('SELECT id, name, price, stock, is_active FROM products WHERE id = :id LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, name, price, discount_price, stock, is_active FROM products WHERE id = :id LIMIT 1');
     $stmt->execute(['id' => $productId]);
     $product = $stmt->fetch();
 
@@ -64,12 +64,15 @@ try {
         json_response(false, "Cannot add more items. Only {$stockAvailable} units are in stock.", [], 422);
     }
 
+    // Determine correct promotional price
+    $finalPrice = ($product['discount_price'] !== null && (float)$product['discount_price'] > 0 && (float)$product['discount_price'] < (float)$product['price']) ? (float)$product['discount_price'] : (float)$product['price'];
+
     // Upsert into cart_items
     if ($existingItem) {
         $updateStmt = $pdo->prepare('UPDATE cart_items SET quantity = :quantity, price = :price, updated_at = NOW() WHERE id = :id');
         $updateStmt->execute([
             'quantity' => $newQty,
-            'price' => $product['price'],
+            'price' => $finalPrice,
             'id' => $existingItem['id']
         ]);
     } else {
@@ -78,7 +81,7 @@ try {
             'cart_id' => $cartId,
             'product_id' => $productId,
             'quantity' => $newQty,
-            'price' => $product['price']
+            'price' => $finalPrice
         ]);
     }
 

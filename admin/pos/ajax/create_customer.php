@@ -57,6 +57,9 @@ if ($email === '') {
     $email = 'pos_' . $mobile . '@grocery.store';
 }
 
+$loyalty = trim(input('loyalty_enrollment', '0'));
+$rewardPointsVal = ($loyalty === '1') ? 0 : null;
+
 try {
     $pdo = db();
     
@@ -79,10 +82,10 @@ try {
     // Create customer record with safe default values
     $password = password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT);
     $stmt = $pdo->prepare("
-        INSERT INTO users (role_id, full_name, email, phone, password, gender, dob, is_verified, is_active, created_at, updated_at) 
-        VALUES (2, ?, ?, ?, ?, ?, ?, 1, 1, NOW(), NOW())
+        INSERT INTO users (role_id, full_name, email, phone, password, gender, dob, reward_points, is_verified, is_active, created_at, updated_at) 
+        VALUES (2, ?, ?, ?, ?, ?, ?, ?, 1, 1, NOW(), NOW())
     ");
-    $stmt->execute([$name, $email, $mobile, $password, $gender ?: null, $dob ?: null]);
+    $stmt->execute([$name, $email, $mobile, $password, $gender ?: null, $dob ?: null, $rewardPointsVal]);
     $newId = (int)$pdo->lastInsertId();
 
     // Optionally save address record

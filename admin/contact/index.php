@@ -162,7 +162,7 @@ try {
                                         <?php endif; ?>
                                     </form>
 
-                                    <a href="delete.php?id=<?= $msg['id'] ?>" onclick="return confirm('Permanently delete this message?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete message"><i class="fas fa-trash"></i></a>
+                                    <a href="delete.php?id=<?= $msg['id'] ?>&csrf_token=<?= csrf_token() ?>" onclick="return confirm('Permanently delete this message?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete message"><i class="fas fa-trash"></i></a>
                                 </div>
                             </td>
                         </tr>

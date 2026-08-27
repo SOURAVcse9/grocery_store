@@ -66,31 +66,25 @@ if (method_is('post')) {
                     // Handle image upload
                     if (!empty($_FILES['image']['name'])) {
                         $file = $_FILES['image'];
-                        if ($file['error'] === UPLOAD_ERR_OK) {
-                            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
-                                if ($file['size'] <= 2 * 1024 * 1024) { // Max 2MB
-                                    $uploadDir = __DIR__ . '/../../public/uploads/categories';
-                                    if (!is_dir($uploadDir)) {
-                                        mkdir($uploadDir, 0775, true);
-                                    }
-                                    
-                                    // Delete old image
-                                    if (!empty($category['image'])) {
-                                        $oldImgPath = $uploadDir . '/' . $category['image'];
-                                        if (file_exists($oldImgPath)) {
-                                            @unlink($oldImgPath);
-                                        }
-                                    }
-                                    
-                                    $imageName = 'cat_' . uniqid('', true) . '.' . $ext;
-                                    move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $imageName);
-                                } else {
-                                    $error = 'Image file size must be less than 2MB.';
-                                }
-                            } else {
-                                $error = 'Only JPG, JPEG, PNG, and WebP image formats are allowed.';
+                        if (!validate_uploaded_image($file, 2 * 1024 * 1024)) {
+                            $error = 'Invalid image file. Must be JPG, JPEG, PNG, or WebP under 2MB.';
+                        } else {
+                            $uploadDir = __DIR__ . '/../../public/uploads/categories';
+                            if (!is_dir($uploadDir)) {
+                                mkdir($uploadDir, 0775, true);
                             }
+                            
+                            // Delete old image
+                            if (!empty($category['image'])) {
+                                $oldImgPath = $uploadDir . '/' . $category['image'];
+                                if (file_exists($oldImgPath)) {
+                                    @unlink($oldImgPath);
+                                }
+                            }
+                            
+                            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                            $imageName = 'cat_' . uniqid('', true) . '.' . $ext;
+                            move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $imageName);
                         }
                     }
 

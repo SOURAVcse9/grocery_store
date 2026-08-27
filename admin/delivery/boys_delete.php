@@ -15,6 +15,14 @@ require_admin_permission('delivery.manage');
 
 $pdo = db();
 $boyId = (int) input('id', '0', 'get');
+$token = input('csrf_token', '', 'get');
+
+// Validate CSRF token in GET parameter
+if (empty($token) || !hash_equals(csrf_token(), $token)) {
+    flash('boy_msg', 'Security key verification failed. Action aborted.', 'error');
+    header('Location: boys.php');
+    exit;
+}
 
 if ($boyId > 0) {
     try {

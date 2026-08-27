@@ -43,10 +43,16 @@ function current_user_id(): ?int
  * their role name. Returns null for guests or if the account no longer
  * exists / was deactivated.
  */
-function current_user(): ?array
+function current_user(bool $reset = false): ?array
 {
     static $cached = null;
     static $resolved = false;
+
+    if ($reset) {
+        $cached = null;
+        $resolved = false;
+        return null;
+    }
 
     if ($resolved) {
         return $cached;
@@ -148,6 +154,7 @@ function attempt_login(string $email, string $password): array|false
  */
 function login_user(array $user): void
 {
+    current_user(true);
     $guestToken = $_SESSION['guest_token'] ?? null;
 
     // Prevent session fixation.
@@ -254,6 +261,7 @@ function merge_guest_data_into_user(int $userId, string $guestToken): void
  */
 function logout_user(): void
 {
+    current_user(true);
     clear_remember_me_cookie();
 
     $_SESSION = [];

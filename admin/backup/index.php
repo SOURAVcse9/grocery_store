@@ -79,36 +79,75 @@ if (method_is('post')) {
         }
     } elseif ($action === 'restore_backup') {
         $filename = input('filename', '');
-        $filepath = $backupDir . '/' . $filename;
-
-        if (empty($filename) || !file_exists($filepath)) {
-            $error = 'Backup source file not found.';
+        if (empty($filename) || strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+            $error = 'Invalid or unsafe backup filename.';
         } else {
-            try {
-                $sql = file_get_contents($filepath);
-                if ($sql !== false) {
-                    $pdo->exec($sql);
-                    log_admin_activity('backups.restore', "Restored database from backup file: '{$filename}'");
-                    $success = 'Database restored successfully from backup file!';
-                } else {
-                    $error = 'Failed to read backup file contents.';
+            $filepath = $backupDir . '/' . $filename;
+            $realPath = realpath($filepath);
+            $realBackupDir = realpath($backupDir);
+            
+            if (!$realPath || !$realBackupDir || strpos($realPath, $realBackupDir) !== 0 || !file_exists($filepath)) {
+                $error = 'Backup source file not found or access denied.';
+            } else {
+                try {
+                    $sql = file_get_contents($filepath);
+                    if ($sql !== false) {
+                        $pdo->exec($sql);
+                        log_admin_activity('backups.restore', "Restored database from backup file: '{$filename}'");
+                        $success = 'Database restored successfully from backup file!';
+                    } else {
+                        $error = 'Failed to read backup file contents.';
+                    }
+                } catch (PDOException $e) {
+                    error_log('[admin/backup] Restore failed: ' . $e->getMessage());
+                    $error = 'Database restore execution failed: ' . $e->getMessage();
                 }
-            } catch (PDOException $e) {
-                error_log('[admin/backup] Restore failed: ' . $e->getMessage());
-                $error = 'Database restore execution failed: ' . $e->getMessage();
             }
         }
     } elseif ($action === 'delete_backup') {
         $filename = input('filename', '');
-        $filepath = $backupDir . '/' . $filename;
-        
-        if (empty($filename) || !file_exists($filepath)) {
-            $error = 'Backup file not found on disk.';
+        if (empty($filename) || strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+            $error = 'Invalid or unsafe backup filename.';
         } else {
-            unlink($filepath);
-            $pdo->prepare("DELETE FROM system_backups WHERE filename = ?")->execute([$filename]);
-            log_admin_activity('backups.delete', "Deleted backup file: '{$filename}'");
-            $success = 'Backup file deleted successfully.';
+            $filepath = $backupDir . '/' . $filename;
+            $realPath = realpath($filepath);
+            $realBackupDir = realpath($backupDir);
+            
+            if (!$realPath || !$realBackupDir || strpos($realPath, $realBackupDir) !== 0 || !file_exists($filepath)) {
+                $error = 'Backup file not found on disk or access denied.';
+            } else {
+                unlink($filepath);
+                $pdo->prepare("DELETE FROM system_backups WHERE filename = ?")->execute([$filename]);
+                log_admin_activity('backups.delete', "Deleted backup file: '{$filename}'");
+                $success = 'Backup file deleted successfully.';
+            }
+        }
+    } elseif ($action === 'download_backup') {
+        $filename = input('filename', '');
+        if (empty($filename) || strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+            $error = 'Invalid or unsafe backup filename.';
+        } else {
+            $filepath = $backupDir . '/' . $filename;
+            $realPath = realpath($filepath);
+            $realBackupDir = realpath($backupDir);
+            
+            if (!$realPath || !$realBackupDir || strpos($realPath, $realBackupDir) !== 0 || !file_exists($filepath)) {
+                $error = 'Backup file not found on disk or access denied.';
+            } else {
+                log_admin_activity('backups.download', "Downloaded backup file: '{$filename}'");
+                if (ob_get_level()) {
+                    ob_end_clean();
+                }
+                header('Content-Description: File Transfer');
+                header('Content-Type: application/octet-stream');
+                header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
+                header('Expires: 0');
+                header('Cache-Control: must-revalidate');
+                header('Pragma: public');
+                header('Content-Length: ' . filesize($filepath));
+                readfile($filepath);
+                exit;
+            }
         }
     }
 }
@@ -156,7 +195,7 @@ try {
                     <th style="padding:16px 20px;">Backup Filename</th>
                     <th style="padding:16px 20px; width:150px; text-align:right;">File Size</th>
                     <th style="padding:16px 20px; width:220px;">Created Date</th>
-                    <th style="padding:16px 20px; width:250px; text-align:right;">Actions</th>
+                    <th style="padding:16px 20px; width:300px; text-align:right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -168,6 +207,13 @@ try {
                             <td style="padding:12px 20px; color:var(--color-text-faint);"><?= date('M d, Y H:i', strtotime($row['created_at'])) ?></td>
                             <td style="padding:12px 20px; text-align:right;">
                                 <div style="display:inline-flex; gap:6px;">
+                                    <form method="post" style="display:inline;">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="backup_action" value="download_backup">
+                                        <input type="hidden" name="filename" value="<?= e($row['filename']) ?>">
+                                        <button type="submit" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#0b7285; color:#fff; border:none; cursor:pointer;"><i class="fas fa-download"></i> Download</button>
+                                    </form>
+
                                     <form method="post" style="display:inline;" onsubmit="return confirm('Restore database to this state? Current tables will be overwritten.');">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="backup_action" value="restore_backup">
@@ -198,4 +244,3 @@ try {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>

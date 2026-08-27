@@ -276,7 +276,7 @@ $breadcrumbs = [
                                     <td>
                                         <a href="<?= $productUrl ?>" style="font-weight:700; color:var(--color-text);"><?= e($item['product_name']) ?></a>
                                         <?php if ($order['status'] === 'delivered' && ($order['payment_status'] === 'paid' || $order['payment_method'] === 'cod')): 
-                                            $reviewUrl = url_for('product.php?slug=' . e($item['slug']) . '&product_id=' . (int)$item['product_id'] . '&order_id=' . (int)$order['id'] . '&customer_id=' . (int)$order['user_id'] . '#tabReviews');
+                                            $reviewUrl = url_for('product.php?slug=' . e($item['slug']) . '&product_id=' . (int)$item['product_id'] . '&order_id=' . (int)$order['id'] . '#tabReviews');
                                         ?>
                                             <div style="margin-top: 6px;">
                                                 <a href="<?= $reviewUrl ?>" class="btn btn-primary no-print" style="padding: 4px 10px; font-size: 10px; border-radius: var(--radius-pill); border: none; text-decoration: none; display: inline-block; font-weight: 700;"><i class="far fa-star"></i> Review Product</a>

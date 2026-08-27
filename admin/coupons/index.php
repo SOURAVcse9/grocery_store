@@ -187,7 +187,7 @@ try {
                                     <div style="display:inline-flex; gap:6px;">
                                         <a href="edit.php?id=<?= $c['id'] ?>" class="btn btn-primary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;"><i class="fas fa-pen"></i> Edit</a>
                                         <a href="duplicate.php?id=<?= $c['id'] ?>" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;" title="Duplicate / Clone"><i class="far fa-copy"></i> Copy</a>
-                                        <a href="delete.php?id=<?= $c['id'] ?>" onclick="return confirm('Permanently delete this coupon code?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete coupon"><i class="fas fa-trash"></i></a>
+                                        <a href="delete.php?id=<?= $c['id'] ?>&csrf_token=<?= csrf_token() ?>" onclick="return confirm('Permanently delete this coupon code?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete coupon"><i class="fas fa-trash"></i></a>
                                     </div>
                                 </td>
                             </tr>

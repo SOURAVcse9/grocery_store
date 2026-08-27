@@ -52,6 +52,10 @@ if (method_is('post')) {
         // Valdations
         if (empty($name) || empty($slug) || $price <= 0) {
             $error = 'Product Name, URL Slug, and a valid Price are required fields.';
+        } elseif ($discountPrice < 0) {
+            $error = 'Discount price cannot be negative.';
+        } elseif ($discountPrice > 0 && $discountPrice >= $price) {
+            $error = 'Discount price must be less than the regular price.';
         } else {
             try {
                 // Verify unique Slug
@@ -65,23 +69,17 @@ if (method_is('post')) {
                     // Handle Main Thumbnail Upload
                     if (!empty($_FILES['thumbnail']['name'])) {
                         $file = $_FILES['thumbnail'];
-                        if ($file['error'] === UPLOAD_ERR_OK) {
-                            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
-                                if ($file['size'] <= 3 * 1024 * 1024) { // Max 3MB
-                                    $uploadDir = __DIR__ . '/../../public/uploads/products';
-                                    if (!is_dir($uploadDir)) {
-                                        mkdir($uploadDir, 0775, true);
-                                    }
-                                    
-                                    $thumbnailName = 'prod_' . uniqid('', true) . '.' . $ext;
-                                    move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $thumbnailName);
-                                } else {
-                                    $error = 'Thumbnail file size must be less than 3MB.';
-                                }
-                            } else {
-                                $error = 'Only JPG, JPEG, PNG, and WebP thumbnail formats are allowed.';
+                        if (!validate_uploaded_image($file, 3 * 1024 * 1024)) {
+                            $error = 'Invalid thumbnail file. Must be JPG, JPEG, PNG, or WebP under 3MB.';
+                        } else {
+                            $uploadDir = __DIR__ . '/../../public/uploads/products';
+                            if (!is_dir($uploadDir)) {
+                                mkdir($uploadDir, 0775, true);
                             }
+                            
+                            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                            $thumbnailName = 'prod_' . uniqid('', true) . '.' . $ext;
+                            move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $thumbnailName);
                         }
                     }
 
@@ -156,7 +154,7 @@ if (method_is('post')) {
                             for ($i = 0; $i < count($files['name']); $i++) {
                                 if ($files['error'][$i] === UPLOAD_ERR_OK) {
                                     $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
-                                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+                                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true) && $files['size'][$i] <= 3 * 1024 * 1024 && @getimagesize($files['tmp_name'][$i])) {
                                         $galName = 'gal_' . uniqid('', true) . '.' . $ext;
                                         if (move_uploaded_file($files['tmp_name'][$i], $uploadDir . '/' . $galName)) {
                                             $insGal->execute([

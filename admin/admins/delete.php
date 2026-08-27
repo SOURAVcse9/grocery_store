@@ -15,6 +15,14 @@ require_admin_permission('admins.manage');
 
 $pdo = db();
 $adminId = (int) input('id', '0', 'get');
+$token = input('csrf_token', '', 'get');
+
+// Validate CSRF token in GET parameter
+if (empty($token) || !hash_equals(csrf_token(), $token)) {
+    flash('admin_msg', 'Security key verification failed. Action aborted.', 'error');
+    header('Location: index.php');
+    exit;
+}
 
 if ($adminId > 0 && $adminId !== current_admin_id()) {
     try {

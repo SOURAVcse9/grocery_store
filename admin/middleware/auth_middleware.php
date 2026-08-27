@@ -46,15 +46,19 @@ function require_admin_permission(string $permissionKey): void
     if (!has_admin_permission($permissionKey)) {
         log_admin_activity('permission_denied', "Attempted to access restricted resource requiring permission: '$permissionKey'");
         
+        if (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
         // Output clean 403 page
         http_response_code(403);
         $pageTitle = '403 Access Denied — ' . site_name();
         
-        require_once __DIR__ . '/../layouts/header.php';
-        require_once __DIR__ . '/../layouts/sidebar.php';
+        require __DIR__ . '/../layouts/header.php';
+        require __DIR__ . '/../layouts/sidebar.php';
         ?>
         <div class="admin-main-panel">
-            <?php require_once __DIR__ . '/../layouts/topbar.php'; ?>
+            <?php require __DIR__ . '/../layouts/topbar.php'; ?>
             <main class="admin-content-area" id="adminMainContent">
                 <div class="container" style="margin-top: 40px; margin-bottom: 40px; text-align: center;">
                     <div class="dashboard-card" style="max-width: 500px; margin: 0 auto; padding: var(--space-6);">
@@ -67,7 +71,7 @@ function require_admin_permission(string $permissionKey): void
                     </div>
                 </div>
             </main>
-            <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+            <?php require __DIR__ . '/../layouts/footer.php'; ?>
         </div>
         <?php
         exit;
@@ -86,13 +90,17 @@ function require_super_admin(): void
     if (!$admin || $admin['role_name'] !== 'Super Admin') {
         log_admin_activity('permission_denied', "Attempted to access restricted resource requiring Super Admin role");
         
+        if (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
         http_response_code(403);
         $pageTitle = '403 Access Denied';
-        require_once __DIR__ . '/../layouts/header.php';
-        require_once __DIR__ . '/../layouts/sidebar.php';
+        require __DIR__ . '/../layouts/header.php';
+        require __DIR__ . '/../layouts/sidebar.php';
         ?>
         <div class="admin-main-panel">
-            <?php require_once __DIR__ . '/../layouts/topbar.php'; ?>
+            <?php require __DIR__ . '/../layouts/topbar.php'; ?>
             <main class="admin-content-area" id="adminMainContent">
                 <div class="container" style="margin-top: 40px; margin-bottom: 40px; text-align: center;">
                     <div class="dashboard-card" style="max-width: 500px; margin: 0 auto; padding: var(--space-6);">
@@ -105,7 +113,7 @@ function require_super_admin(): void
                     </div>
                 </div>
             </main>
-            <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+            <?php require __DIR__ . '/../layouts/footer.php'; ?>
         </div>
         <?php
         exit;

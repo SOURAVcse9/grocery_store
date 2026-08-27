@@ -34,7 +34,7 @@ try {
     $cartId = current_cart_id();
 
     // Fetch product stock and details
-    $prodStmt = $pdo->prepare('SELECT name, stock, price, is_active FROM products WHERE id = :id LIMIT 1');
+    $prodStmt = $pdo->prepare('SELECT name, stock, price, discount_price, is_active FROM products WHERE id = :id LIMIT 1');
     $prodStmt->execute(['id' => $productId]);
     $product = $prodStmt->fetch();
 
@@ -56,11 +56,14 @@ try {
         json_response(false, 'Item not found in your cart.', [], 404);
     }
 
+    // Determine correct promotional price
+    $finalPrice = ($product['discount_price'] !== null && (float)$product['discount_price'] > 0 && (float)$product['discount_price'] < (float)$product['price']) ? (float)$product['discount_price'] : (float)$product['price'];
+
     // Update cart item quantity
     $updateStmt = $pdo->prepare('UPDATE cart_items SET quantity = :quantity, price = :price, updated_at = NOW() WHERE id = :id');
     $updateStmt->execute([
         'quantity' => $quantity,
-        'price' => $product['price'],
+        'price' => $finalPrice,
         'id' => $item['id']
     ]);
 

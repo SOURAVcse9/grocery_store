@@ -15,6 +15,15 @@ require_admin_auth();
 $pdo = db();
 $userId = (int) input('id', '0', 'get');
 $action = input('action', 'delete', 'get'); // 'delete' or 'restore'
+$token = input('csrf_token', '', 'get');
+
+// Validate CSRF token in GET parameter
+if (empty($token) || !hash_equals(csrf_token(), $token)) {
+    flash('cust_msg', 'Security key verification failed. Action aborted.', 'error');
+    $redirectUrl = $_SERVER['HTTP_REFERER'] ?? 'index.php';
+    header("Location: $redirectUrl");
+    exit;
+}
 
 if ($userId > 0) {
     if ($action === 'delete') {

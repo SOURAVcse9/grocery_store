@@ -59,15 +59,8 @@ if (method_is('post')) {
         $fileUploadSuccess = true;
 
         if ($file && $file['error'] === UPLOAD_ERR_OK) {
-            $allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-            $fileType = mime_content_type($file['tmp_name']);
-            $fileSize = $file['size'];
-
-            if (!in_array($fileType, $allowedMimes, true)) {
-                $error = 'Invalid file type. Only PNG, JPEG, JPG, and WEBP formats are allowed.';
-                $fileUploadSuccess = false;
-            } elseif ($fileSize > 3 * 1024 * 1024) {
-                $error = 'File size is too large. Maximum allowed size is 3MB.';
+            if (!validate_uploaded_image($file, 3 * 1024 * 1024)) {
+                $error = 'Invalid image file. Must be PNG, JPEG, or WEBP under 3MB.';
                 $fileUploadSuccess = false;
             } else {
                 $uploadDir = __DIR__ . '/../../public/uploads/banners';

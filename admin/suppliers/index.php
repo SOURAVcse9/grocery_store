@@ -69,7 +69,7 @@ try {
                             <td style="padding:12px 20px; text-align:right;">
                                 <div style="display:inline-flex; gap:6px;">
                                     <a href="edit.php?id=<?= $s['id'] ?>" class="btn btn-primary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;"><i class="fas fa-pen"></i> Edit</a>
-                                    <a href="delete.php?id=<?= $s['id'] ?>" onclick="return confirm('Permanently remove this supplier vendor?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete Supplier"><i class="fas fa-trash"></i></a>
+                                    <a href="delete.php?id=<?= $s['id'] ?>&csrf_token=<?= csrf_token() ?>" onclick="return confirm('Permanently remove this supplier vendor?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete Supplier"><i class="fas fa-trash"></i></a>
                                 </div>
                             </td>
                         </tr>

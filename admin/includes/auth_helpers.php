@@ -268,39 +268,37 @@ function attempt_admin_cookie_login(): bool
 
     try {
         $pdo = db();
-        $stmt = $pdo->prepare("SELECT id, remember_token FROM admins WHERE is_active = 1 AND remember_token IS NOT NULL");
-        $stmt->execute();
-        $adminsList = $stmt->fetchAll();
+        $hashedCookieToken = hash('sha256', $cookieToken);
+        $stmt = $pdo->prepare("SELECT id FROM admins WHERE remember_token = :token AND is_active = 1 LIMIT 1");
+        $stmt->execute(['token' => $hashedCookieToken]);
+        $admin = $stmt->fetch();
 
-        foreach ($adminsList as $admin) {
-            // Verify hash match
-            if (hash_equals($admin['remember_token'], hash('sha256', $cookieToken))) {
-                // Successful auto-login!
-                $_SESSION['admin_id'] = $admin['id'];
-                $_SESSION['admin_last_activity'] = time();
-                $_SESSION['admin_fingerprint'] = md5($_SERVER['HTTP_USER_AGENT'] ?? '');
+        if ($admin) {
+            // Successful auto-login!
+            $_SESSION['admin_id'] = $admin['id'];
+            $_SESSION['admin_last_activity'] = time();
+            $_SESSION['admin_fingerprint'] = md5($_SERVER['HTTP_USER_AGENT'] ?? '');
 
-                // Rotate remember me token (rotation protection)
-                $newToken = bin2hex(random_bytes(32));
-                $newHash = hash('sha256', $newToken);
-                
-                $up = $pdo->prepare("UPDATE admins SET remember_token = :token WHERE id = :id");
-                $up->execute(['token' => $newHash, 'id' => $admin['id']]);
+            // Rotate remember me token (rotation protection)
+            $newToken = bin2hex(random_bytes(32));
+            $newHash = hash('sha256', $newToken);
+            
+            $up = $pdo->prepare("UPDATE admins SET remember_token = :token WHERE id = :id");
+            $up->execute(['token' => $newHash, 'id' => $admin['id']]);
 
-                // Write new cookie (valid for 30 days)
-                setcookie('admin_remember', $newToken, [
-                    'expires' => time() + (30 * 86400),
-                    'path' => '/admin',
-                    'secure' => true,
-                    'httponly' => true,
-                    'samesite' => 'Lax'
-                ]);
+            // Write new cookie (valid for 30 days)
+            setcookie('admin_remember', $newToken, [
+                'expires' => time() + (30 * 86400),
+                'path' => '/admin',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
 
-                log_admin_login((int)$admin['id'], 'Remember Cookie', true);
-                log_admin_activity('auto_login', 'Logged in automatically via remember cookie');
-                
-                return true;
-            }
+            log_admin_login((int)$admin['id'], 'Remember Cookie', true);
+            log_admin_activity('auto_login', 'Logged in automatically via remember cookie');
+            
+            return true;
         }
     } catch (Exception $e) {
         error_log('[auth_helpers] cookie login failed: ' . $e->getMessage());

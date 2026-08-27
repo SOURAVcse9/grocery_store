@@ -87,7 +87,53 @@ try {
             json_response(false, $v->first(), [], 422);
         }
 
-        // 3. Prevent duplicate reviews (one review per product per user) - Update instead of insert!
+        // 3. Handle Optional Images Upload (max 3 images, max 5MB each)
+        $uploadedImages = [];
+        if (!empty($_FILES['review_images']['name'][0])) {
+            $filesCount = count($_FILES['review_images']['name']);
+            if ($filesCount > 3) {
+                json_response(false, 'You can upload a maximum of 3 images.', [], 422);
+            }
+
+            $uploadDir = PUBLIC_PATH . '/uploads/reviews';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0775, true);
+            }
+
+            for ($i = 0; $i < $filesCount; $i++) {
+                if ($_FILES['review_images']['error'][$i] !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                $tmpName = $_FILES['review_images']['tmp_name'][$i];
+                $name = $_FILES['review_images']['name'][$i];
+                $size = $_FILES['review_images']['size'][$i];
+                
+                if ($size > 5 * 1024 * 1024) {
+                    json_response(false, 'Each image must be smaller than 5MB.', [], 422);
+                }
+
+                $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+                    json_response(false, 'Only JPG, JPEG, PNG, and WebP images are allowed.', [], 422);
+                }
+
+                if (!@getimagesize($tmpName)) {
+                    json_response(false, 'Uploaded file is not a valid image.', [], 422);
+                }
+
+                $uniqueName = 'rev_' . uniqid('', true) . '.' . $ext;
+                $targetFile = $uploadDir . '/' . $uniqueName;
+
+                if (move_uploaded_file($tmpName, $targetFile)) {
+                    $uploadedImages[] = 'uploads/reviews/' . $uniqueName;
+                }
+            }
+        }
+
+        $imagesJson = !empty($uploadedImages) ? json_encode($uploadedImages) : null;
+
+        // 4. Prevent duplicate reviews (one review per product per user) - Update instead of insert!
         $dupStmt = $pdo->prepare('SELECT id, review_images FROM product_reviews WHERE product_id = :pid AND user_id = :uid LIMIT 1');
         $dupStmt->execute(['pid' => $productId, 'uid' => $userId]);
         $existing = $dupStmt->fetch();
@@ -142,52 +188,6 @@ try {
             }
             json_response(true, 'Review updated successfully!');
         }
-
-        // 4. Handle Optional Images Upload (max 3 images, max 5MB each)
-        $uploadedImages = [];
-        if (!empty($_FILES['review_images']['name'][0])) {
-            $filesCount = count($_FILES['review_images']['name']);
-            if ($filesCount > 3) {
-                json_response(false, 'You can upload a maximum of 3 images.', [], 422);
-            }
-
-            $uploadDir = __DIR__ . '/../../storage/uploads/reviews';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0775, true);
-            }
-
-            for ($i = 0; $i < $filesCount; $i++) {
-                if ($_FILES['review_images']['error'][$i] !== UPLOAD_ERR_OK) {
-                    continue;
-                }
-
-                $tmpName = $_FILES['review_images']['tmp_name'][$i];
-                $name = $_FILES['review_images']['name'][$i];
-                $size = $_FILES['review_images']['size'][$i];
-                
-                if ($size > 5 * 1024 * 1024) {
-                    json_response(false, 'Each image must be smaller than 5MB.', [], 422);
-                }
-
-                $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
-                    json_response(false, 'Only JPG, JPEG, PNG, and WebP images are allowed.', [], 422);
-                }
-
-                if (!@getimagesize($tmpName)) {
-                    json_response(false, 'Uploaded file is not a valid image.', [], 422);
-                }
-
-                $uniqueName = 'rev_' . uniqid('', true) . '.' . $ext;
-                $targetFile = $uploadDir . '/' . $uniqueName;
-
-                if (move_uploaded_file($tmpName, $targetFile)) {
-                    $uploadedImages[] = 'storage/uploads/reviews/' . $uniqueName;
-                }
-            }
-        }
-
-        $imagesJson = !empty($uploadedImages) ? json_encode($uploadedImages) : null;
 
         // 5. Save review inside transaction
         $pdo->beginTransaction();
@@ -257,7 +257,7 @@ try {
                 json_response(false, 'You can upload a maximum of 3 images.', [], 422);
             }
 
-            $uploadDir = __DIR__ . '/../../storage/uploads/reviews';
+            $uploadDir = PUBLIC_PATH . '/uploads/reviews';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0775, true);
             }
@@ -288,7 +288,7 @@ try {
                 $targetFile = $uploadDir . '/' . $uniqueName;
 
                 if (move_uploaded_file($tmpName, $targetFile)) {
-                    $uploadedImages[] = 'storage/uploads/reviews/' . $uniqueName;
+                    $uploadedImages[] = 'uploads/reviews/' . $uniqueName;
                 }
             }
         }

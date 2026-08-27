@@ -51,6 +51,7 @@ $cashPaid = (float) input('cash', '0.00');
 $cardPaid = (float) input('card', '0.00');
 $bkashPaid = (float) input('bkash', '0.00');
 $walletPaid = (float) input('wallet', '0.00');
+$bankTransferPaid = (float) input('bank_transfer', '0.00');
 $customerId = (int) input('customer_id', '0');
 $note = trim(input('note', 'POS Checkout'));
 
@@ -132,10 +133,22 @@ try {
     }
 
     // 5. Create POS Order (user_id is never NULL)
+    // Map to a valid database enum value: 'cod', 'card', 'mobile_banking'
+    $paymentMethodEnum = 'cod';
+    $maxPaymentType = $cashPaid;
+    if ($cardPaid > $maxPaymentType) {
+        $paymentMethodEnum = 'card';
+        $maxPaymentType = $cardPaid;
+    }
+    if ($bkashPaid > $maxPaymentType) {
+        $paymentMethodEnum = 'mobile_banking';
+        $maxPaymentType = $bkashPaid;
+    }
+
     $orderNumber = 'POS-' . date('Ymd') . '-' . rand(1000, 9999);
     $stmtOrder = $pdo->prepare("
         INSERT INTO orders (order_number, user_id, address_id, subtotal, discount_amount, total_amount, payment_method, payment_status, status, note, created_at)
-        VALUES (?, ?, NULL, ?, ?, ?, 'pos_split', 'paid', 'delivered', ?, NOW())
+        VALUES (?, ?, NULL, ?, ?, ?, ?, 'paid', 'delivered', ?, NOW())
     ");
     $stmtOrder->execute([
         $orderNumber,
@@ -143,6 +156,7 @@ try {
         $subtotal,
         $discount,
         $totalAmount,
+        $paymentMethodEnum,
         $note
     ]);
     $orderId = (int)$pdo->lastInsertId();

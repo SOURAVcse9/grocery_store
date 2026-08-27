@@ -157,9 +157,10 @@ try {
                          data-barcode="<?= strtolower($p['barcode'] ?? '') ?>"
                          data-price="<?= $p['price'] ?>"
                          data-stock="<?= $p['stock'] ?>"
+                         data-image="<?= e($img) ?>"
                          data-cat="<?= $p['category_id'] ?: '' ?>"
                          data-brand="<?= $p['brand_id'] ?: '' ?>"
-                         onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e($p['name']) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>);" 
+                         onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e($p['name']) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>, '<?= e($img) ?>', '<?= e($p['sku'] ?? '') ?>');" 
                          style="padding:10px; text-align:center; cursor:pointer; margin:0; transition: 0.1s;">
                         
                         <div style="width:100%; height:70px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--color-border); background:#fff; margin-bottom:6px;">
@@ -306,7 +307,7 @@ function updateLoyaltyUI() {
     }
 }
 
-function addTouchCartItem(id, name, price, stock) {
+function addTouchCartItem(id, name, price, stock, image = '', sku = '') {
     if (touchCart[id]) {
         if (touchCart[id].qty < stock) {
             touchCart[id].qty++;
@@ -314,7 +315,7 @@ function addTouchCartItem(id, name, price, stock) {
             alert('Out of stock.');
         }
     } else {
-        touchCart[id] = { id, name, price, qty: 1, stock };
+        touchCart[id] = { id, name, price, qty: 1, stock, image, sku };
     }
     renderTouchCart();
     document.getElementById('posFilterSearch')?.focus();
@@ -367,24 +368,40 @@ function renderTouchCart() {
     keys.forEach(k => {
         const item = touchCart[k];
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; font-size:12px; border-bottom:1px solid var(--color-border); padding-bottom:6px;';
+        row.style.cssText = 'display:flex; gap:8px; align-items:center; font-size:11px; border-bottom:1px solid var(--color-border); padding:8px 0;';
         
-        let priceDisplay = `৳${item.price} each`;
+        let priceDisplay = `৳${item.price}`;
         if (canOverridePrice) {
-            priceDisplay = `<span onclick="triggerPriceOverride(${item.id});" style="text-decoration: underline; cursor: pointer; color: var(--color-primary);" title="Click to override price">৳${item.price} each <i class="fas fa-edit" style="font-size: 8px;"></i></span>`;
+            priceDisplay = `<span onclick="triggerPriceOverride(${item.id});" style="text-decoration: underline; cursor: pointer; color: var(--color-primary);" title="Click to override price">৳${item.price} <i class="fas fa-edit" style="font-size: 8px;"></i></span>`;
         }
         
+        const itemTax = (item.price * item.qty * 0.05).toFixed(2);
+        const itemSubtotal = (item.price * item.qty).toFixed(2);
+        const fallbackImg = '<?= BASE_URL ?>/../admin/assets/images/placeholder.png';
+        const imgSrc = item.image ? item.image : fallbackImg;
+        
         row.innerHTML = `
-            <div style="flex:1.5;">
-                <strong>${item.name}</strong><br>
-                <span style="font-size:9px; color:var(--color-text-faint);">${priceDisplay}</span>
+            <div style="width:36px; height:36px; border-radius:4px; overflow:hidden; border:1px solid var(--color-border); flex-shrink:0;">
+                <img src="${imgSrc}" alt="" style="width:100%; height:100%; object-fit:cover;">
             </div>
-            <div style="display:flex; align-items:center; gap:8px; flex:1; justify-content:center;">
-                <button type="button" onclick="updateTouchQty(${item.id}, -1);" style="border:1px solid var(--color-border); background:#fff; width:20px; height:20px; border-radius:50%; cursor:pointer;">-</button>
-                <strong>${item.qty}</strong>
-                <button type="button" onclick="updateTouchQty(${item.id}, 1);" style="border:1px solid var(--color-border); background:#fff; width:20px; height:20px; border-radius:50%; cursor:pointer;">+</button>
+            <div style="flex:1; min-width:0;">
+                <strong style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${item.name}">${item.name}</strong>
+                <span style="font-size:9px; color:var(--color-text-faint);">SKU: ${item.sku || 'N/A'}</span>
             </div>
-            <div style="flex:1; text-align:right; font-weight:700;">৳${(item.price * item.qty).toFixed(2)}</div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:2px; width:65px; flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <button type="button" onclick="updateTouchQty(${item.id}, -1);" style="border:1px solid var(--color-border); background:#fff; width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">-</button>
+                    <strong style="font-size:11px;">${item.qty}</strong>
+                    <button type="button" onclick="updateTouchQty(${item.id}, 1);" style="border:1px solid var(--color-border); background:#fff; width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">+</button>
+                </div>
+            </div>
+            <div style="width:100px; text-align:right; font-size:10px; color:var(--color-text-muted); line-height:1.3; flex-shrink:0;">
+                <div>Price: ৳${item.price.toFixed(2)}</div>
+                <div style="font-size:9px; color:var(--color-text-faint);">Tax (5%): ৳${itemTax}</div>
+                <div style="font-size:9px; color:var(--color-text-faint);">Disc: ৳0.00</div>
+                <div style="font-weight:700; color:var(--color-text);">Sub: ৳${itemSubtotal}</div>
+            </div>
+            <button type="button" onclick="updateTouchQty(${item.id}, -${item.qty});" style="border:none; background:transparent; color:#e03131; cursor:pointer; padding:4px; font-size:13px; flex-shrink:0;" title="Remove Item"><i class="fas fa-trash-alt"></i></button>
         `;
         wrapper.appendChild(row);
     });
@@ -476,6 +493,10 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                 <!-- Summary of Payable -->
                 <div style="background:rgba(92,124,250,0.06); padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:16px; display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--color-text-muted);">
                     <div style="display:flex; justify-content:space-between;">
+                        <span>Customer Info:</span>
+                        <span id="modalCustomerInfo" style="font-weight:700; color:var(--color-text);">Walk-in Customer</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
                         <span>Subtotal:</span>
                         <span id="modalSubtotal" style="font-weight:700; color:var(--color-text);">৳0.00</span>
                     </div>
@@ -490,6 +511,10 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                     <div style="display:flex; justify-content:space-between;">
                         <span>Coupon Discount:</span>
                         <span id="modalCoupon" style="font-weight:700; color:var(--color-text);">৳0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Service Charge:</span>
+                        <span id="modalServiceCharge" style="font-weight:700; color:var(--color-text);">৳0.00</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-border); padding-top:6px; font-size:14px; font-weight:800; color:var(--color-text);">
                         <span style="color:var(--color-text);">Grand Total:</span>
@@ -512,11 +537,21 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                         </div>
                         <div id="cardDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
                             <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
-                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Card Number (opt)</label>
-                                <input type="text" id="splitCardNo" placeholder="Last 4 digits or Full" class="form-control" style="font-size:11px;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Card Type *</label>
+                                <select id="splitCardType" class="form-control" style="font-size:11px; background:#fff; height:auto; padding:4px 8px;">
+                                    <option value="Visa">Visa</option>
+                                    <option value="MasterCard">MasterCard</option>
+                                    <option value="Amex">Amex</option>
+                                    <option value="Nexus">Nexus Card</option>
+                                    <option value="Other">Other Card</option>
+                                </select>
                             </div>
                             <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
-                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Reference Number *</label>
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Last 4 Digits *</label>
+                                <input type="text" id="splitCardNo" placeholder="E.g. 4321" class="form-control" style="font-size:11px;">
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Reference / Txn ID *</label>
                                 <input type="text" id="splitCardRef" placeholder="Approval code / Txn Ref" class="form-control" style="font-size:11px;">
                             </div>
                             <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
@@ -550,6 +585,22 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                         <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
                             <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-wallet" style="color:#fcc419;"></i> Wallet Credit (৳)</label>
                             <input type="number" id="splitWallet" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right;">
+                        </div>
+
+                        <!-- Bank Transfer Row -->
+                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-university" style="color:#7950f2;"></i> Bank Transfer (৳)</label>
+                            <input type="number" id="splitBank" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right;">
+                        </div>
+                        <div id="bankDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
+                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Bank Name *</label>
+                                <input type="text" id="splitBankName" placeholder="E.g. City Bank, HSBC" class="form-control" style="font-size:11px;">
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                                <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Transaction Ref *</label>
+                                <input type="text" id="splitBankRef" placeholder="Txn ID / reference code" class="form-control" style="font-size:11px;">
+                            </div>
                         </div>
                     </div>
 
@@ -619,6 +670,10 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                         <div>
                             <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px; text-align:left;">Address (Optional)</label>
                             <textarea id="custNewAddress" placeholder="E.g. House 12, Road 5, Dhaka" rows="2" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; resize:none;"></textarea>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                            <input type="checkbox" id="custNewLoyalty" checked style="cursor:pointer; width:16px; height:16px;">
+                            <label for="custNewLoyalty" style="font-size:12px; font-weight:700; color:var(--color-text); cursor:pointer; margin:0;">Enroll in Loyalty & Rewards Program</label>
                         </div>
                     </div>
                     <div style="display:flex; justify-content:end; gap:8px; margin-top:20px;">

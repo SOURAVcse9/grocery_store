@@ -76,9 +76,9 @@ try {
                                 <div style="display:inline-flex; gap:6px;">
                                     <?php if ($status === 'pending'): ?>
                                         <a href="receive.php?id=<?= $row['id'] ?>" onclick="return confirm('Confirm Goods Received Note (GRN)? This will adjust stock levels of products.');" class="btn btn-primary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;"><i class="fas fa-truck-ramp-box"></i> Receive Stock</a>
-                                        <a href="delete.php?id=<?= $row['id'] ?>&action=cancel" onclick="return confirm('Cancel this procurement purchase order?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Cancel Order"><i class="fas fa-ban"></i></a>
+                                        <a href="delete.php?id=<?= $row['id'] ?>&action=cancel&csrf_token=<?= csrf_token() ?>" onclick="return confirm('Cancel this procurement purchase order?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Cancel Order"><i class="fas fa-ban"></i></a>
                                     <?php endif; ?>
-                                    <a href="delete.php?id=<?= $row['id'] ?>&action=delete" onclick="return confirm('Permanently delete this PO record?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete Record"><i class="fas fa-trash"></i></a>
+                                    <a href="delete.php?id=<?= $row['id'] ?>&action=delete&csrf_token=<?= csrf_token() ?>" onclick="return confirm('Permanently delete this PO record?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete Record"><i class="fas fa-trash"></i></a>
                                 </div>
                             </td>
                         </tr>

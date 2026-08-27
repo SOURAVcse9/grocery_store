@@ -45,41 +45,30 @@ if (method_is('post') && isset($_POST['update_profile'])) {
                     // Handle Avatar File Upload
                     if (!empty($_FILES['avatar']['name'])) {
                         $file = $_FILES['avatar'];
-                        
-                        if ($file['error'] === UPLOAD_ERR_OK) {
-                            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                            
-                            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
-                                if ($file['size'] <= 2 * 1024 * 1024) { // Max 2MB
-                                    $uploadDir = __DIR__ . '/../public/uploads/users'; // Wait, let's save in storefront uploads/users/
-                                    if (!is_dir($uploadDir)) {
-                                        mkdir($uploadDir, 0775, true);
-                                    }
-                                    
-                                    // Generate unique filename
-                                    $newAvatarName = 'admin_av_' . uniqid('', true) . '.' . $ext;
-                                    $targetFile = $uploadDir . '/' . $newAvatarName;
-                                    
-                                    if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-                                        // Delete old avatar if exists
-                                        if (!empty($admin['avatar'])) {
-                                            $oldAvatarPath = $uploadDir . '/' . $admin['avatar'];
-                                            if (file_exists($oldAvatarPath)) {
-                                                @unlink($oldAvatarPath);
-                                            }
-                                        }
-                                        $avatarName = $newAvatarName;
-                                    } else {
-                                        $error = 'Failed to save uploaded image.';
-                                    }
-                                } else {
-                                    $error = 'Avatar file size must be smaller than 2MB.';
-                                }
-                            } else {
-                                $error = 'Only JPG, JPEG, PNG, and WebP images are allowed.';
-                            }
+                        if (!validate_uploaded_image($file, 2 * 1024 * 1024)) {
+                            $error = 'Invalid avatar file. Must be JPG, JPEG, PNG, or WebP under 2MB.';
                         } else {
-                            $error = 'Image upload encountered error code ' . $file['error'];
+                            $uploadDir = __DIR__ . '/../public/uploads/users';
+                            if (!is_dir($uploadDir)) {
+                                mkdir($uploadDir, 0775, true);
+                            }
+                            
+                            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                            $newAvatarName = 'admin_av_' . uniqid('', true) . '.' . $ext;
+                            $targetFile = $uploadDir . '/' . $newAvatarName;
+                            
+                            if (move_uploaded_file($file['tmp_name'], $targetFile)) {
+                                // Delete old avatar if exists
+                                if (!empty($admin['avatar'])) {
+                                    $oldAvatarPath = $uploadDir . '/' . $admin['avatar'];
+                                    if (file_exists($oldAvatarPath)) {
+                                        @unlink($oldAvatarPath);
+                                    }
+                                }
+                                $avatarName = $newAvatarName;
+                            } else {
+                                $error = 'Failed to save uploaded image.';
+                            }
                         }
                     }
 
