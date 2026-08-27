@@ -71,7 +71,7 @@ if (is_logged_in() && $addressOption !== 'new') {
     // If guest, validate email address for registration
     $email = '';
     if (!is_logged_in()) {
-        $email = trim(input('email', ''));
+        $email = strtolower(trim(input('email', '')));
         $v->required('email', $email, 'Email address is required.')
           ->email('email', $email);
     }
@@ -132,7 +132,7 @@ try {
         $userId = current_user_id();
     } else {
         // Guest user registration block
-        $email = trim(input('email', ''));
+        $email = strtolower(trim(input('email', '')));
         
         // Double-check if user already exists
         $userCheck = $pdo->prepare('SELECT id, role_id, full_name, email, is_active FROM users WHERE email = :email LIMIT 1');

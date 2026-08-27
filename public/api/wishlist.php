@@ -28,7 +28,7 @@ try {
             JOIN products p ON p.id = w.product_id
             LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN brands b ON b.id = p.brand_id
-            WHERE w.user_id = :uid AND p.is_active = 1
+            WHERE w.user_id = :uid AND p.is_active = 1 AND p.deleted_at IS NULL
             ORDER BY w.created_at DESC
         ');
         $stmt->execute(['uid' => $userId]);
@@ -44,7 +44,7 @@ try {
                 FROM products p
                 LEFT JOIN categories c ON c.id = p.category_id
                 LEFT JOIN brands b ON b.id = p.brand_id
-                WHERE p.id IN ({$inClause}) AND p.is_active = 1
+                WHERE p.id IN ({$inClause}) AND p.is_active = 1 AND p.deleted_at IS NULL
                 ORDER BY p.name ASC
             ");
             $products = $stmt->fetchAll();

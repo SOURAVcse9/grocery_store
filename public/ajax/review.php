@@ -147,7 +147,7 @@ try {
                         $oldImages = json_decode($existing['review_images'], true);
                         if (is_array($oldImages)) {
                             foreach ($oldImages as $oldImg) {
-                                $fullPath = __DIR__ . '/../../' . $oldImg;
+                                $fullPath = PUBLIC_PATH . '/' . $oldImg;
                                 if (file_exists($fullPath)) {
                                     @unlink($fullPath);
                                 }
@@ -303,7 +303,7 @@ try {
                     $oldImages = json_decode($existingReview['review_images'], true);
                     if (is_array($oldImages)) {
                         foreach ($oldImages as $oldImg) {
-                            $fullPath = __DIR__ . '/../../' . $oldImg;
+                            $fullPath = PUBLIC_PATH . '/' . $oldImg;
                             if (file_exists($fullPath)) {
                                 @unlink($fullPath);
                             }
@@ -372,7 +372,7 @@ try {
             $oldImages = json_decode($existingReview['review_images'], true);
             if (is_array($oldImages)) {
                 foreach ($oldImages as $oldImg) {
-                    $fullPath = __DIR__ . '/../../' . $oldImg;
+                    $fullPath = PUBLIC_PATH . '/' . $oldImg;
                     if (file_exists($fullPath)) {
                         @unlink($fullPath);
                     }

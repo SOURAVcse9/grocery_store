@@ -38,7 +38,7 @@ try {
     $pdo = db();
 
     // 1. Build Query Parts dynamically
-    $where = ['p.is_active = 1'];
+    $where = ['p.is_active = 1', 'p.deleted_at IS NULL'];
     $params = [];
 
     // Category filter (support single slug)

@@ -29,6 +29,11 @@ try {
         exit;
     }
 
+    if (!is_logged_in() || (int) $order['user_id'] !== current_user_id()) {
+        echo "Unauthorized access.";
+        exit;
+    }
+
     if ($status === 'success') {
         $pdo->beginTransaction();
 

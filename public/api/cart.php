@@ -25,7 +25,7 @@ try {
                p.name, p.slug, p.thumbnail, p.stock, p.unit
         FROM cart_items ci
         JOIN products p ON p.id = ci.product_id
-        WHERE ci.cart_id = :cart_id
+        WHERE ci.cart_id = :cart_id AND p.deleted_at IS NULL
         ORDER BY ci.created_at DESC
     ');
     $stmt->execute(['cart_id' => $cartId]);

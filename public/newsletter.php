@@ -19,7 +19,7 @@ require_method('POST');
 // Verify CSRF
 verify_csrf_or_fail(true);
 
-$email = trim(input('email', ''));
+$email = strtolower(trim(input('email', '')));
 
 $v = new Validator();
 $v->required('email', $email, 'Email address is required.')

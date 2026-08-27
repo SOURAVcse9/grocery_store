@@ -92,7 +92,7 @@ try {
         JOIN products p ON p.id = ci.product_id
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
-        WHERE ci.cart_id = :cart_id
+        WHERE ci.cart_id = :cart_id AND p.deleted_at IS NULL
         ORDER BY ci.created_at DESC
     ');
     $stmt->execute(['cart_id' => $cartId]);
