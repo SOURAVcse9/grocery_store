@@ -34,11 +34,11 @@ try {
     $cartId = current_cart_id();
 
     // Fetch product stock and details
-    $prodStmt = $pdo->prepare('SELECT name, stock, price, discount_price, is_active FROM products WHERE id = :id LIMIT 1');
+    $prodStmt = $pdo->prepare('SELECT name, stock, price, discount_price, is_active, deleted_at FROM products WHERE id = :id LIMIT 1');
     $prodStmt->execute(['id' => $productId]);
     $product = $prodStmt->fetch();
 
-    if (!$product || (int) $product['is_active'] === 0) {
+    if (!$product || (int) $product['is_active'] === 0 || $product['deleted_at'] !== null) {
         json_response(false, 'Product is currently unavailable.', [], 404);
     }
 

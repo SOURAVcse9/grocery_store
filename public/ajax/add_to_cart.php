@@ -35,11 +35,11 @@ try {
     $pdo = db();
 
     // Check if product exists, is active, and check stock
-    $stmt = $pdo->prepare('SELECT id, name, price, discount_price, stock, is_active FROM products WHERE id = :id LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, name, price, discount_price, stock, is_active, deleted_at FROM products WHERE id = :id LIMIT 1');
     $stmt->execute(['id' => $productId]);
     $product = $stmt->fetch();
 
-    if (!$product || (int) $product['is_active'] === 0) {
+    if (!$product || (int) $product['is_active'] === 0 || $product['deleted_at'] !== null) {
         json_response(false, 'Product not found or unavailable.', [], 404);
     }
 

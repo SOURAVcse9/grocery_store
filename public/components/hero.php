@@ -20,7 +20,7 @@ if (empty($banners)) {
     <div class="hero-slider" id="heroSlider">
         <div class="hero-slides-container" id="heroSlidesContainer">
             <?php foreach ($banners as $index => $banner): 
-                $imageUrl = image_url($banner['image'], 'ui');
+                $imageUrl = image_url($banner['image'], 'banners');
                 $title = $banner['title'] ?? '';
                 $subtitle = $banner['subtitle'] ?? '';
                 $btnText = $banner['button_text'] ?? 'Shop Now';

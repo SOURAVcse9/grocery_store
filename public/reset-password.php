@@ -75,9 +75,9 @@ if (method_is('post')) {
         try {
             $pdo->beginTransaction();
 
-            // 1. Update user password
+            // 1. Update user password and clear remember token
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $updateUser = $pdo->prepare('UPDATE users SET password = :pass WHERE id = :uid');
+            $updateUser = $pdo->prepare('UPDATE users SET password = :pass, remember_token = NULL WHERE id = :uid');
             $updateUser->execute([
                 'pass' => $hashedPassword,
                 'uid'  => (int) $resetRecord['user_id']

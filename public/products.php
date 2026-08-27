@@ -51,7 +51,7 @@ try {
     ')->fetchAll();
 
     // 2. Build Query scope for active filters
-    $where = ['p.is_active = 1'];
+    $where = ['p.is_active = 1', 'p.deleted_at IS NULL'];
     $queryParams = [];
 
     if (!empty($categorySlug)) {

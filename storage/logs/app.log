@@ -441,3 +441,8 @@ Stack trace:
 [09-Jul-2026 12:51:44 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
 [09-Jul-2026 12:51:56 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
 [27-Aug-2026 12:33:09 Asia/Dhaka] [process_checkout.php] Transaction failed: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '01782427035' for key 'phone'
+[27-Aug-2026 21:21:09 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[27-Aug-2026 21:30:49 Asia/Dhaka] [index.php] Database error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[27-Aug-2026 21:30:51 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[27-Aug-2026 21:30:53 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[27-Aug-2026 21:31:25 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it

@@ -24,7 +24,7 @@ if (method_is('post')) {
     // Verify CSRF
     verify_csrf_or_fail();
 
-    $email = trim(input('email', ''));
+    $email = strtolower(trim(input('email', '')));
 
     $v = new Validator();
     $v->required('email', $email, 'Email address is required.')

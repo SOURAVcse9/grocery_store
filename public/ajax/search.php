@@ -32,6 +32,7 @@ try {
         LEFT JOIN brands b ON b.id = p.brand_id
         LEFT JOIN categories c ON c.id = p.category_id
         WHERE p.is_active = 1 
+          AND p.deleted_at IS NULL
           AND (p.name LIKE :q1 
                OR p.sku LIKE :q2 
                OR b.name LIKE :q3 

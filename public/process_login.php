@@ -39,7 +39,7 @@ if (isset($_SESSION['login_throttle_time']) && $_SESSION['login_throttle_time'] 
     redirect(url_for('login.php'));
 }
 
-$email = trim(input('email', ''));
+$email = strtolower(trim(input('email', '')));
 $password = input('password', '');
 $remember = input('remember', '') === '1';
 

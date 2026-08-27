@@ -27,7 +27,7 @@ if (is_logged_in()) {
 }
 
 $fullName = trim(input('full_name', ''));
-$email = trim(input('email', ''));
+$email = strtolower(trim(input('email', '')));
 $phone = trim(input('phone', ''));
 $password = input('password', '');
 $passwordConfirm = input('password_confirm', '');

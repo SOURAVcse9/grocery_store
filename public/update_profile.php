@@ -21,7 +21,7 @@ $user = current_user();
 $userId = (int) $user['id'];
 
 $fullName = trim(input('full_name', ''));
-$email = trim(input('email', ''));
+$email = strtolower(trim(input('email', '')));
 $phone = trim(input('phone', ''));
 
 // --------------------------------------------------------------------------

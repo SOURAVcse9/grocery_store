@@ -90,7 +90,7 @@ try {
     // ---- A. Fetch & Validate Cart Items ----
     $cartStmt = $pdo->prepare('
         SELECT ci.product_id, ci.quantity, ci.price,
-               p.name, p.sku, p.stock, p.is_active
+               p.name, p.sku, p.stock, p.is_active, p.deleted_at
         FROM cart_items ci
         JOIN products p ON p.id = ci.product_id
         WHERE ci.cart_id = :cart_id
@@ -104,12 +104,12 @@ try {
     }
 
     // ---- B. Enforce Stock Locks & Availability ----
-    $lockStmt = $pdo->prepare('SELECT stock, name, is_active FROM products WHERE id = :id FOR UPDATE');
+    $lockStmt = $pdo->prepare('SELECT stock, name, is_active, deleted_at FROM products WHERE id = :id FOR UPDATE');
     foreach ($cartItems as &$item) {
         $lockStmt->execute(['id' => (int)$item['product_id']]);
         $prod = $lockStmt->fetch();
 
-        if (!$prod || (int) $prod['is_active'] === 0) {
+        if (!$prod || (int) $prod['is_active'] === 0 || $prod['deleted_at'] !== null) {
             $pdo->rollBack();
             json_response(false, sprintf('Order failed: "%s" is no longer available.', $item['name']), [], 422);
         }

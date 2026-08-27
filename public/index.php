@@ -44,7 +44,7 @@ try {
     $banners = [];
     foreach ($bannersData as $bRow) {
         $banners[] = [
-            'image' => '../uploads/banners/' . $bRow['image_path'],
+            'image' => $bRow['image_path'],
             'title' => $bRow['title'],
             'subtitle' => 'Limited Time Exclusive Deal',
             'button_text' => 'Shop Now',
@@ -70,7 +70,7 @@ try {
                COUNT(pr.id) AS review_count
         FROM products p
         LEFT JOIN product_reviews pr ON pr.product_id = p.id
-        WHERE p.is_active = 1 AND p.is_featured = 1
+        WHERE p.is_active = 1 AND p.deleted_at IS NULL AND p.is_featured = 1
         GROUP BY p.id
         ORDER BY p.id DESC
         LIMIT 8
@@ -83,7 +83,7 @@ try {
                COUNT(pr.id) AS review_count
         FROM products p
         LEFT JOIN product_reviews pr ON pr.product_id = p.id
-        WHERE p.is_active = 1 AND p.discount_price IS NOT NULL AND p.discount_price < p.price
+        WHERE p.is_active = 1 AND p.deleted_at IS NULL AND p.discount_price IS NOT NULL AND p.discount_price < p.price
         GROUP BY p.id
         ORDER BY p.id DESC
         LIMIT 4
@@ -98,7 +98,7 @@ try {
         FROM products p
         LEFT JOIN order_items oi ON oi.product_id = p.id
         LEFT JOIN product_reviews pr ON pr.product_id = p.id
-        WHERE p.is_active = 1
+        WHERE p.is_active = 1 AND p.deleted_at IS NULL
         GROUP BY p.id
         ORDER BY sales_count DESC, p.id DESC
         LIMIT 8
@@ -111,7 +111,7 @@ try {
                COUNT(pr.id) AS review_count
         FROM products p
         LEFT JOIN product_reviews pr ON pr.product_id = p.id
-        WHERE p.is_active = 1
+        WHERE p.is_active = 1 AND p.deleted_at IS NULL
         GROUP BY p.id
         ORDER BY avg_rating DESC, review_count DESC, p.id DESC
         LIMIT 8
@@ -124,7 +124,7 @@ try {
                COUNT(pr.id) AS review_count
         FROM products p
         LEFT JOIN product_reviews pr ON pr.product_id = p.id
-        WHERE p.is_active = 1
+        WHERE p.is_active = 1 AND p.deleted_at IS NULL
         GROUP BY p.id
         ORDER BY p.created_at DESC, p.id DESC
         LIMIT 8
@@ -138,7 +138,7 @@ try {
                ROUND(((p.price - p.discount_price) / p.price) * 100) AS discount_percentage
         FROM products p
         LEFT JOIN product_reviews pr ON pr.product_id = p.id
-        WHERE p.is_active = 1 AND p.discount_price IS NOT NULL AND p.discount_price < p.price
+        WHERE p.is_active = 1 AND p.deleted_at IS NULL AND p.discount_price IS NOT NULL AND p.discount_price < p.price
         GROUP BY p.id
         ORDER BY discount_percentage DESC, p.id DESC
         LIMIT 8

@@ -18,43 +18,75 @@ declare(strict_types=1);
  */
 function check_rate_limit(string $action, int $maxRequests = 5, int $seconds = 60, bool $respondJson = true): bool
 {
-    // Start session if not already initialized
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
     $now = time();
-
-    if (!isset($_SESSION['rate_limits'])) {
-        $_SESSION['rate_limits'] = [];
+    
+    $hash = md5($ip . '_' . $action);
+    $dir = 'C:/xampp/tmp/rate_limit_cache';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
     }
-
-    if (!isset($_SESSION['rate_limits'][$action])) {
-        // Initial setup for this action
-        $_SESSION['rate_limits'][$action] = [
+    
+    $filePath = $dir . '/rl_' . $hash . '.json';
+    $limit = null;
+    $useSession = false;
+    
+    if (is_dir($dir) && is_writable($dir)) {
+        if (file_exists($filePath)) {
+            $content = @file_get_contents($filePath);
+            if ($content !== false) {
+                $limit = json_decode($content, true);
+            }
+        }
+    } else {
+        $useSession = true;
+    }
+    
+    if ($useSession) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (!isset($_SESSION['rate_limits'])) {
+            $_SESSION['rate_limits'] = [];
+        }
+        if (isset($_SESSION['rate_limits'][$action])) {
+            $limit = $_SESSION['rate_limits'][$action];
+        }
+    }
+    
+    if (!$limit) {
+        $limit = [
             'start_time' => $now,
             'count'      => 1
         ];
-        return true;
+    } else {
+        if (($now - $limit['start_time']) >= $seconds) {
+            $limit['start_time'] = $now;
+            $limit['count'] = 1;
+        } else {
+            $limit['count']++;
+        }
     }
-
-    $limit = &$_SESSION['rate_limits'][$action];
-
-    // If time span has elapsed, reset count
-    if (($now - $limit['start_time']) >= $seconds) {
-        $limit['start_time'] = $now;
-        $limit['count'] = 1;
-        return true;
+    
+    if ($useSession) {
+        $_SESSION['rate_limits'][$action] = $limit;
+    } else {
+        @file_put_contents($filePath, json_encode($limit));
+        if (rand(1, 100) === 1) {
+            $files = glob($dir . '/rl_*.json');
+            if ($files) {
+                foreach ($files as $file) {
+                    if (file_exists($file) && (time() - filemtime($file) > 3600)) {
+                        @unlink($file);
+                    }
+                }
+            }
+        }
     }
-
-    // Increment count
-    $limit['count']++;
-
-    // Check if count exceeds limit
+    
     if ($limit['count'] > $maxRequests) {
-        // Log brute-force attempts
         require_once __DIR__ . '/logger.php';
-        log_action('RATE_LIMIT_TRIGGERED', "Action '{$action}' exceeded limit. Count: " . $limit['count']);
+        log_action('RATE_LIMIT_TRIGGERED', "Action '{$action}' exceeded limit. IP: {$ip}, Count: " . $limit['count']);
 
         if ($respondJson) {
             if (!headers_sent()) {
@@ -73,6 +105,6 @@ function check_rate_limit(string $action, int $maxRequests = 5, int $seconds = 6
             exit;
         }
     }
-
+    
     return true;
 }

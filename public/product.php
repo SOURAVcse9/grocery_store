@@ -35,7 +35,7 @@ try {
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
         LEFT JOIN product_reviews pr ON pr.product_id = p.id
-        WHERE p.slug = :slug AND p.is_active = 1
+        WHERE p.slug = :slug AND p.is_active = 1 AND p.deleted_at IS NULL
         GROUP BY p.id
         LIMIT 1
     ');

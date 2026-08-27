@@ -256,10 +256,6 @@ $extraScripts = ['js/account.js'];
 require_once __DIR__ . '/header.php';
 ?>
 
-<?php
-require_once __DIR__ . '/header.php';
-?>
-
 <!-- Premium UI Styles for Address Book Redesign -->
 <style>
 .address-book-wrapper {
