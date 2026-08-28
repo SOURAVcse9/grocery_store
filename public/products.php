@@ -37,7 +37,7 @@ try {
     // 1. Fetch filter metadata for Sidebar Checklists
     $categoriesList = $pdo->query('
         SELECT c.id, c.name, c.slug, 
-               (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.is_active = 1) AS p_count
+               (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.is_active = 1 AND p.deleted_at IS NULL) AS p_count
         FROM categories c 
         WHERE c.is_active = 1 AND c.parent_id IS NULL
         ORDER BY c.name ASC
@@ -45,7 +45,7 @@ try {
 
     $brandsList = $pdo->query('
         SELECT b.id, b.name, b.slug,
-               (SELECT COUNT(*) FROM products p WHERE p.brand_id = b.id AND p.is_active = 1) AS p_count
+               (SELECT COUNT(*) FROM products p WHERE p.brand_id = b.id AND p.is_active = 1 AND p.deleted_at IS NULL) AS p_count
         FROM brands b
         ORDER BY b.name ASC
     ')->fetchAll();

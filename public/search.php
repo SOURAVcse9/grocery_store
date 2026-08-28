@@ -41,7 +41,7 @@ try {
     // 1. Fetch checklists for Filter Sidebar
     $categoriesList = $pdo->query('
         SELECT c.id, c.name, c.slug, 
-               (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.is_active = 1) AS p_count
+               (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.is_active = 1 AND p.deleted_at IS NULL) AS p_count
         FROM categories c 
         WHERE c.is_active = 1 AND c.parent_id IS NULL
         ORDER BY c.name ASC
@@ -49,7 +49,7 @@ try {
 
     $brandsList = $pdo->query('
         SELECT b.id, b.name, b.slug,
-               (SELECT COUNT(*) FROM products p WHERE p.brand_id = b.id AND p.is_active = 1) AS p_count
+               (SELECT COUNT(*) FROM products p WHERE p.brand_id = b.id AND p.is_active = 1 AND p.deleted_at IS NULL) AS p_count
         FROM brands b
         ORDER BY b.name ASC
     ')->fetchAll();
@@ -57,7 +57,7 @@ try {
     // 2. Perform Search Queries if query is provided
     if (mb_strlen($searchQuery) >= 2) {
         
-        $where = ['p.is_active = 1'];
+        $where = ['p.is_active = 1', 'p.deleted_at IS NULL'];
         $queryParams = [];
 
         // Match terms

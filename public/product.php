@@ -198,7 +198,7 @@ try {
                    COUNT(pr.id) AS review_count
             FROM products p
             LEFT JOIN product_reviews pr ON pr.product_id = p.id
-            WHERE p.id IN ({$inClause}) AND p.is_active = 1
+            WHERE p.id IN ({$inClause}) AND p.is_active = 1 AND p.deleted_at IS NULL
             GROUP BY p.id
             ORDER BY FIELD(p.id, {$inClause})
             LIMIT 4
@@ -216,7 +216,7 @@ try {
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
         LEFT JOIN product_reviews pr ON pr.product_id = p.id
-        WHERE p.category_id = :cat_id AND p.id != :curr_id AND p.is_active = 1
+        WHERE p.category_id = :cat_id AND p.id != :curr_id AND p.is_active = 1 AND p.deleted_at IS NULL
         GROUP BY p.id
         ORDER BY p.id DESC
         LIMIT 4
@@ -232,7 +232,7 @@ try {
     $fbtProductsStmt = $pdo->prepare('
         SELECT p.id, p.name, p.price, p.discount_price, p.thumbnail, p.slug
         FROM products p
-        WHERE p.category_id = :cat_id AND p.id != :curr_id AND p.is_active = 1 AND p.stock > 0
+        WHERE p.category_id = :cat_id AND p.id != :curr_id AND p.is_active = 1 AND p.stock > 0 AND p.deleted_at IS NULL
         ORDER BY p.is_featured DESC, p.id ASC
         LIMIT 2
     ');

@@ -41,7 +41,7 @@ try {
     // 2. Fetch all active products
     $prodStmt = $pdo->query('
         SELECT slug, updated_at FROM products 
-        WHERE is_active = 1 
+        WHERE is_active = 1 AND deleted_at IS NULL
         ORDER BY id DESC
     ');
     while ($p = $prodStmt->fetch()) {

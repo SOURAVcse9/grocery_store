@@ -19,7 +19,7 @@ try {
     // Fetch all active, non-expired coupon discounts
     $stmt = $pdo->query('
         SELECT * FROM coupons 
-        WHERE is_active = 1 AND (expiry_date IS NULL OR expiry_date >= CURDATE()) 
+        WHERE is_active = 1 AND (valid_until IS NULL OR valid_until >= NOW()) 
         ORDER BY discount_percent DESC, id DESC
     ');
     $coupons = $stmt->fetchAll();
@@ -61,8 +61,8 @@ $breadcrumbs = [
             <div class="coupons-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:var(--space-4);">
                 <?php foreach ($coupons as $c): 
                     $pct = (int) $c['discount_percent'];
-                    $minSpend = (float) ($c['min_spend'] ?? 0);
-                    $expiry = $c['expiry_date'] ? date('M d, Y', strtotime($c['expiry_date'])) : 'Never Expires';
+                    $minSpend = (float) ($c['min_order_amount'] ?? 0);
+                    $expiry = $c['valid_until'] ? date('M d, Y', strtotime($c['valid_until'])) : 'Never Expires';
                 ?>
                     <div class="coupon-offer-card" style="background:var(--color-surface); border:2px dashed var(--color-border); border-radius:var(--radius-md); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3); relative; overflow:hidden; box-shadow:var(--shadow-sm);">
                         

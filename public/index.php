@@ -56,7 +56,7 @@ try {
     $categories = $pdo->query('
         SELECT c.id, c.name, c.slug, c.image, COUNT(p.id) AS product_count 
         FROM categories c 
-        LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1
+        LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1 AND p.deleted_at IS NULL
         WHERE c.is_active = 1 AND c.parent_id IS NULL
         GROUP BY c.id 
         ORDER BY c.name ASC 
