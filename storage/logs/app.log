@@ -446,3 +446,7 @@ Stack trace:
 [27-Aug-2026 21:30:51 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
 [27-Aug-2026 21:30:53 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
 [27-Aug-2026 21:31:25 Asia/Dhaka] [DB CONNECTION ERROR] SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[28-Aug-2026 12:58:51 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 19, order_id: 0, slug: bun-copy-178, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
+[28-Aug-2026 12:59:47 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 18, order_id: 0, slug: bun, review_exists: 0, purchase_exists: 1, delivered_exists: 0, permission_result: 0
+[28-Aug-2026 12:59:59 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 19, order_id: 0, slug: bun-copy-178, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
+[28-Aug-2026 12:59:59 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 18, order_id: 0, slug: bun, review_exists: 0, purchase_exists: 1, delivered_exists: 0, permission_result: 0
