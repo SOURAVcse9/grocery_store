@@ -491,3 +491,25 @@ body.admin-body {
     padding-inline: var(--space-3);
   }
 }
+
+/* ==========================================================================
+   Theme Color Reconciliation & Mobile Responsiveness Grids
+   ========================================================================== */
+body.admin-body {
+  --color-primary: var(--admin-color-primary) !important;
+  --color-primary-dark: var(--admin-color-primary-dark) !important;
+  --color-primary-light: var(--admin-color-primary-light) !important;
+}
+
+@media (max-width: 768px) {
+  /* Collapse forms, dashboards, and grids to stacked 1fr layout on tablet/mobile */
+  .grid-2, .grid-3, .grid-4, .grid-5, .grid-7, 
+  .admin-dashboard-layout, .stats-row,
+  .admin-body div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-content-area {
+    padding: 16px 12px 24px 12px !important;
+  }
+}

@@ -107,6 +107,49 @@ if (method_is('post') && isset($_POST['update_order_status'])) {
                         'note' => "Restocked: Cancelled Order #{$order['order_number']}"
                     ]);
                 }
+                
+                // Rollback coupon usage if applicable
+                if (!empty($order['coupon_id'])) {
+                    $upCoupon = $pdo->prepare("UPDATE coupons SET times_used = GREATEST(times_used - 1, 0) WHERE id = ?");
+                    $upCoupon->execute([$order['coupon_id']]);
+                }
+            }
+            // Deduct stock if Order is being Re-activated from Cancelled
+            elseif ($newStatus !== 'cancelled' && $order['status'] === 'cancelled') {
+                // Check stock levels first
+                $checkStock = $pdo->prepare("SELECT stock, name FROM products WHERE id = ? FOR UPDATE");
+                foreach ($items as $item) {
+                    $checkStock->execute([$item['product_id']]);
+                    $prod = $checkStock->fetch();
+                    if (!$prod || (int)$prod['stock'] < (int)$item['quantity']) {
+                        throw new Exception("Insufficient stock to re-activate order. Product '" . ($prod['name'] ?? 'Unknown') . "' has insufficient stock.");
+                    }
+                }
+
+                foreach ($items as $item) {
+                    // Decrease stock
+                    $downStock = $pdo->prepare("UPDATE products SET stock = stock - :qty WHERE id = :pid");
+                    $downStock->execute(['qty' => $item['quantity'], 'pid' => $item['product_id']]);
+
+                    // Add inventory log
+                    $logInv = $pdo->prepare("
+                        INSERT INTO inventory_logs (product_id, admin_id, type, quantity, remaining_stock, note)
+                        VALUES (:pid, :aid, 'stock_out', :qty, (SELECT stock FROM products WHERE id = :pid2), :note)
+                    ");
+                    $logInv->execute([
+                        'pid' => $item['product_id'],
+                        'aid' => current_admin_id(),
+                        'qty' => -$item['quantity'],
+                        'pid2' => $item['product_id'],
+                        'note' => "Stock Deducted: Re-activated Order #{$order['order_number']}"
+                    ]);
+                }
+
+                // Re-increment coupon usage if applicable
+                if (!empty($order['coupon_id'])) {
+                    $upCoupon = $pdo->prepare("UPDATE coupons SET times_used = times_used + 1 WHERE id = ?");
+                    $upCoupon->execute([$order['coupon_id']]);
+                }
             }
 
             // B. Update Orders Table Status details

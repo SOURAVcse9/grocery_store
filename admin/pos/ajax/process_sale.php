@@ -89,8 +89,8 @@ try {
         }
     }
 
-    // 2. Validate stocks
-    $stmtCheck = $pdo->prepare("SELECT stock, name, sku FROM products WHERE id = ? FOR UPDATE");
+    // 2. Validate stocks and prices
+    $stmtCheck = $pdo->prepare("SELECT stock, name, sku, price, discount_price FROM products WHERE id = ? FOR UPDATE");
     $productDetails = [];
     foreach ($items as $item) {
         $stmtCheck->execute([(int)$item['id']]);
@@ -98,15 +98,25 @@ try {
         if (!$prod || (int)$prod['stock'] < (int)$item['qty']) {
             throw new Exception("Product '" . ($prod['name'] ?? 'Unknown') . "' has insufficient stock.");
         }
+        
+        // Price tampering verification
+        $price = (float)$item['price'];
+        $resolvedPrice = (float)($prod['discount_price'] !== null ? $prod['discount_price'] : $prod['price']);
+        if (abs($price - $resolvedPrice) > 0.001 && !has_admin_permission('pos.override')) {
+            throw new Exception("Unauthorized price override for product '" . $prod['name'] . "'. Manager override permission required.");
+        }
+        
         $productDetails[(int)$item['id']] = $prod;
     }
 
-    // 3. Compute totals
+    // 3. Compute totals (with 5% VAT)
     $subtotal = 0.0;
     foreach ($items as $item) {
         $subtotal += ((float)$item['price'] * (int)$item['qty']);
     }
-    $totalAmount = max($subtotal - $discount, 0);
+    $taxableAmount = max($subtotal - $discount, 0);
+    $vat = round($taxableAmount * 0.05, 2);
+    $totalAmount = $taxableAmount + $vat;
 
     // 4. Update customer wallet and reward points (Only for registered customers, NOT Walk-in)
     if ($customerId > 0 && $customerId !== $walkinId) {
@@ -121,10 +131,21 @@ try {
     }
 
     // 5. Create POS Order (user_id is never NULL)
+    $paymentMethodEnum = 'cod';
+    $maxPaymentType = $cashPaid;
+    if ($cardPaid > $maxPaymentType) {
+        $paymentMethodEnum = 'card';
+        $maxPaymentType = $cardPaid;
+    }
+    if ($bkashPaid > $maxPaymentType) {
+        $paymentMethodEnum = 'mobile_banking';
+        $maxPaymentType = $bkashPaid;
+    }
+
     $orderNumber = 'POS-' . date('Ymd') . '-' . rand(1000, 9999);
     $stmtOrder = $pdo->prepare("
         INSERT INTO orders (order_number, user_id, address_id, subtotal, discount_amount, total_amount, payment_method, payment_status, status, note, created_at)
-        VALUES (?, ?, NULL, ?, ?, ?, 'pos_split', 'paid', 'delivered', ?, NOW())
+        VALUES (?, ?, NULL, ?, ?, ?, ?, 'paid', 'delivered', ?, NOW())
     ");
     $stmtOrder->execute([
         $orderNumber,
@@ -132,6 +153,7 @@ try {
         $subtotal,
         $discount,
         $totalAmount,
+        $paymentMethodEnum,
         $note
     ]);
     $orderId = (int)$pdo->lastInsertId();

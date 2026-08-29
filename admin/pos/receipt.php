@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../public/dbconnect.php';
 require_once __DIR__ . '/../middleware/auth_middleware.php';
 
 require_admin_auth();
-require_admin_permission('pos.manage');
+require_admin_permission('pos.sale');
 
 $pdo = db();
 $orderId = (int) input('id', '0', 'get');
