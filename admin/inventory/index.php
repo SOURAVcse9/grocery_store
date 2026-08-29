@@ -33,7 +33,7 @@ $whereClause = 'WHERE ' . implode(' AND ', $where);
 
 try {
     $inventory = $pdo->prepare("
-        SELECT p.id, p.name, p.price, p.stock, p.image, (p.price * p.stock) AS valuation
+        SELECT p.id, p.name, p.price, p.stock, p.thumbnail AS image, (p.price * p.stock) AS valuation
         FROM products p
         {$whereClause}
         ORDER BY p.stock ASC, p.name ASC

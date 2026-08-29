@@ -111,8 +111,8 @@ try {
     $discount = 10.00;
     $subtotal = $expectedPrice * 2;
     $taxable = $subtotal - $discount;
-    $vat = round($taxable * 0.05, 2);
-    $totalAmount = $taxable + $vat;
+    $vat = 0.0;
+    $totalAmount = $taxable;
 
     $orderNumber = 'POS-QA-' . rand(10000, 99999);
     $stmtOrder = $pdo->prepare("

@@ -290,12 +290,7 @@ log_admin_activity('invoices.print', "Printed invoice for Order Number: #{$order
                     <td>Delivery Charge:</td>
                     <td style="text-align: right;">৳<?= number_format((float)($order['delivery_charge'] ?? 0.0), 2) ?></td>
                 </tr>
-                <?php if (!empty($order['tax_amount']) && (float)$order['tax_amount'] > 0): ?>
-                    <tr>
-                        <td>Tax / VAT:</td>
-                        <td style="text-align: right;">৳<?= number_format((float)$order['tax_amount'], 2) ?></td>
-                    </tr>
-                <?php endif; ?>
+
                 <tr class="grand-total">
                     <td>Grand Total:</td>
                     <td style="text-align: right;">৳<?= number_format((float)$order['total_amount'], 2) ?></td>

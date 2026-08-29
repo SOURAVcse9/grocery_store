@@ -71,8 +71,8 @@ try {
         $deliveryCharge = 0.0;
     }
 
-    $vatAmount = max(0.0, $subtotal - $discountAmount) * 0.05; // 5% VAT
-    $grandTotal = max(0.0, ($subtotal - $discountAmount) + $deliveryCharge + $vatAmount);
+    $vatAmount = 0.0;
+    $grandTotal = max(0.0, ($subtotal - $discountAmount) + $deliveryCharge);
 
     // 3. If user is logged in, fetch saved addresses
     $savedAddresses = [];
@@ -285,10 +285,6 @@ $breadcrumbs = [
                     <strong><?= format_price($deliveryCharge) ?></strong>
                 </div>
 
-                <div class="summary-row">
-                    <span>VAT (5%):</span>
-                    <strong><?= format_price($vatAmount) ?></strong>
-                </div>
 
                 <div class="summary-row total-row">
                     <span>Grand Total:</span>

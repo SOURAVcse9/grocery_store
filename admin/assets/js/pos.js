@@ -669,8 +669,8 @@
     
     const totalDiscounts = discount + coupon;
     const taxableAmount = Math.max(subtotal - totalDiscounts, 0);
-    const vat = taxableAmount * 0.05;
-    const totalPayable = taxableAmount + vat;
+    const vat = 0.0;
+    const totalPayable = taxableAmount;
     
     // Set breakdown text elements inside modal
     const modalSubtotal = document.getElementById('modalSubtotal');
@@ -753,8 +753,8 @@
     
     const totalDiscounts = discount + coupon;
     const taxableAmount = Math.max(subtotal - totalDiscounts, 0);
-    const vat = taxableAmount * 0.05;
-    const totalPayable = taxableAmount + vat;
+    const vat = 0.0;
+    const totalPayable = taxableAmount;
 
     const splitCash = document.getElementById('splitCash');
     const splitCard = document.getElementById('splitCard');

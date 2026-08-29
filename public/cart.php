@@ -148,15 +148,11 @@ try {
         }
     }
 
-    // VAT (5% VAT)
+    // VAT (No VAT)
     $vatAmount = 0.0;
-    if ($subtotal > 0) {
-        $taxable = max(0.0, $subtotal - $discountAmount);
-        $vatAmount = $taxable * 0.05;
-    }
 
     // Grand total
-    $grandTotal = max(0.0, ($subtotal - $discountAmount) + $deliveryCharge + $vatAmount);
+    $grandTotal = max(0.0, ($subtotal - $discountAmount) + $deliveryCharge);
 
 } catch (PDOException $e) {
     error_log('[cart.php] Error: ' . $e->getMessage());
@@ -282,10 +278,6 @@ $breadcrumbs = [
                 <strong id="cartPageDelivery"><?= format_price($deliveryCharge) ?></strong>
             </div>
 
-            <div class="summary-row">
-                <span>Est. Tax / VAT (5%):</span>
-                <strong id="cartPageVat"><?= format_price($vatAmount) ?></strong>
-            </div>
 
             <div class="summary-row total-row">
                 <span>Total:</span>

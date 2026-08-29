@@ -66,18 +66,18 @@ try {
         SELECT COUNT(*) FROM products WHERE price < 0 OR discount_price < 0
     ")->fetchColumn();
 
-    // 8. Inconsistent order totals (subtotal - discount + delivery + 5% VAT != total_amount)
+    // 8. Inconsistent order totals (subtotal - discount + delivery != total_amount)
     $report['inconsistent_order_totals'] = (int) $pdo->query("
         SELECT COUNT(*) FROM orders 
-        WHERE ABS(subtotal - discount_amount + delivery_charge + ROUND((subtotal - discount_amount) * 0.05, 2) - total_amount) > 0.05
+        WHERE ABS(subtotal - discount_amount + delivery_charge - total_amount) > 0.05
           AND order_number NOT LIKE 'POS-%'
     ")->fetchColumn();
 
-    // 9. Inconsistent POS order totals (subtotal - discount + 5% VAT != total_amount)
+    // 9. Inconsistent POS order totals (subtotal - discount != total_amount)
     $report['inconsistent_pos_totals'] = (int) $pdo->query("
         SELECT COUNT(*) FROM orders 
         WHERE order_number LIKE 'POS-%'
-          AND ABS(ROUND((subtotal - discount_amount) * 1.05, 2) - total_amount) > 0.05
+          AND ABS(subtotal - discount_amount - total_amount) > 0.05
     ")->fetchColumn();
 
     // 10. Duplicate ledger transaction reference lines

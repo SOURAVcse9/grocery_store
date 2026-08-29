@@ -220,10 +220,6 @@ try {
                         <strong id="posCartSubtotal">৳0.00</strong>
                     </div>
 
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>VAT (5%):</span>
-                        <strong id="posCartVat">৳0.00</strong>
-                    </div>
                     
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Discount Override (৳):</span>
@@ -375,7 +371,7 @@ function renderTouchCart() {
             priceDisplay = `<span onclick="triggerPriceOverride(${item.id});" style="text-decoration: underline; cursor: pointer; color: var(--color-primary);" title="Click to override price">৳${item.price} <i class="fas fa-edit" style="font-size: 8px;"></i></span>`;
         }
         
-        const itemTax = (item.price * item.qty * 0.05).toFixed(2);
+        const itemTax = (0.00).toFixed(2);
         const itemSubtotal = (item.price * item.qty).toFixed(2);
         const fallbackImg = '<?= BASE_URL ?>/../admin/assets/images/placeholder.png';
         const imgSrc = item.image ? item.image : fallbackImg;
@@ -397,7 +393,6 @@ function renderTouchCart() {
             </div>
             <div style="width:100px; text-align:right; font-size:10px; color:var(--color-text-muted); line-height:1.3; flex-shrink:0;">
                 <div>Price: ৳${item.price.toFixed(2)}</div>
-                <div style="font-size:9px; color:var(--color-text-faint);">Tax (5%): ৳${itemTax}</div>
                 <div style="font-size:9px; color:var(--color-text-faint);">Disc: ৳0.00</div>
                 <div style="font-weight:700; color:var(--color-text);">Sub: ৳${itemSubtotal}</div>
             </div>
@@ -424,8 +419,8 @@ function recalculatePOSBalances() {
     
     const totalDiscounts = discount + coupon;
     const taxableAmount = Math.max(subtotal - totalDiscounts, 0);
-    const vat = taxableAmount * 0.05;
-    const total = taxableAmount + vat;
+    const vat = 0.0;
+    const total = taxableAmount;
     
     const subtotalEl = document.getElementById('posCartSubtotal');
     const vatEl = document.getElementById('posCartVat');
@@ -499,10 +494,6 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                     <div style="display:flex; justify-content:space-between;">
                         <span>Subtotal:</span>
                         <span id="modalSubtotal" style="font-weight:700; color:var(--color-text);">৳0.00</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>VAT (5%):</span>
-                        <span id="modalVat" style="font-weight:700; color:var(--color-text);">৳0.00</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
                         <span>Discount Override:</span>

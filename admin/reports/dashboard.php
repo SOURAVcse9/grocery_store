@@ -21,8 +21,8 @@ try {
     $totalCustomers = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE role_id != 1 AND deleted_at IS NULL")->fetchColumn();
     $inventoryValue = (float) $pdo->query("SELECT COALESCE(SUM(price * stock), 0) FROM products WHERE deleted_at IS NULL")->fetchColumn();
     
-    // Tax collected (let's assume 5% of delivered orders total is tax as metadata)
-    $taxCollected = $totalSales * 0.05;
+    // Tax collected (No VAT)
+    $taxCollected = 0.0;
     // Estimated profit (let's assume profit is 15% of delivered orders total)
     $netProfit = $totalSales * 0.15;
 

@@ -15,7 +15,7 @@ $pdo = db();
 
 try {
     $flashSales = $pdo->query("
-        SELECT fs.*, p.name AS product_name, p.price AS product_price, p.image AS product_image
+        SELECT fs.*, p.name AS product_name, p.price AS product_price, p.thumbnail AS product_image
         FROM flash_sales fs
         JOIN products p ON p.id = fs.product_id
         ORDER BY fs.starts_at DESC

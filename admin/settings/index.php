@@ -41,7 +41,7 @@ if (method_is('post')) {
             'site_currency'             => trim(input('site_currency', 'BDT')),
             'site_currency_symbol'      => trim(input('site_currency_symbol', '৳')),
             'site_timezone'             => trim(input('site_timezone', 'Asia/Dhaka')),
-            'site_tax'                  => trim(input('site_tax', '5.00')),
+            'site_tax'                  => '0.00',
             'site_shipping_charge'      => trim(input('site_shipping_charge', '60.00')),
             'site_min_order'            => trim(input('site_min_order', '100.00')),
             'site_invoice_prefix'       => trim(input('site_invoice_prefix', 'INV-')),
@@ -161,10 +161,7 @@ if (method_is('post')) {
                     <label style="font-weight:700;">Timezone</label>
                     <input type="text" name="site_timezone" value="<?= e($settings['site_timezone'] ?? 'Asia/Dhaka') ?>" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
                 </div>
-                <div class="form-field-group">
-                    <label style="font-weight:700;">VAT / Tax Rate (%)</label>
-                    <input type="number" name="site_tax" step="0.01" value="<?= e($settings['site_tax'] ?? '5.00') ?>" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
-                </div>
+
                 <div class="form-field-group">
                     <label style="font-weight:700;">Shipping Charge (৳)</label>
                     <input type="number" name="site_shipping_charge" step="0.01" value="<?= e($settings['site_shipping_charge'] ?? '60.00') ?>" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">

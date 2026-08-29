@@ -96,15 +96,11 @@ try {
         }
     }
 
-    // Tax/VAT: Let's assume a standard 5% VAT on subtotal minus discount
+    // VAT (No VAT)
     $vatAmount = 0.0;
-    if ($subtotal > 0) {
-        $taxableAmount = max(0.0, $subtotal - $discountAmount);
-        $vatAmount = $taxableAmount * 0.05; // 5% VAT
-    }
 
     // Grand Total
-    $grandTotal = max(0.0, ($subtotal - $discountAmount) + $deliveryCharge + $vatAmount);
+    $grandTotal = max(0.0, ($subtotal - $discountAmount) + $deliveryCharge);
 
     // Capture the pre-rendered Mini Cart HTML
     ob_start();

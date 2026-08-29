@@ -313,15 +313,6 @@ $breadcrumbs = [
                             <strong><?= format_price((float)$order['delivery_charge']) ?></strong>
                         </div>
 
-                        <?php 
-                        // Estimate tax (which is already compiled inside total_amount)
-                        $taxable = max(0.0, (float)$order['subtotal'] - (float)$order['discount_amount']);
-                        $estTax = $taxable * 0.05;
-                        ?>
-                        <div style="display:flex; justify-content:space-between; color:var(--color-text-muted);">
-                            <span>VAT (5%):</span>
-                            <strong><?= format_price($estTax) ?></strong>
-                        </div>
 
                         <div style="display:flex; justify-content:space-between; font-size:14px; border-top:1px solid var(--color-border); padding-top:8px; font-weight:800; color:var(--color-text);">
                             <span>Grand Total:</span>

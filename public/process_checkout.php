@@ -133,8 +133,9 @@ try {
     } else {
         // Guest user registration block
         $email = strtolower(trim(input('email', '')));
+        $phone = trim(input('phone', ''));
         
-        // Double-check if user already exists
+        // Double-check if user already exists by email
         $userCheck = $pdo->prepare('SELECT id, role_id, full_name, email, is_active FROM users WHERE email = :email LIMIT 1');
         $userCheck->execute(['email' => $email]);
         $existingUser = $userCheck->fetch();
@@ -142,6 +143,16 @@ try {
         if ($existingUser) {
             $pdo->rollBack();
             json_response(false, 'An account with this email address already exists. Please log in first to continue.', [], 422);
+        }
+
+        // Double-check if user already exists by phone
+        $phoneCheck = $pdo->prepare('SELECT id FROM users WHERE phone = :phone LIMIT 1');
+        $phoneCheck->execute(['phone' => $phone]);
+        $existingPhone = $phoneCheck->fetch();
+
+        if ($existingPhone) {
+            $pdo->rollBack();
+            json_response(false, 'An account with this phone number already exists. Please log in first to continue.', [], 422);
         }
 
         // Create seamless user account with random password
@@ -235,8 +246,8 @@ try {
         $deliveryCharge = 0.0;
     }
 
-    $vatAmount = max(0.0, $subtotal - $discountAmount) * 0.05; // 5% VAT
-    $grandTotal = max(0.0, ($subtotal - $discountAmount) + $deliveryCharge + $vatAmount);
+    $vatAmount = 0.0;
+    $grandTotal = max(0.0, ($subtotal - $discountAmount) + $deliveryCharge);
 
     // ---- F. Place Order ----
     // Generate secure order number: ORD-[Ymd]-[Random bytes hex]
