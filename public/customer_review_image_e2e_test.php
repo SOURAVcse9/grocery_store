@@ -121,6 +121,8 @@ try {
     assertTest("Public review card contains review-images-grid", str_contains($cardHtml, 'review-images-grid'));
     assertTest("Public review card renders <img src> with resolved image URL", str_contains($cardHtml, 'uploads/reviews/' . $testPng));
     assertTest("Public review card does NOT render broken /assets/uploads/", !str_contains($cardHtml, '/assets/uploads/'));
+    assertTest("Public review card does NOT use target=_blank", !str_contains($cardHtml, 'target="_blank"'));
+    assertTest("Public review card uses lightbox trigger button", str_contains($cardHtml, 'class="review-image-thumb-btn'));
 
     // 5. Test 2-Image and 3-Image review storage & rendering
     $testPng2 = 'rev_test_2_' . uniqid() . '.png';
@@ -144,7 +146,8 @@ try {
     include PUBLIC_PATH . '/components/review-card.php';
     $cardHtml3 = ob_get_clean();
 
-    assertTest("3-image review renders exactly 3 image links", substr_count($cardHtml3, 'class="review-image-link"') === 3);
+    assertTest("3-image review renders exactly 3 image thumbnail buttons", substr_count($cardHtml3, 'review-image-thumb-btn') === 3);
+    assertTest("3-image review contains valid data-review-gallery json attribute", str_contains($cardHtml3, 'data-review-gallery='));
 
     // 6. Test Review without images
     $review['review_images'] = null;
@@ -177,56 +180,86 @@ try {
 
     // Simulate Admin rendering snippet from admin/reviews/index.php
     ob_start();
-    $imgs = json_decode($rev['review_images'], true);
-    if (is_array($imgs) && !empty($imgs)):
+    if (!empty($rev['review_images'])): 
+        $imgs = json_decode($rev['review_images'], true);
+        if (is_array($imgs) && !empty($imgs)):
+            $validAdminImages = [];
+            $missingCount = 0;
+            foreach ($imgs as $img) {
+                $cleanImg = ltrim($img, '/');
+                if (file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
+                    file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
+                    file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg))) {
+                    $validAdminImages[] = image_url($img, 'reviews');
+                } else {
+                    $missingCount++;
+                }
+            }
+            if (!empty($validAdminImages)):
+                $galleryJson = htmlspecialchars(json_encode($validAdminImages), ENT_QUOTES, 'UTF-8');
     ?>
-    <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        <?php foreach ($imgs as $img): 
-            $cleanImg = ltrim($img, '/');
-            $exists = file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
-                      file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
-                      file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg));
-            $imgUrl = image_url($img, 'reviews');
-        ?>
-            <?php if ($exists): ?>
-                <a href="<?= e($imgUrl) ?>" target="_blank" rel="noopener noreferrer" title="View full image" style="display:inline-block; border:1px solid var(--color-border); border-radius:2px; overflow:hidden;">
-                    <img src="<?= e($imgUrl) ?>" alt="Review image" style="width:40px; height:40px; object-fit:cover;">
-                </a>
-            <?php else: ?>
-                <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">Missing file</span>
+        <div class="review-images-grid" data-review-gallery="<?= $galleryJson ?>" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <?php foreach ($validAdminImages as $idx => $imgUrl): ?>
+                <button type="button" class="review-image-thumb-btn" data-index="<?= $idx ?>" data-full-url="<?= e($imgUrl) ?>" aria-label="View review image <?= $idx + 1 ?> of <?= count($validAdminImages) ?>" style="display:inline-block; border:1px solid var(--color-border); border-radius:2px; overflow:hidden; padding:0; background:transparent; cursor:zoom-in;">
+                    <img src="<?= e($imgUrl) ?>" alt="Review image <?= $idx + 1 ?>" style="width:40px; height:40px; object-fit:cover; display:block;">
+                </button>
+            <?php endforeach; ?>
+            <?php if ($missingCount > 0): ?>
+                <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">(<?= $missingCount ?> missing)</span>
             <?php endif; ?>
-        <?php endforeach; ?>
-    </div>
+        </div>
+    <?php elseif ($missingCount > 0): ?>
+        <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">Missing file</span>
+    <?php endif; else: ?>
+        <span style="color:var(--color-text-faint); font-size:11px;">None</span>
+    <?php endif; else: ?>
+        <span style="color:var(--color-text-faint); font-size:11px;">None</span>
     <?php endif;
     $adminHtml = ob_get_clean();
 
     assertTest("Admin review snippet renders valid thumbnail URLs", str_contains($adminHtml, 'uploads/reviews/' . $testPng));
     assertTest("Admin review snippet does NOT contain broken /assets/uploads/", !str_contains($adminHtml, '/assets/uploads/'));
+    assertTest("Admin review snippet does NOT use target=_blank", !str_contains($adminHtml, 'target="_blank"'));
+    assertTest("Admin review snippet uses lightbox button trigger", str_contains($adminHtml, 'class="review-image-thumb-btn"'));
 
     // Test Admin snippet with missing file
     $revMissing = $rev;
     $revMissing['review_images'] = json_encode(['uploads/reviews/non_existent_file_99999.png']);
     ob_start();
-    $imgs = json_decode($revMissing['review_images'], true);
-    if (is_array($imgs) && !empty($imgs)):
+    if (!empty($revMissing['review_images'])): 
+        $imgs = json_decode($revMissing['review_images'], true);
+        if (is_array($imgs) && !empty($imgs)):
+            $validAdminImages = [];
+            $missingCount = 0;
+            foreach ($imgs as $img) {
+                $cleanImg = ltrim($img, '/');
+                if (file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
+                    file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
+                    file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg))) {
+                    $validAdminImages[] = image_url($img, 'reviews');
+                } else {
+                    $missingCount++;
+                }
+            }
+            if (!empty($validAdminImages)):
+                $galleryJson = htmlspecialchars(json_encode($validAdminImages), ENT_QUOTES, 'UTF-8');
     ?>
-    <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        <?php foreach ($imgs as $img): 
-            $cleanImg = ltrim($img, '/');
-            $exists = file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
-                      file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
-                      file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg));
-            $imgUrl = image_url($img, 'reviews');
-        ?>
-            <?php if ($exists): ?>
-                <a href="<?= e($imgUrl) ?>" target="_blank" rel="noopener noreferrer" title="View full image" style="display:inline-block; border:1px solid var(--color-border); border-radius:2px; overflow:hidden;">
-                    <img src="<?= e($imgUrl) ?>" alt="Review image" style="width:40px; height:40px; object-fit:cover;">
-                </a>
-            <?php else: ?>
-                <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">Missing file</span>
+        <div class="review-images-grid" data-review-gallery="<?= $galleryJson ?>" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <?php foreach ($validAdminImages as $idx => $imgUrl): ?>
+                <button type="button" class="review-image-thumb-btn" data-index="<?= $idx ?>" data-full-url="<?= e($imgUrl) ?>" aria-label="View review image <?= $idx + 1 ?> of <?= count($validAdminImages) ?>" style="display:inline-block; border:1px solid var(--color-border); border-radius:2px; overflow:hidden; padding:0; background:transparent; cursor:zoom-in;">
+                    <img src="<?= e($imgUrl) ?>" alt="Review image <?= $idx + 1 ?>" style="width:40px; height:40px; object-fit:cover; display:block;">
+                </button>
+            <?php endforeach; ?>
+            <?php if ($missingCount > 0): ?>
+                <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">(<?= $missingCount ?> missing)</span>
             <?php endif; ?>
-        <?php endforeach; ?>
-    </div>
+        </div>
+    <?php elseif ($missingCount > 0): ?>
+        <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">Missing file</span>
+    <?php endif; else: ?>
+        <span style="color:var(--color-text-faint); font-size:11px;">None</span>
+    <?php endif; else: ?>
+        <span style="color:var(--color-text-faint); font-size:11px;">None</span>
     <?php endif;
     $adminMissingHtml = ob_get_clean();
     assertTest("Admin review snippet displays 'Missing file' for non-existent image", str_contains($adminMissingHtml, 'Missing file'));

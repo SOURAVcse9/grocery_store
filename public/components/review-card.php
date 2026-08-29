@@ -76,22 +76,26 @@ $avatarUrl = $avatar ? image_url($avatar, 'users') : asset('images/ui/placeholde
         <?php if (!empty($review['review_images'])): 
             $images = json_decode($review['review_images'], true);
             if (is_array($images) && !empty($images)):
-        ?>
-            <div class="review-images-grid" style="display:flex; gap:8px; margin-top:8px; margin-bottom:8px; flex-wrap:wrap;">
-                <?php foreach ($images as $img): 
+                $validImages = [];
+                foreach ($images as $img) {
                     $cleanImg = ltrim($img, '/');
-                    $exists = file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
-                              file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
-                              file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg));
-                    if (!$exists) continue;
-                    $imgUrl = image_url($img, 'reviews');
-                ?>
-                    <a href="<?= e($imgUrl) ?>" target="_blank" rel="noopener noreferrer" class="review-image-link" style="display:inline-block; border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden;">
-                        <img src="<?= e($imgUrl) ?>" alt="Customer review photo" style="width:60px; height:60px; object-fit:cover; transition: transform var(--transition-fast);">
-                    </a>
+                    if (file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
+                        file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
+                        file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg))) {
+                        $validImages[] = image_url($img, 'reviews');
+                    }
+                }
+                if (!empty($validImages)):
+                    $galleryJson = htmlspecialchars(json_encode($validImages), ENT_QUOTES, 'UTF-8');
+        ?>
+            <div class="review-images-grid" data-review-gallery="<?= $galleryJson ?>" style="display:flex; gap:8px; margin-top:8px; margin-bottom:8px; flex-wrap:wrap;">
+                <?php foreach ($validImages as $idx => $imgUrl): ?>
+                    <button type="button" class="review-image-thumb-btn review-image-link" data-index="<?= $idx ?>" data-full-url="<?= e($imgUrl) ?>" aria-label="View review image <?= $idx + 1 ?> of <?= count($validImages) ?>" style="display:inline-block; border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; padding:0; background:transparent; cursor:zoom-in;">
+                        <img src="<?= e($imgUrl) ?>" alt="Customer review photo <?= $idx + 1 ?>" style="width:60px; height:60px; object-fit:cover; display:block; transition: transform var(--transition-fast);">
+                    </button>
                 <?php endforeach; ?>
             </div>
-        <?php endif; endif; ?>
+        <?php endif; endif; endif; ?>
     </div>
 
     <!-- Helpful Vote controls -->

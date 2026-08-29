@@ -105,6 +105,8 @@ require_once __DIR__ . '/header.php';
     text-align: center;
     position: relative;
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
   .contact-hero::before {
     content: '';
@@ -132,6 +134,8 @@ require_once __DIR__ . '/header.php';
   .contact-section {
     padding: var(--space-8) 0;
     background: var(--color-surface);
+    width: 100%;
+    box-sizing: border-box;
   }
   .contact-section.alt-bg {
     background: var(--color-bg);
@@ -140,9 +144,11 @@ require_once __DIR__ . '/header.php';
   /* Contact Information Cards */
   .contact-info-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-4);
     margin-bottom: var(--space-7);
+    width: 100%;
+    box-sizing: border-box;
   }
   .contact-info-card {
     background: var(--color-surface);
@@ -152,6 +158,10 @@ require_once __DIR__ . '/header.php';
     text-align: center;
     box-shadow: var(--shadow-sm);
     transition: all var(--transition-normal);
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
   .contact-info-card:hover {
     transform: translateY(-5px);
@@ -180,6 +190,9 @@ require_once __DIR__ . '/header.php';
     font-size: var(--fs-sm);
     color: var(--color-text-muted);
     line-height: 1.6;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    margin: 0;
   }
 
   /* Core Contact Grid */
@@ -187,6 +200,8 @@ require_once __DIR__ . '/header.php';
     display: grid;
     grid-template-columns: 1.2fr 0.8fr;
     gap: var(--space-6);
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .contact-form-wrapper {
@@ -195,6 +210,9 @@ require_once __DIR__ . '/header.php';
     border-radius: var(--radius-lg);
     padding: var(--space-6);
     box-shadow: var(--shadow-sm);
+    min-width: 0;
+    box-sizing: border-box;
+    width: 100%;
   }
   .contact-form-wrapper h2 {
     font-size: var(--fs-lg);
@@ -228,10 +246,13 @@ require_once __DIR__ . '/header.php';
   .contact-form-group {
     position: relative;
     margin-bottom: var(--space-4);
+    width: 100%;
+    box-sizing: border-box;
   }
   .contact-form-group input,
   .contact-form-group textarea {
     width: 100%;
+    box-sizing: border-box;
     padding: 14px 16px 14px 44px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
@@ -267,6 +288,9 @@ require_once __DIR__ . '/header.php';
     padding: var(--space-3);
     box-shadow: var(--shadow-sm);
     height: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    width: 100%;
   }
   .map-iframe {
     width: 100%;
@@ -274,15 +298,21 @@ require_once __DIR__ . '/header.php';
     min-height: 380px;
     border: none;
     border-radius: var(--radius-md);
+    box-sizing: border-box;
+    display: block;
   }
 
   /* FAQs Section */
   .contact-faq-section {
     margin-top: var(--space-8);
+    width: 100%;
+    box-sizing: border-box;
   }
   .faq-accordion {
     max-width: 800px;
+    width: 100%;
     margin: 0 auto;
+    box-sizing: border-box;
   }
   .faq-item {
     border: 1px solid var(--color-border);
@@ -290,6 +320,8 @@ require_once __DIR__ . '/header.php';
     background: var(--color-surface);
     margin-bottom: var(--space-2);
     overflow: hidden;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .faq-trigger {
     width: 100%;
@@ -305,6 +337,7 @@ require_once __DIR__ . '/header.php';
     justify-content: space-between;
     align-items: center;
     outline: none;
+    box-sizing: border-box;
   }
   .faq-trigger:hover {
     background: var(--color-bg);
@@ -325,6 +358,7 @@ require_once __DIR__ . '/header.php';
     font-size: var(--fs-sm);
     color: var(--color-text-muted);
     line-height: 1.6;
+    box-sizing: border-box;
   }
   .faq-item.is-open .faq-content {
     padding: 0 var(--space-4) var(--space-4);
@@ -337,6 +371,9 @@ require_once __DIR__ . '/header.php';
     justify-content: center;
     gap: var(--space-3);
     margin-top: var(--space-6);
+    flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
   }
   .social-btn {
     width: 48px;
@@ -363,15 +400,26 @@ require_once __DIR__ . '/header.php';
   /* Responsive styling */
   @media (max-width: 1024px) {
     .contact-info-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .contact-core-grid {
       grid-template-columns: 1fr;
     }
   }
+  @media (max-width: 768px) {
+    .contact-section {
+      padding: var(--space-6) 0;
+    }
+    .map-iframe {
+      min-height: 300px;
+    }
+  }
   @media (max-width: 576px) {
     .contact-info-grid {
       grid-template-columns: 1fr;
+    }
+    .contact-form-wrapper {
+      padding: var(--space-4);
     }
   }
 </style>
@@ -520,7 +568,9 @@ require_once __DIR__ . '/header.php';
 </section>
 
 <!-- Newsletter Component block -->
-<?php include PUBLIC_PATH . '/components/newsletter-form.php'; ?>
+<div class="container" style="margin-top: var(--space-6); margin-bottom: var(--space-6);">
+    <?php include PUBLIC_PATH . '/components/newsletter-form.php'; ?>
+</div>
 
 <!-- FAQ Toggle Javascript -->
 <script>

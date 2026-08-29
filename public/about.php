@@ -46,6 +46,8 @@ require_once __DIR__ . '/header.php';
     text-align: center;
     position: relative;
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
   .about-hero::before {
     content: '';
@@ -73,6 +75,8 @@ require_once __DIR__ . '/header.php';
   .about-section {
     padding: var(--space-8) 0;
     background: var(--color-surface);
+    width: 100%;
+    box-sizing: border-box;
   }
   .about-section.alt-bg {
     background: var(--color-bg);
@@ -82,6 +86,8 @@ require_once __DIR__ . '/header.php';
     text-align: center;
     max-width: 700px;
     margin: 0 auto var(--space-6);
+    box-sizing: border-box;
+    width: 100%;
   }
   .section-header h2 {
     font-size: var(--fs-xl);
@@ -97,11 +103,17 @@ require_once __DIR__ . '/header.php';
   /* Two-column layout */
   .about-grid-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-6);
     align-items: center;
+    width: 100%;
+    box-sizing: border-box;
   }
 
+  .story-content {
+    min-width: 0;
+    box-sizing: border-box;
+  }
   .story-content h3 {
     font-size: var(--fs-lg);
     font-weight: 700;
@@ -115,7 +127,7 @@ require_once __DIR__ . '/header.php';
   }
   .story-badge-list {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-3);
   }
   .story-badge-item {
@@ -129,6 +141,7 @@ require_once __DIR__ . '/header.php';
   .story-badge-item i {
     color: var(--color-primary);
     font-size: var(--fs-base);
+    flex-shrink: 0;
   }
 
   .story-image {
@@ -137,6 +150,8 @@ require_once __DIR__ . '/header.php';
     padding: var(--space-6);
     text-align: center;
     border: 1px dashed var(--color-primary);
+    min-width: 0;
+    box-sizing: border-box;
   }
   .story-image i {
     font-size: 80px;
@@ -147,8 +162,10 @@ require_once __DIR__ . '/header.php';
   /* Why Choose Us Cards */
   .why-us-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
     gap: var(--space-4);
+    width: 100%;
+    box-sizing: border-box;
   }
   .why-us-card {
     background: var(--color-surface);
@@ -157,6 +174,8 @@ require_once __DIR__ . '/header.php';
     padding: var(--space-5);
     transition: all var(--transition-normal);
     box-shadow: var(--shadow-sm);
+    min-width: 0;
+    box-sizing: border-box;
   }
   .why-us-card:hover {
     transform: translateY(-5px);
@@ -199,11 +218,19 @@ require_once __DIR__ . '/header.php';
     color: var(--color-surface);
     padding: var(--space-7) 0;
     text-align: center;
+    width: 100%;
+    box-sizing: border-box;
   }
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: var(--space-4);
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .stat-item {
+    min-width: 0;
+    box-sizing: border-box;
   }
   .stat-item h3 {
     font-size: var(--fs-2xl);
@@ -221,8 +248,10 @@ require_once __DIR__ . '/header.php';
   /* Mission, Vision, Values layout */
   .mvv-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-5);
+    width: 100%;
+    box-sizing: border-box;
   }
   .mvv-card {
     background: var(--color-surface);
@@ -230,6 +259,8 @@ require_once __DIR__ . '/header.php';
     border-radius: var(--radius-md);
     padding: var(--space-5);
     height: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .mvv-card h3 {
     font-size: var(--fs-lg);
@@ -265,8 +296,10 @@ require_once __DIR__ . '/header.php';
   /* Team Section */
   .team-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-4);
+    width: 100%;
+    box-sizing: border-box;
   }
   .team-card {
     background: var(--color-surface);
@@ -275,6 +308,8 @@ require_once __DIR__ . '/header.php';
     padding: var(--space-4);
     text-align: center;
     transition: all var(--transition-normal);
+    min-width: 0;
+    box-sizing: border-box;
   }
   .team-card:hover {
     transform: translateY(-5px);
@@ -326,8 +361,10 @@ require_once __DIR__ . '/header.php';
   .testimonial-carousel-wrapper {
     position: relative;
     max-width: 800px;
+    width: 100%;
     margin: 0 auto;
     overflow: hidden;
+    box-sizing: border-box;
   }
   .testimonial-track {
     display: flex;
@@ -335,6 +372,7 @@ require_once __DIR__ . '/header.php';
   }
   .testimonial-slide {
     min-width: 100%;
+    width: 100%;
     box-sizing: border-box;
     padding: var(--space-5);
     text-align: center;
@@ -422,15 +460,20 @@ require_once __DIR__ . '/header.php';
   }
 
   /* Call To Action */
+  .about-cta-section {
+    padding: var(--space-6) 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
   .cta-banner {
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: var(--color-surface);
-    padding: var(--space-7) 0;
+    padding: var(--space-7) var(--space-4);
     text-align: center;
     border-radius: var(--radius-lg);
-    margin: var(--space-6) auto;
-    max-width: var(--container-max);
-    width: calc(100% - 32px);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     box-shadow: var(--shadow-md);
   }
   .cta-banner h2 {
@@ -448,12 +491,15 @@ require_once __DIR__ . '/header.php';
   /* Responsive breakpoints */
   @media (max-width: 1024px) {
     .stats-grid {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: var(--space-3);
     }
     .mvv-grid {
       grid-template-columns: 1fr;
       gap: var(--space-4);
+    }
+    .team-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
   @media (max-width: 768px) {
@@ -461,19 +507,34 @@ require_once __DIR__ . '/header.php';
       grid-template-columns: 1fr;
       gap: var(--space-5);
     }
-    .team-grid {
-      grid-template-columns: repeat(2, 1fr);
+    .about-section {
+      padding: var(--space-6) 0;
     }
     .stats-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-3);
     }
   }
   @media (max-width: 480px) {
     .team-grid {
       grid-template-columns: 1fr;
     }
-    .stats-grid {
+    .story-badge-list {
       grid-template-columns: 1fr;
+    }
+    .cta-banner {
+      padding: var(--space-6) var(--space-3);
+    }
+    .cta-banner h2 {
+      font-size: var(--fs-xl);
+    }
+  }
+  @media (max-width: 360px) {
+    .stat-item h3 {
+      font-size: var(--fs-xl);
+    }
+    .stat-item p {
+      font-size: 11px;
     }
   }
 </style>
@@ -714,10 +775,14 @@ require_once __DIR__ . '/header.php';
 </section>
 
 <!-- Section 10: Call To Action -->
-<section class="cta-banner">
-    <h2>Experience the Freshest Groceries Today</h2>
-    <p>Sign up now to receive standard free delivery on your first order. Safe, local, and premium quality products are just one click away.</p>
-    <a href="products.php" class="btn btn-accent" style="border-radius:var(--radius-pill); font-weight:700; padding:14px 40px; text-decoration:none; display:inline-block;">Start Shopping Now</a>
+<section class="about-cta-section">
+    <div class="container">
+        <div class="cta-banner">
+            <h2>Experience the Freshest Groceries Today</h2>
+            <p>Sign up now to receive standard free delivery on your first order. Safe, local, and premium quality products are just one click away.</p>
+            <a href="products.php" class="btn btn-accent" style="border-radius:var(--radius-pill); font-weight:700; padding:14px 40px; text-decoration:none; display:inline-block;">Start Shopping Now</a>
+        </div>
+    </div>
 </section>
 
 <!-- Include script for testimonial slider and statistics counter animations -->

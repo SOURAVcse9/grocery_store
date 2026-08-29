@@ -310,24 +310,35 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
                                     <?php if (!empty($rev['review_images'])): 
                                         $imgs = json_decode($rev['review_images'], true);
                                         if (is_array($imgs) && !empty($imgs)):
-                                    ?>
-                                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                            <?php foreach ($imgs as $img): 
+                                            $validAdminImages = [];
+                                            $missingCount = 0;
+                                            foreach ($imgs as $img) {
                                                 $cleanImg = ltrim($img, '/');
-                                                $exists = file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
-                                                          file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
-                                                          file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg));
-                                                $imgUrl = image_url($img, 'reviews');
-                                            ?>
-                                                <?php if ($exists): ?>
-                                                    <a href="<?= e($imgUrl) ?>" target="_blank" rel="noopener noreferrer" title="View full image" style="display:inline-block; border:1px solid var(--color-border); border-radius:2px; overflow:hidden;">
-                                                        <img src="<?= e($imgUrl) ?>" alt="Review image" style="width:40px; height:40px; object-fit:cover;">
-                                                    </a>
-                                                <?php else: ?>
-                                                    <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">Missing file</span>
-                                                <?php endif; ?>
+                                                if (file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
+                                                    file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
+                                                    file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg))) {
+                                                    $validAdminImages[] = image_url($img, 'reviews');
+                                                } else {
+                                                    $missingCount++;
+                                                }
+                                            }
+                                            if (!empty($validAdminImages)):
+                                                $galleryJson = htmlspecialchars(json_encode($validAdminImages), ENT_QUOTES, 'UTF-8');
+                                    ?>
+                                        <div class="review-images-grid" data-review-gallery="<?= $galleryJson ?>" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                                            <?php foreach ($validAdminImages as $idx => $imgUrl): ?>
+                                                <button type="button" class="review-image-thumb-btn" data-index="<?= $idx ?>" data-full-url="<?= e($imgUrl) ?>" aria-label="View review image <?= $idx + 1 ?> of <?= count($validAdminImages) ?>" style="display:inline-block; border:1px solid var(--color-border); border-radius:2px; overflow:hidden; padding:0; background:transparent; cursor:zoom-in;">
+                                                    <img src="<?= e($imgUrl) ?>" alt="Review image <?= $idx + 1 ?>" style="width:40px; height:40px; object-fit:cover; display:block;">
+                                                </button>
                                             <?php endforeach; ?>
+                                            <?php if ($missingCount > 0): ?>
+                                                <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">(<?= $missingCount ?> missing)</span>
+                                            <?php endif; ?>
                                         </div>
+                                    <?php elseif ($missingCount > 0): ?>
+                                        <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">Missing file</span>
+                                    <?php endif; else: ?>
+                                        <span style="color:var(--color-text-faint); font-size:11px;">None</span>
                                     <?php endif; else: ?>
                                         <span style="color:var(--color-text-faint); font-size:11px;">None</span>
                                     <?php endif; ?>
@@ -406,6 +417,9 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
     </div>
 
 </div>
+
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/reviews.css">
+<script src="<?= BASE_URL ?>/assets/js/reviews.js"></script>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
 </div>
