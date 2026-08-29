@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/dbconnect.php';
 
-$extraScripts = ['js/reviews.js'];
 $slug = input('slug', '', 'get');
 
 if (empty($slug)) {
@@ -34,7 +33,7 @@ try {
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id
+        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = \'approved\'
         WHERE p.slug = :slug AND p.is_active = 1 AND p.deleted_at IS NULL
         GROUP BY p.id
         LIMIT 1
@@ -197,7 +196,7 @@ try {
                    COALESCE(AVG(pr.rating), 0) AS avg_rating,
                    COUNT(pr.id) AS review_count
             FROM products p
-            LEFT JOIN product_reviews pr ON pr.product_id = p.id
+            LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = 'approved'
             WHERE p.id IN ({$inClause}) AND p.is_active = 1 AND p.deleted_at IS NULL
             GROUP BY p.id
             ORDER BY FIELD(p.id, {$inClause})
@@ -215,7 +214,7 @@ try {
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id
+        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = \'approved\'
         WHERE p.category_id = :cat_id AND p.id != :curr_id AND p.is_active = 1 AND p.deleted_at IS NULL
         GROUP BY p.id
         ORDER BY p.id DESC
@@ -253,12 +252,13 @@ try {
 $pageTitle = $product['name'] . ' — ' . ($product['brand_name'] ? $product['brand_name'] . ' — ' : '') . site_name();
 $pageDescription = $product['short_description'] ?? truncate($product['description'] ?? '', 160);
 
-$extraStylesheets = ['css/home.css', 'css/product.css'];
+$extraStylesheets = ['css/home.css', 'css/product.css', 'css/reviews.css'];
 $extraScripts = [
     'js/quickview.js',
     'js/cart.js',
     'js/wishlist.js',
-    'js/compare.js'
+    'js/compare.js',
+    'js/reviews.js'
 ];
 
 require_once __DIR__ . '/header.php';
@@ -554,7 +554,7 @@ $breadcrumbs = [
                 </div>
             </div>
         </div>
-    </div></div>
+    </div>
 
     <!-- Frequently Bought Together Bundle Grid -->
     <?php include PUBLIC_PATH . '/components/frequently-bought.php'; ?>

@@ -56,12 +56,33 @@ $reviewId = $existingReview ? (int) $existingReview['id'] : 0;
             </div>
         </div>
 
-    <?php elseif ($isEdit): ?>
+    <?php elseif ($isEdit): 
+        $status = $existingReview['status'] ?? 'approved';
+        $alertBg = '#e6fcf5';
+        $alertBorder = '#c3fae8';
+        $alertColor = '#0ca678';
+        $iconClass = 'fas fa-circle-check';
+        $statusMsg = '✔ You already reviewed this product.';
+        
+        if ($status === 'pending') {
+            $alertBg = '#fff9db';
+            $alertBorder = '#ffe066';
+            $alertColor = '#f08c00';
+            $iconClass = 'fas fa-clock';
+            $statusMsg = 'Your review has been submitted and is pending administrator approval.';
+        } elseif ($status === 'rejected') {
+            $alertBg = '#fff5f5';
+            $alertBorder = '#ffe3e3';
+            $alertColor = '#fa5252';
+            $iconClass = 'fas fa-circle-xmark';
+            $statusMsg = 'Your review was not approved by a moderator. You can modify or submit a new review below.';
+        }
+    ?>
         <!-- CASE 5 -->
-        <div class="verified-purchaser-warning" style="background:#e6fcf5; border:1px solid #c3fae8; color:#0ca678; padding:12px; border-radius:var(--radius-sm); display:flex; gap:10px; font-size:var(--fs-sm); margin-bottom: 16px;">
-            <i class="fas fa-circle-check" style="font-size:18px; margin-top:2px;"></i>
+        <div class="verified-purchaser-warning" style="background:<?= $alertBg ?>; border:1px solid <?= $alertBorder ?>; color:<?= $alertColor ?>; padding:12px; border-radius:var(--radius-sm); display:flex; gap:10px; font-size:var(--fs-sm); margin-bottom: 16px;">
+            <i class="<?= $iconClass ?>" style="font-size:18px; margin-top:2px;"></i>
             <div>
-                <strong>✔ You already reviewed this product.</strong>
+                <strong><?= $statusMsg ?></strong>
                 <div style="margin-top: 8px; display: flex; gap: 8px;">
                     <button type="button" class="btn btn-secondary btn-edit-review" data-review-id="<?= $reviewId ?>" data-rating="<?= $ratingVal ?>" data-title="<?= e($titleVal) ?>" data-comment="<?= e($commentVal) ?>" style="padding: 4px 12px; font-size: 11px; border-radius: var(--radius-pill); cursor: pointer;"><i class="far fa-edit"></i> Edit Review</button>
                     <button type="button" class="btn btn-secondary btn-delete-review" data-review-id="<?= $reviewId ?>" style="padding: 4px 12px; font-size: 11px; border-radius: var(--radius-pill); cursor: pointer; background: #fff5f5; border-color: #ffe3e3; color: #fa5252;"><i class="far fa-trash-can"></i> Delete Review</button>

@@ -21,7 +21,7 @@ try {
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id
+        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = 'approved'
         WHERE p.is_active = 1 AND p.discount_price IS NOT NULL AND p.discount_price < p.price
         GROUP BY p.id
         ORDER BY (p.price - p.discount_price) DESC, p.id DESC

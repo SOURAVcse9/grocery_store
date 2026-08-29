@@ -55,9 +55,10 @@ function image_url(?string $path, string $placeholderCategory = 'ui'): string
             return $path;
         }
 
+        $cleaned = ltrim($path, '/');
+
         // 1. If it starts with uploads/
-        if (str_starts_with(ltrim($path, '/'), 'uploads/')) {
-            $cleaned = ltrim($path, '/');
+        if (str_starts_with($cleaned, 'uploads/')) {
             $filePath = PUBLIC_PATH . '/' . $cleaned;
             if (file_exists($filePath)) {
                 $mtime = filemtime($filePath);
@@ -65,31 +66,38 @@ function image_url(?string $path, string $placeholderCategory = 'ui'): string
             }
         }
 
-        // 2. If it is a filename and exists in uploads/<category>/
+        // 2. If it directly exists under public/uploads/
+        $directUpload = PUBLIC_PATH . '/uploads/' . $cleaned;
+        if (file_exists($directUpload)) {
+            $mtime = filemtime($directUpload);
+            return BASE_URL . '/uploads/' . $cleaned . '?v=' . $mtime;
+        }
+
+        // 3. If it is a filename and exists in uploads/<category>/
         $folder = $placeholderCategory;
         if ($folder === 'users') {
             $folder = 'users';
         }
-        $filePath = PUBLIC_PATH . '/uploads/' . $folder . '/' . ltrim($path, '/');
+        $filePath = PUBLIC_PATH . '/uploads/' . $folder . '/' . $cleaned;
         if (file_exists($filePath)) {
             $mtime = filemtime($filePath);
-            return BASE_URL . '/uploads/' . $folder . '/' . ltrim($path, '/') . '?v=' . $mtime;
+            return BASE_URL . '/uploads/' . $folder . '/' . $cleaned . '?v=' . $mtime;
         }
 
-        // 3. If it starts with storage/
-        if (str_starts_with($path, 'storage/')) {
-            $filePath = PUBLIC_PATH . '/../' . ltrim($path, '/');
+        // 4. If it starts with storage/
+        if (str_starts_with($cleaned, 'storage/')) {
+            $filePath = PUBLIC_PATH . '/../' . $cleaned;
             if (file_exists($filePath)) {
                 $mtime = filemtime($filePath);
-                return rtrim(dirname(BASE_URL), '/') . '/' . ltrim($path, '/') . '?v=' . $mtime;
+                return rtrim(dirname(BASE_URL), '/') . '/' . $cleaned . '?v=' . $mtime;
             }
         }
 
-        // 4. For standard assets inside assets/images/
-        $filePath = PUBLIC_PATH . '/assets/images/' . ltrim($path, '/');
+        // 5. For standard assets inside assets/images/
+        $filePath = PUBLIC_PATH . '/assets/images/' . $cleaned;
         if (file_exists($filePath)) {
             $mtime = filemtime($filePath);
-            return BASE_URL . '/assets/images/' . ltrim($path, '/') . '?v=' . $mtime;
+            return BASE_URL . '/assets/images/' . $cleaned . '?v=' . $mtime;
         }
     }
 

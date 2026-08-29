@@ -72,7 +72,7 @@ foreach ($fbtItems as $item) {
 $bundleTotal = array_sum(array_column($bundle, 'price'));
 ?>
 
-<div class="frequently-bought-together-wrapper" style="margin-top:var(--space-5); margin-bottom:var(--space-5); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:var(--space-4) var(--space-5); box-shadow:var(--shadow-sm);">
+<div class="frequently-bought-together-wrapper" style="margin-top:var(--space-5); margin-bottom:var(--space-5); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:var(--space-4) var(--space-5); box-shadow:var(--shadow-sm); width:100%; box-sizing:border-box;">
     <h3 style="font-size:var(--fs-xs); font-weight:800; text-transform:uppercase; color:var(--color-text-faint); margin:0 0 var(--space-3) 0; letter-spacing:0.5px;">Frequently Bought Together</h3>
     
     <div class="fbt-grid-layout" style="display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap;">

@@ -33,7 +33,7 @@ try {
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id
+        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = 'approved'
         WHERE p.id IN ({$inClause}) AND p.is_active = 1
         GROUP BY p.id
         ORDER BY FIELD(p.id, {$inClause})

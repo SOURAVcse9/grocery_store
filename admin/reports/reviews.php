@@ -18,13 +18,14 @@ try {
     $ratings = $pdo->query("
         SELECT rating, COUNT(*) AS count
         FROM product_reviews
+        WHERE status = 'approved'
         GROUP BY rating
         ORDER BY rating DESC
     ")->fetchAll();
 
     // Average rating
-    $avgRating = $pdo->query("SELECT COALESCE(ROUND(AVG(rating), 2), 0) FROM product_reviews")->fetchColumn();
-    $totalReviews = $pdo->query("SELECT COUNT(*) FROM product_reviews")->fetchColumn();
+    $avgRating = $pdo->query("SELECT COALESCE(ROUND(AVG(rating), 2), 0) FROM product_reviews WHERE status = 'approved'")->fetchColumn();
+    $totalReviews = $pdo->query("SELECT COUNT(*) FROM product_reviews WHERE status = 'approved'")->fetchColumn();
 
 } catch (PDOException $e) {
     error_log('[admin/reports/reviews] failed: ' . $e->getMessage());

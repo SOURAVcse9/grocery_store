@@ -540,10 +540,23 @@
 /* Card Footer Actions */
 .product-card-footer {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1.4fr 1fr;
   gap: var(--space-1);
   border-top: 1px solid var(--color-border);
   padding-top: var(--space-2);
+  margin-top: auto;
+}
+
+@media (max-width: 480px) {
+  .product-card-footer {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .product-card-footer .btn {
+    width: 100%;
+    padding: 8px 4px;
+    font-size: 11px;
+  }
 }
 
 .product-card-footer .btn {
@@ -557,6 +570,8 @@
   justify-content: center;
   gap: 4px;
   transition: all var(--transition-fast);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .btn-add-cart {

@@ -118,6 +118,13 @@ try {
                     json_response(false, 'Only JPG, JPEG, PNG, and WebP images are allowed.', [], 422);
                 }
 
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = finfo_file($finfo, $tmpName);
+                finfo_close($finfo);
+                if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                    json_response(false, 'Uploaded file is not a valid image format.', [], 422);
+                }
+
                 if (!@getimagesize($tmpName)) {
                     json_response(false, 'Uploaded file is not a valid image.', [], 422);
                 }
@@ -157,7 +164,7 @@ try {
 
                     $update = $pdo->prepare('
                         UPDATE product_reviews 
-                        SET rating = :rating, review_title = :title, review_comment = :comment, review_images = :images, updated_at = NOW() 
+                        SET rating = :rating, review_title = :title, review_comment = :comment, review_images = :images, status = \'pending\', is_approved = 0, updated_at = NOW() 
                         WHERE id = :id
                     ');
                     $update->execute([
@@ -170,7 +177,7 @@ try {
                 } else {
                     $update = $pdo->prepare('
                         UPDATE product_reviews 
-                        SET rating = :rating, review_title = :title, review_comment = :comment, updated_at = NOW() 
+                        SET rating = :rating, review_title = :title, review_comment = :comment, status = \'pending\', is_approved = 0, updated_at = NOW() 
                         WHERE id = :id
                     ');
                     $update->execute([
@@ -186,15 +193,15 @@ try {
                 $pdo->rollBack();
                 throw $ex;
             }
-            json_response(true, 'Review updated successfully!');
+            json_response(true, 'Review updated successfully! It is pending admin approval.');
         }
 
         // 5. Save review inside transaction
         $pdo->beginTransaction();
         try {
             $insert = $pdo->prepare('
-                INSERT INTO product_reviews (product_id, user_id, order_id, rating, review_title, review_comment, review_images, verified_purchase, status, created_at, updated_at)
-                VALUES (:pid, :uid, :oid, :rating, :title, :comment, :images, 1, \'approved\', NOW(), NOW())
+                INSERT INTO product_reviews (product_id, user_id, order_id, rating, review_title, review_comment, review_images, verified_purchase, status, is_approved, created_at, updated_at)
+                VALUES (:pid, :uid, :oid, :rating, :title, :comment, :images, 1, \'pending\', 0, NOW(), NOW())
             ');
             $insert->execute([
                 'pid'     => $productId,
@@ -214,7 +221,7 @@ try {
             throw $ex;
         }
 
-        json_response(true, 'Review submitted successfully!');
+        json_response(true, 'Review submitted successfully! It is pending admin approval.');
     }
 
     // ---- B. Edit Review ----
@@ -280,6 +287,13 @@ try {
                     json_response(false, 'Only JPG, JPEG, PNG, and WebP images are allowed.', [], 422);
                 }
 
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = finfo_file($finfo, $tmpName);
+                finfo_close($finfo);
+                if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                    json_response(false, 'Uploaded file is not a valid image format.', [], 422);
+                }
+
                 if (!@getimagesize($tmpName)) {
                     json_response(false, 'Uploaded file is not a valid image.', [], 422);
                 }
@@ -313,7 +327,7 @@ try {
 
                 $update = $pdo->prepare('
                     UPDATE product_reviews 
-                    SET rating = :rating, review_title = :title, review_comment = :comment, review_images = :images, updated_at = NOW() 
+                    SET rating = :rating, review_title = :title, review_comment = :comment, review_images = :images, status = \'pending\', is_approved = 0, updated_at = NOW() 
                     WHERE id = :id
                 ');
                 $update->execute([
@@ -326,7 +340,7 @@ try {
             } else {
                 $update = $pdo->prepare('
                     UPDATE product_reviews 
-                    SET rating = :rating, review_title = :title, review_comment = :comment, updated_at = NOW() 
+                    SET rating = :rating, review_title = :title, review_comment = :comment, status = \'pending\', is_approved = 0, updated_at = NOW() 
                     WHERE id = :id
                 ');
                 $update->execute([
@@ -345,7 +359,7 @@ try {
             throw $ex;
         }
 
-        json_response(true, 'Review updated successfully!');
+        json_response(true, 'Review updated successfully! It is pending admin approval.');
     }
 
     // ---- C. Delete Review ----
@@ -395,6 +409,17 @@ try {
         }
 
         json_response(true, 'Review deleted successfully.');
+    }
+
+    // ---- D. Helpful Vote ----
+    if ($action === 'helpful') {
+        $reviewId = (int) input('review_id', '0');
+        if ($reviewId <= 0) {
+            json_response(false, 'Invalid review selection.', [], 400);
+        }
+        $stmt = $pdo->prepare('UPDATE product_reviews SET helpful_count = helpful_count + 1 WHERE id = :id');
+        $stmt->execute(['id' => $reviewId]);
+        json_response(true, 'Thank you for your feedback!');
     }
 
     // Invalid action fallback

@@ -99,7 +99,7 @@ try {
                 FROM products p
                 LEFT JOIN categories c ON c.id = p.category_id
                 LEFT JOIN brands b ON b.id = p.brand_id
-                LEFT JOIN product_reviews pr ON pr.product_id = p.id
+                LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = 'approved'
                 {$whereClause}
                 GROUP BY p.id
                 HAVING COALESCE(AVG(pr.rating), 0) >= :min_rating
@@ -146,7 +146,7 @@ try {
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id
+        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = 'approved'
         {$whereClause}
         GROUP BY p.id
     ";

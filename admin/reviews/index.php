@@ -51,17 +51,17 @@ if (method_is('post')) {
                 $pdo->beginTransaction();
                 try {
                     if ($action === 'approve') {
-                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'approved', updated_at = NOW() WHERE id = :id");
+                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'approved', is_approved = 1, updated_at = NOW() WHERE id = :id");
                         $up->execute(['id' => $reviewId]);
                         sync_product_rating_stats($productId, $pdo);
                         flash('reviews_admin', 'Review approved successfully.', 'success');
                     } elseif ($action === 'reject') {
-                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'rejected', updated_at = NOW() WHERE id = :id");
+                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'rejected', is_approved = 0, updated_at = NOW() WHERE id = :id");
                         $up->execute(['id' => $reviewId]);
                         sync_product_rating_stats($productId, $pdo);
                         flash('reviews_admin', 'Review marked as rejected.', 'success');
                     } elseif ($action === 'hide') {
-                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'hidden', updated_at = NOW() WHERE id = :id");
+                        $up = $pdo->prepare("UPDATE product_reviews SET status = 'hidden', is_approved = 0, updated_at = NOW() WHERE id = :id");
                         $up->execute(['id' => $reviewId]);
                         sync_product_rating_stats($productId, $pdo);
                         flash('reviews_admin', 'Review hidden from catalog listings.', 'success');
@@ -312,10 +312,20 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
                                         if (is_array($imgs) && !empty($imgs)):
                                     ?>
                                         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                            <?php foreach ($imgs as $img): ?>
-                                                <a href="<?= e(asset($img)) ?>" target="_blank" style="display:inline-block; border:1px solid var(--color-border); border-radius:2px; overflow:hidden;">
-                                                    <img src="<?= e(asset($img)) ?>" alt="Review image" style="width:40px; height:40px; object-fit:cover;">
-                                                </a>
+                                            <?php foreach ($imgs as $img): 
+                                                $cleanImg = ltrim($img, '/');
+                                                $exists = file_exists(PUBLIC_PATH . '/' . $cleanImg) || 
+                                                          file_exists(PUBLIC_PATH . '/uploads/' . $cleanImg) || 
+                                                          file_exists(PUBLIC_PATH . '/uploads/reviews/' . basename($cleanImg));
+                                                $imgUrl = image_url($img, 'reviews');
+                                            ?>
+                                                <?php if ($exists): ?>
+                                                    <a href="<?= e($imgUrl) ?>" target="_blank" rel="noopener noreferrer" title="View full image" style="display:inline-block; border:1px solid var(--color-border); border-radius:2px; overflow:hidden;">
+                                                        <img src="<?= e($imgUrl) ?>" alt="Review image" style="width:40px; height:40px; object-fit:cover;">
+                                                    </a>
+                                                <?php else: ?>
+                                                    <span style="color:var(--color-text-faint); font-size:10px; font-style:italic;">Missing file</span>
+                                                <?php endif; ?>
                                             <?php endforeach; ?>
                                         </div>
                                     <?php endif; else: ?>
