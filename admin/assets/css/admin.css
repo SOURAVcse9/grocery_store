@@ -468,6 +468,7 @@ body.admin-body {
   .admin-sidebar {
     transform: translateX(-100%);
     width: var(--admin-sidebar-width) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
   
   .admin-sidebar.mobile-open {
@@ -495,7 +496,7 @@ body.admin-body {
 /* ==========================================================================
    Mobile Responsiveness Grids
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   /* Collapse forms, dashboards, and grids to stacked 1fr layout on tablet/mobile */
   .grid-2, .grid-3, .grid-4, .grid-5, .grid-7, 
   .admin-dashboard-layout, .stats-row,
@@ -505,6 +506,10 @@ body.admin-body {
 
   .admin-content-area {
     padding: 16px 12px 24px 12px !important;
+  }
+
+  .admin-data-table {
+    min-width: 600px;
   }
 }
 

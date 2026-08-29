@@ -131,6 +131,18 @@ try {
 <div id="mobileOverlay" class="mobile-overlay"></div>
 <div id="mobileMenu" class="mobile-menu">
     <div class="mobile-menu-close" id="closeMenuBtn"><i class="fas fa-times"></i></div>
+    <div class="mobile-menu-search" style="padding: 16px; border-bottom: 1px solid var(--color-border);">
+        <form action="<?= url_for('search.php') ?>" method="get" role="search" style="position: relative; display: block; margin: 0;">
+            <input
+                type="text"
+                name="q"
+                placeholder="<?= e(t('search_placeholder')) ?>"
+                value="<?= e($_GET['q'] ?? '') ?>"
+                style="width: 100%; padding: 10px 40px 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-bg); color: var(--color-text); outline: none; font-size: 13px;"
+            >
+            <button type="submit" aria-label="Search" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--color-text-muted); cursor: pointer;"><i class="fas fa-search"></i></button>
+        </form>
+    </div>
     <ul>
         <li><a href="<?= url_for('index.php') ?>"><i class="fas fa-house"></i> <?= e(t('home')) ?></a></li>
         <li><a href="<?= url_for('products.php') ?>"><i class="fas fa-bag-shopping"></i> <?= e(t('shop')) ?></a></li>
