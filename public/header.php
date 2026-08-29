@@ -42,6 +42,16 @@ $pageCanonical   = $pageCanonical ?? current_url();
 <!DOCTYPE html>
 <html lang="<?= e($lang) ?>">
 <head>
+    <script>
+    (function() {
+        const saved = localStorage.getItem('groco-theme') || 'system';
+        let theme = saved;
+        if (saved === 'system') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle) ?></title>
@@ -71,6 +81,7 @@ $pageCanonical   = $pageCanonical ?? current_url();
         <?php endforeach; ?>
     <?php endif; ?>
     <link rel="stylesheet" href="<?= asset('css/responsive.css') ?>">
+    <script src="<?= asset('js/theme.js') ?>"></script>
 </head>
 <body>
 <?php
@@ -99,17 +110,17 @@ try {
 ?>
 
 <?php if ($announcementActive && !empty($announcementText)): ?>
-    <div style="background-color: #0ca678; color: #ffffff; text-align: center; padding: 8px 12px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; z-index: 9999; position: relative;">
+    <div style="background-color: var(--color-primary); color: #ffffff; text-align: center; padding: 8px 12px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; z-index: 9999; position: relative;">
         <?= e($announcementText) ?>
     </div>
 <?php endif; ?>
 
 <?php if ($popupActive && !empty($popupMessage)): ?>
     <div id="settingsPopupModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100000; display: flex; align-items: center; justify-content: center;">
-        <div style="background: #fff; padding: 24px; border-radius: 8px; max-width: 450px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); text-align: center; position: relative;">
-            <h3 style="margin-top: 0; color: #0ca678; font-size: 18px; font-weight: 700;"><?= e($popupTitle) ?></h3>
-            <p style="color: #555; font-size: 14px; line-height: 1.6; margin: 16px 0;"><?= e($popupMessage) ?></p>
-            <button onclick="document.getElementById('settingsPopupModal').style.display='none';" style="background: #0ca678; color: #fff; border: none; padding: 8px 24px; border-radius: 20px; font-weight: 700; cursor: pointer; outline: none;">Close</button>
+        <div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 24px; border-radius: 8px; max-width: 450px; width: 90%; box-shadow: var(--shadow-lg); text-align: center; position: relative;">
+            <h3 style="margin-top: 0; color: var(--color-primary); font-size: 18px; font-weight: 700;"><?= e($popupTitle) ?></h3>
+            <p style="color: var(--color-text-secondary); font-size: 14px; line-height: 1.6; margin: 16px 0;"><?= e($popupMessage) ?></p>
+            <button onclick="document.getElementById('settingsPopupModal').style.display='none';" style="background: var(--color-primary); color: #fff; border: none; padding: 8px 24px; border-radius: 20px; font-weight: 700; cursor: pointer; outline: none;">Close</button>
         </div>
     </div>
 <?php endif; ?>
@@ -165,6 +176,32 @@ try {
             <div class="lang-switch hide-mobile">
                 <a href="?lang=en" class="<?= $lang === 'en' ? 'active' : '' ?>">EN</a> /
                 <a href="?lang=bn" class="<?= $lang === 'bn' ? 'active' : '' ?>">বাং</a>
+            </div>
+
+            <!-- Theme Switcher -->
+            <div class="theme-switcher-wrapper">
+                <button type="button" class="theme-toggle-btn icon-link" id="themeToggleBtn" aria-label="Toggle Theme" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-sun theme-icon-light" style="display:none;"></i>
+                    <i class="fas fa-moon theme-icon-dark" style="display:none;"></i>
+                    <i class="fas fa-desktop theme-icon-system" style="display:none;"></i>
+                </button>
+                <div class="theme-dropdown-menu" id="themeDropdownMenu" role="menu" aria-hidden="true" style="display:none;">
+                    <button type="button" class="theme-dropdown-item" data-theme-val="light" role="menuitem">
+                        <span class="item-check"><i class="fas fa-check"></i></span>
+                        <span class="item-icon"><i class="fas fa-sun"></i></span>
+                        <span class="item-text">Light</span>
+                    </button>
+                    <button type="button" class="theme-dropdown-item" data-theme-val="dark" role="menuitem">
+                        <span class="item-check"><i class="fas fa-check"></i></span>
+                        <span class="item-icon"><i class="fas fa-moon"></i></span>
+                        <span class="item-text">Dark</span>
+                    </button>
+                    <button type="button" class="theme-dropdown-item" data-theme-val="system" role="menuitem">
+                        <span class="item-check"><i class="fas fa-check"></i></span>
+                        <span class="item-icon"><i class="fas fa-desktop"></i></span>
+                        <span class="item-text">System</span>
+                    </button>
+                </div>
             </div>
 
             <a href="<?= url_for('wishlist.php') ?>" class="icon-link hide-mobile" title="<?= e(t('wishlist')) ?>">

@@ -286,3 +286,219 @@ fieldset { border: none; margin: 0; padding: 0; }
   100% { transform: scale(1); }
 }
 .pop { animation: pop 300ms ease; }
+
+/* ==========================================================================
+   Theme Switcher & Dark Mode Palette
+   ========================================================================== */
+
+/* 1. Theme switcher navbar dropdown styling */
+.theme-switcher-wrapper {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.theme-toggle-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  font-size: 16px;
+  width: 38px;
+  height: 38px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.theme-toggle-btn:hover {
+  background: var(--color-border);
+}
+
+.theme-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 120%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  min-width: 140px;
+  padding: 4px 0;
+}
+
+.theme-dropdown-item {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-xs);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.theme-dropdown-item:hover {
+  background: var(--color-bg);
+}
+
+.theme-dropdown-item .item-check {
+  width: 14px;
+  display: flex;
+  justify-content: center;
+  color: var(--color-primary);
+  visibility: hidden;
+}
+
+.theme-dropdown-item.active .item-check {
+  visibility: visible;
+}
+
+.theme-dropdown-item .item-icon {
+  width: 16px;
+  display: flex;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+/* 2. Dark Palette variables overrides */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  
+  --color-bg: #0f1115;
+  --color-surface: #1c2128;
+  --color-border: #2a2f37;
+  
+  --color-text: #e6e8eb;
+  --color-text-secondary: #adb5bd;
+  --color-text-faint: #6c757d;
+  
+  /* Lighter/desaturated AA contrast green brand primary */
+  --color-primary: #3ecf7e;
+  --color-primary-dark: #2ebd6b;
+  --color-primary-light: rgba(62, 207, 126, 0.15);
+  --color-success: #3ecf7e;
+  
+  --color-danger: #ff6b6b;
+  --color-warning: #ffd43b;
+  --color-accent: #ff922b;
+}
+
+/* 3. Global Dark overrides for dark-surface contrast styling */
+html[data-theme="dark"] .alert-success { background: rgba(62, 207, 126, 0.15); color: #3ecf7e; border-color: rgba(62, 207, 126, 0.25); }
+html[data-theme="dark"] .alert-error   { background: rgba(224, 48, 62, 0.15); color: #ff6b6b; border-color: rgba(224, 48, 62, 0.25); }
+html[data-theme="dark"] .alert-info    { background: rgba(37, 99, 235, 0.15); color: #748ffc; border-color: rgba(37, 99, 235, 0.25); }
+
+html[data-theme="dark"] input, 
+html[data-theme="dark"] select, 
+html[data-theme="dark"] textarea {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+html[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, #1c2128 25%, #272d37 37%, #1c2128 63%);
+}
+
+/* Fix browser autofill background on input fields */
+html[data-theme="dark"] input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100px #1c2128 inset !important;
+  -webkit-text-fill-color: #e6e8eb !important;
+}
+
+/* ==========================================================================
+   Dark Mode Visual Overrides for Components
+   ========================================================================== */
+html[data-theme="dark"] .site-header {
+  background: rgba(28, 33, 40, 0.97) !important;
+}
+
+html[data-theme="dark"] .header-search input:focus {
+  background: var(--color-surface) !important;
+}
+
+html[data-theme="dark"] .hero-slide-content {
+  background: rgba(28, 33, 40, 0.85) !important;
+  color: var(--color-text) !important;
+}
+
+html[data-theme="dark"] .products-hero {
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, #16241c 100%) !important;
+}
+
+html[data-theme="dark"] .catalog-loading-overlay {
+  background: rgba(15, 17, 21, 0.65) !important;
+}
+
+html[data-theme="dark"] .stats-icon-box.total,
+html[data-theme="dark"] .order-badge.processing {
+  background: rgba(30, 136, 229, 0.15) !important;
+  color: #64b5f6 !important;
+}
+
+html[data-theme="dark"] .stats-icon-box.pending,
+html[data-theme="dark"] .order-badge.pending {
+  background: rgba(251, 140, 0, 0.15) !important;
+  color: #ffb74d !important;
+}
+
+html[data-theme="dark"] .stats-icon-box.completed,
+html[data-theme="dark"] .order-badge.delivered {
+  background: rgba(67, 160, 71, 0.15) !important;
+  color: #81c784 !important;
+}
+
+html[data-theme="dark"] .stats-icon-box.wishlist {
+  background: rgba(216, 27, 96, 0.15) !important;
+  color: #f06292 !important;
+}
+
+html[data-theme="dark"] .order-badge.shipped {
+  background: rgba(103, 58, 183, 0.15) !important;
+  color: #b39ddb !important;
+}
+
+html[data-theme="dark"] .order-badge.cancelled {
+  background: rgba(183, 28, 28, 0.15) !important;
+  color: #ef9a9a !important;
+}
+
+html[data-theme="dark"] .stat-card-icon-wrapper.accent-success {
+  background: rgba(43, 138, 62, 0.15) !important;
+  color: #51cf66 !important;
+}
+
+html[data-theme="dark"] .stat-card-icon-wrapper.accent-warning {
+  background: rgba(230, 126, 34, 0.15) !important;
+  color: #fcc419 !important;
+}
+
+html[data-theme="dark"] .stat-card-icon-wrapper.accent-danger {
+  background: rgba(250, 82, 82, 0.15) !important;
+  color: #ff8787 !important;
+}
+
+html[data-theme="dark"] .notif-type-order { background: rgba(34, 139, 230, 0.15) !important; color: #74c0fc !important; }
+html[data-theme="dark"] .notif-type-promo { background: rgba(230, 73, 128, 0.15) !important; color: #faa2c1 !important; }
+html[data-theme="dark"] .notif-type-coupon { background: rgba(245, 159, 0, 0.15) !important; color: #ffd43b !important; }
+html[data-theme="dark"] .notif-type-account { background: rgba(73, 80, 87, 0.15) !important; color: #c1c2c5 !important; }
+html[data-theme="dark"] .notif-type-security { background: rgba(250, 82, 82, 0.15) !important; color: #ff8787 !important; }
+html[data-theme="dark"] .notif-type-general { background: rgba(121, 80, 242, 0.15) !important; color: #b197fc !important; }
+
+html[data-theme="dark"] .badge-danger {
+  background: rgba(224, 48, 62, 0.15) !important;
+  color: #ff6b6b !important;
+}
+
+html[data-theme="dark"] .badge-warning {
+  background: rgba(242, 183, 5, 0.15) !important;
+  color: #ffd43b !important;
+}

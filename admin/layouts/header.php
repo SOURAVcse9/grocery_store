@@ -18,6 +18,16 @@ $__admin_avatar = image_url($__admin['avatar'] ?? null, 'users');
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+    (function() {
+        const saved = localStorage.getItem('groco-theme') || 'system';
+        let theme = saved;
+        if (saved === 'system') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= csrf_token() ?>">
@@ -35,6 +45,7 @@ $__admin_avatar = image_url($__admin['avatar'] ?? null, 'users');
     
     <!-- Chart.js CDN for responsive analytics widget integration -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="<?= asset('js/theme.js') ?>"></script>
 </head>
 <body class="admin-body">
     <div class="admin-layout-wrapper">

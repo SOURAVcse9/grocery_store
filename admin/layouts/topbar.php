@@ -44,6 +44,32 @@ try {
             <i class="fas fa-expand"></i>
         </button>
 
+        <!-- Theme Switcher -->
+        <div class="theme-switcher-wrapper" style="margin-right: 8px;">
+            <button type="button" class="topbar-action-btn" id="themeToggleBtn" aria-label="Toggle Theme" aria-haspopup="true" aria-expanded="false" style="border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-sun theme-icon-light" style="display:none;"></i>
+                <i class="fas fa-moon theme-icon-dark" style="display:none;"></i>
+                <i class="fas fa-desktop theme-icon-system" style="display:none;"></i>
+            </button>
+            <div class="theme-dropdown-menu" id="themeDropdownMenu" role="menu" aria-hidden="true" style="display:none; top: 45px;">
+                <button type="button" class="theme-dropdown-item" data-theme-val="light" role="menuitem">
+                    <span class="item-check"><i class="fas fa-check"></i></span>
+                    <span class="item-icon"><i class="fas fa-sun"></i></span>
+                    <span class="item-text">Light</span>
+                </button>
+                <button type="button" class="theme-dropdown-item" data-theme-val="dark" role="menuitem">
+                    <span class="item-check"><i class="fas fa-check"></i></span>
+                    <span class="item-icon"><i class="fas fa-moon"></i></span>
+                    <span class="item-text">Dark</span>
+                </button>
+                <button type="button" class="theme-dropdown-item" data-theme-val="system" role="menuitem">
+                    <span class="item-check"><i class="fas fa-check"></i></span>
+                    <span class="item-icon"><i class="fas fa-desktop"></i></span>
+                    <span class="item-text">System</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Notification Bell Dropdown -->
         <div style="position:relative; display:inline-block;" class="notification-dropdown-wrapper">
             <button type="button" class="topbar-action-btn" id="btnNotifDropdown" aria-label="View Notifications">

@@ -7,16 +7,16 @@
   --admin-sidebar-collapsed: 70px;
   --admin-header-height: 70px;
   
-  /* Modern clean color variables matching grocery store */
-  --admin-color-primary: #0ca678;
-  --admin-color-primary-dark: #098a62;
-  --admin-color-primary-light: #e6fcf5;
-  --admin-color-bg: #f8f9fa;
-  --admin-color-surface: #ffffff;
-  --admin-color-border: #e9ecef;
-  --admin-color-text: #212529;
-  --admin-color-text-muted: #495057;
-  --admin-color-text-faint: #adb5bd;
+  /* Unified brand colors mapped to global design tokens */
+  --admin-color-primary: var(--color-primary);
+  --admin-color-primary-dark: var(--color-primary-dark);
+  --admin-color-primary-light: var(--color-primary-light);
+  --admin-color-bg: var(--color-bg);
+  --admin-color-surface: var(--color-surface);
+  --admin-color-border: var(--color-border);
+  --admin-color-text: var(--color-text);
+  --admin-color-text-muted: var(--color-text-secondary);
+  --admin-color-text-faint: var(--color-text-faint);
 }
 
 /* --------------------------------------------------------------------- */
@@ -493,14 +493,8 @@ body.admin-body {
 }
 
 /* ==========================================================================
-   Theme Color Reconciliation & Mobile Responsiveness Grids
+   Mobile Responsiveness Grids
    ========================================================================== */
-body.admin-body {
-  --color-primary: var(--admin-color-primary) !important;
-  --color-primary-dark: var(--admin-color-primary-dark) !important;
-  --color-primary-light: var(--admin-color-primary-light) !important;
-}
-
 @media (max-width: 768px) {
   /* Collapse forms, dashboards, and grids to stacked 1fr layout on tablet/mobile */
   .grid-2, .grid-3, .grid-4, .grid-5, .grid-7, 
@@ -512,4 +506,39 @@ body.admin-body {
   .admin-content-area {
     padding: 16px 12px 24px 12px !important;
   }
+}
+
+/* ==========================================================================
+   Admin Dark Theme Widget & Pill Overrides
+   ========================================================================== */
+html[data-theme="dark"] .theme-green,
+html[data-theme="dark"] .status-pill.pill-completed {
+  background: rgba(62, 207, 126, 0.15) !important;
+  color: #3ecf7e !important;
+}
+html[data-theme="dark"] .theme-blue,
+html[data-theme="dark"] .status-pill.pill-processing {
+  background: rgba(66, 99, 235, 0.15) !important;
+  color: #748ffc !important;
+}
+html[data-theme="dark"] .theme-orange,
+html[data-theme="dark"] .status-pill.pill-pending {
+  background: rgba(245, 159, 0, 0.15) !important;
+  color: #ffd43b !important;
+}
+html[data-theme="dark"] .theme-red,
+html[data-theme="dark"] .status-pill.pill-cancelled {
+  background: rgba(240, 62, 62, 0.15) !important;
+  color: #ff8787 !important;
+}
+
+/* Fix dashboard line details border and card header borders */
+html[data-theme="dark"] .dashboard-card,
+html[data-theme="dark"] .admin-table-wrapper {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+html[data-theme="dark"] .admin-data-table th {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
 }
