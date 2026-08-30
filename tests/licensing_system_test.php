@@ -138,7 +138,7 @@ assert_test(
     "Authority generates an authorized DEVELOPMENT license"
 );
 
-$actDev = $server->activate($devLic['license_key'], "localhost", "inst_dev_node_1");
+$actDev = $server->activate($devLic['license_key'], "localhost", get_installation_id());
 assert_test(
     $actDev['success'] === true && ($actDev['payload']['license_type'] ?? '') === 'development',
     "Development license successfully activates on localhost with signed payload"
@@ -156,7 +156,7 @@ $stmtDev = db()->prepare("
 $stmtDev->execute([
     hash('sha256', $devLic['license_key']),
     'GRCO-••••-••••-••••-DEV1',
-    'inst_dev_node_1',
+    get_installation_id(),
     $payloadDevJson,
     $actDev['signature'],
     date('Y-m-d H:i:s'),
@@ -176,7 +176,7 @@ assert_test(
 echo "\n--- Scenario 10: Valid Production License on Production Domain ---\n";
 
 $prodLic = $server->createLicense("Retail Client Ltd", "billing@retail.com", ['shop.retail.com'], 1, null, "Prod key", "production");
-$actProd = $server->activate($prodLic['license_key'], "shop.retail.com", "inst_prod_01");
+$actProd = $server->activate($prodLic['license_key'], "shop.retail.com", get_installation_id());
 assert_test(
     $actProd['success'] === true && ($actProd['payload']['license_type'] ?? '') === 'production',
     "Production license successfully activates on authorized domain"
@@ -194,7 +194,7 @@ $stmtProd = db()->prepare("
 $stmtProd->execute([
     hash('sha256', $prodLic['license_key']),
     'GRCO-••••-••••-••••-PRD1',
-    'inst_prod_01',
+    get_installation_id(),
     $payloadProdJson,
     $actProd['signature'],
     date('Y-m-d H:i:s'),
@@ -334,7 +334,7 @@ echo "\n--- Scenarios 21 & 22: Remote Outage Tolerance & Grace Period ---\n";
 
 // Create isolated license for outage tests
 $outageLic = $server->createLicense("Outage Store", "out@store.com", ['shop.outage.com'], 1, null, '', 'production');
-$freshAct = $server->activate($outageLic['license_key'], 'shop.outage.com', 'inst_prod_outage');
+$freshAct = $server->activate($outageLic['license_key'], 'shop.outage.com', get_installation_id());
 $freshPayloadJson = json_encode($freshAct['payload'], JSON_UNESCAPED_SLASHES);
 
 db()->exec("DELETE FROM system_license");
@@ -351,7 +351,7 @@ $overdueRecheck = date('Y-m-d H:i:s', time() - 3600);
 $stmtOutage->execute([
     hash('sha256', $outageLic['license_key']),
     'GRCO-••••-••••-••••-OUT1',
-    'inst_prod_outage',
+    get_installation_id(),
     $freshPayloadJson,
     $freshAct['signature'],
     $twoHoursAgo,
@@ -480,30 +480,9 @@ putenv('APP_ENV=development');
 putenv('LICENSE_SERVER_URL=');
 unset($_SERVER['HTTP_HOST']);
 
-// Restore local development license so local instance is ready for immediate developer use
-$mainServer = new LicenseServer();
-$restoreDevLic = $mainServer->createLicense("Local Developer", "dev@groco.com.bd", ['localhost', '127.0.0.1'], 5, null, "Auto-restored dev key", "development");
-$restoreAct = $mainServer->activate($restoreDevLic['license_key'], 'localhost', get_installation_id(), '127.0.0.1');
-if ($restoreAct['success']) {
-    $restorePayloadJson = json_encode($restoreAct['payload'], JSON_UNESCAPED_SLASHES);
-    db()->exec("DELETE FROM system_license");
-    $stmtRestore = db()->prepare("
-        INSERT INTO system_license (
-            license_key_hash, license_mask, installation_id, license_type, domain, customer_email,
-            status, activation_payload, signature, last_verified_at, next_check_at, expires_at
-        ) VALUES (?, ?, ?, 'development', 'localhost', 'dev@groco.com.bd', 'active', ?, ?, ?, ?, NULL)
-    ");
-    $stmtRestore->execute([
-        hash('sha256', $restoreDevLic['license_key']),
-        substr($restoreDevLic['license_key'], 0, 5) . '••••-••••-••••-' . substr($restoreDevLic['license_key'], -4),
-        get_installation_id(),
-        $restorePayloadJson,
-        $restoreAct['signature'],
-        date('Y-m-d H:i:s'),
-        date('Y-m-d H:i:s', time() + 86400)
-    ]);
-}
-unset($mainServer);
+// Clean up all temporary test rows so database remains in a clean unactivated state
+db()->exec("DELETE FROM system_license");
+
 
 // -------------------------------------------------------------------------
 // FINAL SUMMARY

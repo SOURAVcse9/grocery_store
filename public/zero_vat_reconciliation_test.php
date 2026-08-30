@@ -5,6 +5,7 @@
 
 declare(strict_types=1);
 
+define('GROCO_CLI_TEST_MODE', true);
 require_once __DIR__ . '/dbconnect.php';
 require_once __DIR__ . '/../admin/middleware/auth_middleware.php';
 

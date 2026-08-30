@@ -120,12 +120,65 @@ function verify_license_signature(string $payloadJson, string $base64Signature, 
 }
 
 /**
- * Retrieve the active local installation license record.
+ * Ensure database license tables exist (auto-migration on fresh clone).
  */
-function get_local_license(): ?array
+function ensure_license_tables_exist(): void
 {
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+    $checked = true;
     try {
-        $stmt = db()->query("SELECT * FROM system_license ORDER BY id DESC LIMIT 1");
+        db()->exec("
+            CREATE TABLE IF NOT EXISTS system_license (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                license_key_hash VARCHAR(64) NOT NULL,
+                license_mask VARCHAR(32) NOT NULL,
+                installation_id VARCHAR(64) NOT NULL,
+                license_type ENUM('development', 'production', 'trial') NOT NULL DEFAULT 'production',
+                domain VARCHAR(255) NOT NULL,
+                customer_email VARCHAR(255) NULL,
+                status ENUM('active', 'suspended', 'expired', 'revoked') NOT NULL DEFAULT 'active',
+                activation_payload LONGTEXT NOT NULL,
+                signature LONGTEXT NOT NULL,
+                last_verified_at TIMESTAMP NULL DEFAULT NULL,
+                next_check_at TIMESTAMP NULL DEFAULT NULL,
+                expires_at TIMESTAMP NULL DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_license_status (status),
+                INDEX idx_license_domain (domain),
+                INDEX idx_license_installation (installation_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+            CREATE TABLE IF NOT EXISTS system_license_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                event_type VARCHAR(50) NOT NULL,
+                message VARCHAR(255) NOT NULL,
+                details TEXT NULL,
+                ip_address VARCHAR(45) NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_license_event (event_type),
+                INDEX idx_license_log_created (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+    } catch (\Throwable $e) {
+        // Table existence fallback
+    }
+}
+
+/**
+ * Retrieve the active local installation license record strictly bound to this installation.
+ */
+function get_local_license(?string $installationId = null): ?array
+{
+    ensure_license_tables_exist();
+    $instId = $installationId ?: get_installation_id();
+
+    try {
+        $stmt = db()->prepare("SELECT * FROM system_license WHERE installation_id = ? ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$instId]);
         $row = $stmt->fetch();
         if (!$row) {
             return null;
@@ -160,6 +213,18 @@ function log_license_event(string $eventType, string $message, ?string $details 
 }
 
 /**
+ * Resolve the authoritative licensing server API endpoint.
+ */
+function get_licensing_server_url(): string
+{
+    $envUrl = getenv('LICENSE_SERVER_URL');
+    if ($envUrl) {
+        return $envUrl;
+    }
+    return license_config('LICENSE_SERVER_URL', 'http://localhost:8080/grocery-store/licensing_server/api.php');
+}
+
+/**
  * Submit an activation request to the authoritative licensing server.
  */
 function activate_license_remote(string $licenseKey, ?string $domain = null, ?string $email = null): array
@@ -167,7 +232,7 @@ function activate_license_remote(string $licenseKey, ?string $domain = null, ?st
     $licenseKey = trim(strtoupper($licenseKey));
     $domain = $domain ? normalize_license_domain($domain) : get_current_domain();
     $installationId = get_installation_id();
-    $serverUrl = license_config('LICENSE_SERVER_URL', 'http://localhost:8080/grocery-store/licensing_server/api.php');
+    $serverUrl = get_licensing_server_url();
 
     $postData = [
         'action' => 'activate',
@@ -243,7 +308,8 @@ function activate_license_remote(string $licenseKey, ?string $domain = null, ?st
 
     db()->beginTransaction();
     try {
-        db()->exec("DELETE FROM system_license"); // Replace any old license record
+        $stmtDel = db()->prepare("DELETE FROM system_license WHERE installation_id = ?");
+        $stmtDel->execute([$installationId]);
         $stmt = db()->prepare("
             INSERT INTO system_license (
                 license_key_hash, license_mask, installation_id, license_type, domain, customer_email,
@@ -291,14 +357,29 @@ function activate_license_remote(string $licenseKey, ?string $domain = null, ?st
  */
 function verify_license_remote(bool $force = false): array
 {
-    $lic = get_local_license();
+    $currentInstId = get_installation_id();
+    $lic = get_local_license($currentInstId);
     if (!$lic) {
-        return ['valid' => false, 'status' => 'unactivated', 'reason' => 'No active license found'];
+        return ['valid' => false, 'status' => 'unactivated', 'reason' => 'No active license found for this installation'];
     }
 
+    // 1. Strict Node Identity verification
+    if (($lic['installation_id'] ?? '') !== $currentInstId) {
+        log_license_event('NODE_MISMATCH', "License installed for node {$lic['installation_id']}, executed on {$currentInstId}");
+        return ['valid' => false, 'status' => 'unactivated', 'reason' => 'Installation ID mismatch'];
+    }
+
+    // 2. Cryptographic signature check
     if (!$lic['is_signature_valid']) {
         log_license_event('TAMPER_DETECTED', 'Stored license signature verification failed');
         return ['valid' => false, 'status' => 'tampered', 'reason' => 'Local license data has been altered'];
+    }
+
+    // 3. Cryptographic payload node binding check
+    $payloadInstId = $lic['payload']['installation_id'] ?? '';
+    if ($payloadInstId !== $currentInstId) {
+        log_license_event('TAMPER_DETECTED', "Signed payload installation mismatch: expected {$currentInstId}, got {$payloadInstId}");
+        return ['valid' => false, 'status' => 'tampered', 'reason' => 'Cryptographic signature is not valid for this installation'];
     }
 
     $currentDomain = get_current_domain();
@@ -340,7 +421,7 @@ function verify_license_remote(bool $force = false): array
     }
 
     // Handshake with remote licensing authority
-    $serverUrl = license_config('LICENSE_SERVER_URL', 'http://localhost:8080/grocery-store/licensing_server/api.php');
+    $serverUrl = get_licensing_server_url();
     $payloadData = $lic['payload'] ?? [];
     $rawKey = $payloadData['license_key'] ?? '';
 
