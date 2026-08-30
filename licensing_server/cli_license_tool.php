@@ -118,6 +118,20 @@ switch ($command) {
         echo "License {$key} has been REACTIVATED.\n";
         break;
 
+    case 'renew':
+        $key = $argv[2] ?? '';
+        if (!$key) die("Error: License key required.\n");
+        $days = isset($opts['days']) ? (int)$opts['days'] : 365;
+        $until = $opts['until'] ?? null;
+        $res = $server->renewLicense($key, $days, $until ? (string)$until : null);
+        if ($res['success']) {
+            echo "🎉 " . $res['message'] . "\n";
+            echo "New Expiration: " . ($res['license']['expires_at'] ?? 'N/A') . "\n";
+        } else {
+            echo "❌ Renewal failed: " . ($res['message'] ?? 'Unknown error') . "\n";
+        }
+        break;
+
     case 'public-key':
         echo "\n----- GROCO LICENSE RSA PUBLIC VERIFICATION KEY -----\n";
         echo $server->getPublicKey() . "\n";
@@ -125,9 +139,10 @@ switch ($command) {
 
     default:
         echo "Commands:\n";
-        echo "  create --customer=NAME --email=EMAIL [--domains=d1,d2] [--limit=1] [--expires=YYYY-MM-DD]\n";
+        echo "  create --customer=NAME --email=EMAIL [--domains=d1,d2] [--limit=1] [--expires=YYYY-MM-DD] [--type=production|development]\n";
         echo "  list\n";
         echo "  inspect <KEY>\n";
+        echo "  renew <KEY> [--days=365] [--until=YYYY-MM-DD]\n";
         echo "  revoke <KEY> [--reason=REASON]\n";
         echo "  suspend <KEY> [--reason=REASON]\n";
         echo "  reactivate <KEY>\n";

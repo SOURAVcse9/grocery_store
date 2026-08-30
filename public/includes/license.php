@@ -411,16 +411,11 @@ function verify_license_remote(bool $force = false): array
     }
 
     $now = time();
-    $nextCheck = strtotime($lic['next_check_at'] ?: '1970-01-01');
     $lastVerified = strtotime($lic['last_verified_at'] ?: '1970-01-01');
     $gracePeriodSecs = (int)license_config('LICENSE_GRACE_PERIOD_DAYS', 7) * 86400;
 
-    // If verification is not yet due and not forced, return cached active status
-    if (!$force && $now < $nextCheck && $lic['status'] === 'active') {
-        return ['valid' => true, 'status' => 'active', 'cached' => true, 'license' => $lic];
-    }
-
-    // Handshake with remote licensing authority
+    // Direct, immediate remote verification handshake with licensing authority on every request.
+    // The authority is the single source of truth for revocation, suspension, and expiration.
     $serverUrl = get_licensing_server_url();
     $payloadData = $lic['payload'] ?? [];
     $rawKey = $payloadData['license_key'] ?? '';
@@ -489,6 +484,13 @@ function verify_license_remote(bool $force = false): array
 
     $remoteStatus = strtolower((string)($res['payload']['status'] ?? 'active'));
     $remoteType = strtolower((string)($res['payload']['license_type'] ?? $licenseType));
+    $serverTime = (int)($res['payload']['server_time'] ?? $now);
+
+    // Enforce server-authoritative timestamp against expiration to prevent client clock manipulation
+    if (!empty($res['payload']['expires_at']) && strtotime($res['payload']['expires_at']) < $serverTime) {
+        $remoteStatus = 'expired';
+    }
+
     $newNextCheck = date('Y-m-d H:i:s', $now + 86400);
     $newLastVerified = date('Y-m-d H:i:s', $now);
     $newExpiresAt = !empty($res['payload']['expires_at']) ? $res['payload']['expires_at'] : null;
@@ -510,13 +512,125 @@ function verify_license_remote(bool $force = false): array
 
     $lic['status'] = $remoteStatus;
     $lic['license_type'] = $remoteType;
+    $lic['expires_at'] = $newExpiresAt;
+    $lic['payload'] = $res['payload'];
 
     if ($remoteStatus !== 'active') {
         log_license_event('STATUS_CHANGED', "License status transitioned to {$remoteStatus}");
         return ['valid' => false, 'status' => $remoteStatus, 'reason' => "License is {$remoteStatus}", 'license' => $lic];
     }
 
+    log_license_event('VERIFY_SUCCESS', "License verified with authority on {$currentDomain}");
     return ['valid' => true, 'status' => 'active', 'license' => $lic];
+}
+
+/**
+ * Verify whether the active license has entitlement to a specific feature module.
+ */
+function has_license_feature(string $featureName): bool
+{
+    $lic = get_local_license();
+    if (!$lic || empty($lic['is_signature_valid']) || $lic['status'] !== 'active') {
+        return false;
+    }
+    $entitlements = $lic['payload']['feature_entitlements'] ?? [];
+    if (!is_array($entitlements)) {
+        return false;
+    }
+    return !empty($entitlements[$featureName]);
+}
+
+/**
+ * Execute authoritative remote business calculation (e.g. ERP inventory valuation).
+ */
+function remote_calculate_inventory_valuation(array $items): array
+{
+    $lic = get_local_license();
+    if (!$lic || empty($lic['is_signature_valid']) || $lic['status'] !== 'active') {
+        return ['success' => false, 'error' => 'UNAUTHORIZED', 'message' => 'Active license required for ERP valuation.'];
+    }
+
+    $serverUrl = get_licensing_server_url();
+    $payloadData = $lic['payload'] ?? [];
+    $rawKey = $payloadData['license_key'] ?? '';
+
+    $postData = [
+        'action' => 'business_operation',
+        'operation' => 'inventory_valuation',
+        'license_key' => $rawKey,
+        'installation_id' => $lic['installation_id'],
+        'items' => $items,
+    ];
+
+    $ch = curl_init($serverUrl . '?action=business_operation');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+    $raw = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($raw === false || $httpCode !== 200) {
+        return ['success' => false, 'error' => 'SERVER_ERROR', 'message' => 'Business authority calculation service unavailable.'];
+    }
+
+    $res = json_decode($raw, true);
+    if (!is_array($res) || empty($res['payload']) || empty($res['signature'])) {
+        return ['success' => false, 'error' => 'INVALID_RESPONSE', 'message' => 'Invalid calculation response payload.'];
+    }
+
+    $payloadJson = json_encode($res['payload'], JSON_UNESCAPED_SLASHES);
+    if (!verify_license_signature($payloadJson, $res['signature'])) {
+        log_license_event('TAMPER_DETECTED', 'Business calculation signature failed verification');
+        return ['success' => false, 'error' => 'TAMPER_DETECTED', 'message' => 'Calculation signature validation failed.'];
+    }
+
+    return $res;
+}
+
+/**
+ * Validates local integrity of critical bootstrap and licensing source files.
+ */
+function verify_application_integrity(): array
+{
+    $criticalFiles = [
+        'public/includes/license.php',
+        'public/dbconnect.php',
+        'public/activate.php',
+        'public/license_status.php',
+    ];
+
+    $root = dirname(__DIR__, 2);
+    $missing = [];
+    $present = [];
+
+    foreach ($criticalFiles as $rel) {
+        $path = $root . '/' . $rel;
+        if (!file_exists($path) || filesize($path) === 0) {
+            $missing[] = $rel;
+        } else {
+            $present[$rel] = hash_file('sha256', $path);
+        }
+    }
+
+    if (!empty($missing)) {
+        log_license_event('INTEGRITY_FAILURE', 'Critical application files missing: ' . implode(', ', $missing));
+        return [
+            'valid' => false,
+            'status' => 'integrity_failure',
+            'missing' => $missing,
+            'hashes' => $present,
+        ];
+    }
+
+    return [
+        'valid' => true,
+        'status' => 'valid',
+        'hashes' => $present,
+    ];
 }
 
 /**

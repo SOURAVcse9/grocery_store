@@ -1,235 +1,160 @@
-# 🛡️ GroCo Software Licensing & Installation Activation Architecture
+# 🛡️ GroCo Software Licensing & Maximum Protection Architecture
 
-## 1. Overview & Threat Model
+## 1. Overview & Business Model
 
-GroCo includes an enterprise-grade, cryptographically signed software licensing and installation activation subsystem designed to prevent unauthorized deployment and commercial usage when source code is obtained or cloned from version control.
-
-### Realistic Security Boundaries for Self-Hosted PHP
-> [!IMPORTANT]
-> Because PHP is an interpreted scripting language executed on the customer's server, anyone with physical or shell access to a server and intermediate programming knowledge can technically read, modify, or strip lines of source code. **No self-hosted PHP application can claim to be mathematically impossible to tamper with once raw source code is handed over.**
->
-> True enterprise software protection relies on **Defense-in-Depth**:
-> 1. **Private GitHub Repository**: Keeping source code access restricted to vetted team members.
-> 2. **Remote Authoritative Licensing Server**: Critical licensing status decisions (active, suspended, expired, revoked) are determined remotely on a project-owner-controlled server.
-> 3. **Asymmetric Cryptographic Signatures (RSA-2048)**: Activation responses are signed with a private key residing **only** on your licensing authority. The client verifies authenticity with an embedded public key. Tampering with local status values breaks the cryptographic signature.
-> 4. **Domain & Machine Binding**: Activations are cryptographically tied to the authorized domain name and unique machine installation ID.
-> 5. **Non-Destructive Enforcement**: Inactive installations are cleanly paused with a friendly status screen. Customer orders, database tables, and uploaded assets are **never deleted or destroyed**.
-
----
-
-## 2. Architecture & Request Flow
+GroCo is sold as **licensed commercial software**. The source code repository is intentionally **PUBLIC on GitHub**, allowing anyone to clone the code, but **no installation can legitimately operate without an authorized license issued by your central licensing authority**.
 
 ```text
-               ANY INSTALLATION (Localhost OR Production Server)       LICENSING AUTHORITY
-        ┌──────────────────────────────────────────────────────┐    ┌────────────────────────┐
-        │                    User Request                      │    │ Project Owner API Host │
-        │                         │                            │    └───────────┬────────────┘
-        │                         ▼                            │                │
-        │               [public/dbconnect.php]                 │                │
-        │                         │                            │                │
-        │                [enforce_license()]                   │                │
-        │                         │                            │                │
-        │                         ▼                            │                │
-        │            Check Local Cryptographic Cache           │                │
-        │                (system_license table)                │                │
-        │                         │                            │                │
-        │               ┌─────────┴──────────┐                 │                │
-        │               ▼                    ▼                 │                │
-        │        [Active & Valid]      [Unactivated / Due]     │                │
-        │               │                    │                 │                │
-        │             ALLOW                  ▼                 │                │
-        │                         Periodic HTTPS Handshake     │                │
-        │                          (Signed Nonce Payload)      │                │
-        │                                    │                 │                │
-        │                                    ├────────────────►│ (POST /api.php?action=verify)
-        │                                    │                 │   • Validates License Type
-        │                                    │                 │   • Validates Domain
-        │                                    │                 │   • Validates Status
-        │                                    │                 │   • Signs with RSA-2048 Private Key
-        │                                    │◄────────────────┤
-        │                                    ▼                 │
-        │                      Verify RSA-2048 Signature       │
-        │                                    │                 │
-        │                      ┌─────────────┴─────────────┐   │
-        │                      ▼                           ▼   │
-        │                [Active / Valid]         [Revoked / Expired]
-        │                      │                           │   │
-        │                    ALLOW                  Display Branded
-        │                                         License Status Screen
-        └──────────────────────────────────────────────────────┘
+       PUBLIC GITHUB REPOSITORY (Anyone may git clone)
+                          │
+                          ▼
+             FRESH CLONE ON ANY SERVER
+                          │
+                          ▼
+                 NO VALID LICENSE
+                          │
+                          ▼
+                 ❌ STRICTLY BLOCKED
+             (Redirects to activate.php)
 ```
 
 ---
 
-## 3. Mandatory License Model: Development vs. Production Tiers
+## 2. 1-Year Commercial Subscription Lifecycle
 
-In accordance with our **Public GitHub Repository** security model, anyone in the world may clone the repository, but **nobody can run the application without an authorized license from your licensing authority**.
+When a merchant purchases a 1-year commercial license:
+1. **License Key**: `GRCO-XXXX-XXXX-XXXX-XXXX`
+2. **Authorized Domain**: e.g., `shop.example.com`
+3. **Expiration Date**: 1 year from issue date (e.g., `2027-08-30`)
+4. **Node Installation ID**: Unique cryptographic hash computed for the server environment.
 
-There is **NO automatic localhost bypass** and **NO environment variable that can disable the licensing system**.
+```text
+VALID 1-YEAR LICENSE
+       │
+       ▼
+AUTHORIZED DOMAIN (shop.example.com)
+       │
+       ▼
+AUTHORIZED INSTALLATION (inst_xxxx)
+       │
+       ▼
+REMOTE HTTPS VERIFICATION
+       │
+       ▼
+ACTIVE & CRYPTOGRAPHICALLY SIGNED
+       │
+       ▼
+✅ STORE OPERATES FULLY
 
-### License Tiers:
 
-1. **Development License (`license_type: development`)**:
-   - Authorized exclusively for local development loopback domains: `localhost`, `127.0.0.1`, `::1`, `*.test`, `*.local`.
-   - Cannot be activated on public or production domains (e.g. `groco.com.bd` will return `DEV_LICENSE_ON_PRODUCTION`).
-   - Issued to your internal developers, contractors, or evaluators.
-
-2. **Production License (`license_type: production`)**:
-   - Authorized exclusively for designated public hostnames / production domains (e.g. `shop.example.com`).
-   - Cannot be activated on `localhost` or local development loopbacks (returns `PROD_LICENSE_ON_LOCALHOST`).
-   - Enforces strict installation slot limits and domain binding.
-
-3. **Trial / Evaluation License (`license_type: trial`)**:
-   - Time-limited license for customer proof-of-concept deployments.
-   - Automatically transitions to `EXPIRED` status upon reaching its expiration timestamp.
+1 YEAR PASSES (Expiry Reached)
+       │
+       ▼
+REMOTE AUTHORITY SENDS 'EXPIRED'
+       │
+       ▼
+❌ APPLICATION BLOCKED (license_status.php?status=expired)
+       │
+       ▼
+MERCHANT RENEWS SUBSCRIPTION
+       │
+       ▼
+AUTHORITY UPDATES EXPIRATION (e.g., 2028-08-30)
+       │
+       ▼
+NEXT REQUEST AUTOMATICALLY SYNCS & RESTORES ACCESS
+       │
+       ▼
+✅ STORE OPERATES FULLY
+```
 
 ---
 
-## 4. Issuing and Managing Licenses via CLI
+## 3. Defense-in-Depth Architecture
 
-As the repository owner, you generate licenses using the administrative CLI tool on your licensing server:
+### A. Immediate Remote Verification (No Stale 24-Hour Cache)
+Every application request reaching the licensing gatekeeper connects to your central licensing authority.
+- **Revocation**: Takes effect immediately on the next request.
+- **Reactivation**: Restores store operation immediately on the next request.
+- **Renewal**: Instantly applies new subscription terms without requiring code changes or reinstallations.
+
+### B. Outage Tolerance & Grace Period (7 Days)
+If your central licensing server experiences temporary network downtime or maintenance:
+- If the store held a valid active license within the last 7 days, it enters `GRACE_ACTIVE` mode (zero unexpected customer checkout downtime).
+- If offline for $> 7$ consecutive days, access is safely paused until connectivity is restored.
+- **Strict Rule**: Remote responses of `revoked`, `suspended`, `expired`, or `domain_mismatch` **never** enter grace period.
+
+### C. RSA-2048 Asymmetric Cryptography
+- The **Private Signing Key** (`license_private.pem`) resides **strictly on your licensing authority** and is NEVER committed to git or shipped to customers.
+- The client installation contains only the public verification key.
+- Direct database tampering (e.g. `UPDATE system_license SET status='active'`) immediately fails RSA signature validation and triggers `TAMPER_DETECTED` containment.
+
+### D. Node & Domain Binding
+- Every installation receives a deterministic `installation_id` based on hardware and filesystem parameters.
+- Two installations sharing a MySQL database cannot share licenses.
+- Copying a database dump to a new server assigns a new node ID; the licensing authority rejects unactivated nodes once the license slot limit is reached.
+
+### E. Server-Authoritative Feature Entitlements
+- Entitlements for modules (`pos`, `erp`, `advanced_reports`, `multi_branch`, `inventory_valuation`) are signed in the remote payload.
+- Modules check `has_license_feature('module_name')` before permitting access.
+
+### F. Remote Authoritative Business Calculations
+- Critical business operations (such as ERP inventory valuation using FIFO and wholesale margin analytics) are computed on the central licensing authority and return cryptographically signed calculations.
+
+### G. Application File Integrity
+- `verify_application_integrity()` verifies SHA-256 integrity of critical core files (`public/includes/license.php`, `public/dbconnect.php`, `public/activate.php`, `public/license_status.php`).
+
+---
+
+## 4. Administrative Authority CLI Tool
+
+Run commands on your licensing server using [`licensing_server/cli_license_tool.php`](file:///c:/xampp/htdocs/grocery-store/licensing_server/cli_license_tool.php):
 
 ```bash
-# Issue a Development License for a local developer
-php licensing_server/cli_license_tool.php create --customer="Dev Team" --email="dev@groco.com" --type=development --limit=3
-
-# Issue a Production License for a paying commercial customer
-php licensing_server/cli_license_tool.php create --customer="Retail Store Ltd" --email="billing@retail.com" --domains="shop.retail.com" --type=production --limit=1
-
-# List all issued licenses
-php licensing_server/cli_license_tool.php list
-
-# Revoke a license remotely
-php licensing_server/cli_license_tool.php revoke <LICENSE_KEY> --reason="Non-payment"
-```
-
----
-
-## 4. Production Mode & Deployment
-
-In production, GroCo requires an active, cryptographically signed license.
-
-### Step 1: Configure Environment Variables
-In `.env` on your production server:
-```env
-APP_ENV=production
-LICENSE_SERVER_URL=https://license.groco.com.bd/api.php
-LICENSE_GRACE_PERIOD_DAYS=7
-```
-
-### Step 2: First-Time Activation
-1. When a user or administrator navigates to the website for the first time, GroCo detects that no activation record exists.
-2. The application presents the **License Activation Screen** (`public/activate.php`).
-3. The administrator enters:
-   - **License Key**: `GRCO-XXXX-XXXX-XXXX-XXXX`
-   - **Contact Email**: `admin@clientdomain.com`
-   - **Domain**: Automatically detected (e.g. `groco.com.bd`)
-4. Upon submission, GroCo contacts your remote licensing authority.
-5. If valid, the licensing server registers the installation and returns an RSA-signed activation token.
-6. The client stores the verified token in `system_license` and unlocks production access.
-
----
-
-## 5. Remote Revocation, Suspension & Statuses
-
-The licensing authority can update a license's status at any time:
-
-| Status | Effect on Production Store | Behavior |
-| :--- | :--- | :--- |
-| **`active`** | Full normal operation | Periodic recheck every 24 hours. |
-| **`suspended`** | Access paused | Shows friendly status screen explaining account review. |
-| **`expired`** | Access paused | Shows subscription renewal notice with contact email. |
-| **`revoked`** | Access permanently paused | Shows license revoked notice. |
-| **`grace_exceeded`** | Access paused | Occurs if offline for $> 7$ consecutive days without re-verification. |
-
-> [!NOTE]
-> All restricted statuses display a clean, branded status screen (`public/license_status.php`) with store contact details. Zero database records or user files are ever deleted.
-
----
-
-## 6. Offline Outage Tolerance & Grace Periods
-
-To prevent customer checkout interruptions during temporary licensing server downtime or maintenance:
-
-1. **24-Hour Cache**: Successful handshakes are cached locally. The client only re-verifies once every 24 hours.
-2. **Configurable Grace Period (Default: 7 Days)**: If the remote licensing API is unreachable due to a network glitch or server outage, GroCo checks the elapsed time since `last_verified_at`.
-   - If within 7 days: GroCo logs `GRACE_ACTIVE` and continues normal operations without interruption.
-   - If offline for more than 7 days: GroCo pauses production access until connectivity is restored.
-
----
-
-## 7. Administrative License Authority CLI
-
-The licensing authority includes a CLI management utility at [`licensing_server/cli_license_tool.php`](file:///c:/xampp/htdocs/grocery-store/licensing_server/cli_license_tool.php):
-
-### Generating a New License:
-```bash
+# 1. Issue a 1-Year Commercial Production License
 php licensing_server/cli_license_tool.php create \
-    --customer="Metro Grocers Ltd" \
-    --email="billing@metrogrocers.com" \
-    --domains="metrogrocers.com,www.metrogrocers.com" \
+    --customer="Acme Supermarket" \
+    --email="owner@acme.com" \
+    --domains="shop.acme.com,www.shop.acme.com" \
     --limit=1 \
-    --expires="2027-12-31" \
-    --notes="Annual Enterprise Plan"
-```
+    --expires="2027-08-30" \
+    --type=production
 
-### Listing All Issued Licenses:
-```bash
-php licensing_server/cli_license_tool.php list
-```
+# 2. Issue a Local Development License for Developers / Testing
+php licensing_server/cli_license_tool.php create \
+    --customer="Core Dev Team" \
+    --email="dev@groco.com.bd" \
+    --domains="localhost" \
+    --limit=2 \
+    --type=development
 
-### Revoking a License:
-```bash
-php licensing_server/cli_license_tool.php revoke GRCO-XXXX-XXXX-XXXX-XXXX --reason="Non-payment"
-```
+# 3. Renew a Commercial License for Another Year (+365 days)
+php licensing_server/cli_license_tool.php renew GRCO-XXXX-XXXX-XXXX-XXXX --days=365
 
-### Suspending a License:
-```bash
-php licensing_server/cli_license_tool.php suspend GRCO-XXXX-XXXX-XXXX-XXXX --reason="Account audit"
-```
+# 4. Revoke a Compromised or Defaulted License
+php licensing_server/cli_license_tool.php revoke GRCO-XXXX-XXXX-XXXX-XXXX --reason="Chargeback / Breach of Terms"
 
-### Reactivating a License:
-```bash
+# 5. Reactivate a Suspended or Revoked License
 php licensing_server/cli_license_tool.php reactivate GRCO-XXXX-XXXX-XXXX-XXXX
-```
 
-### Exporting the Public Verification Key:
-```bash
-php licensing_server/cli_license_tool.php public-key
+# 6. List All Issued Licenses and Activation Slots
+php licensing_server/cli_license_tool.php list
+
+# 7. Inspect Full Signed Metadata for a License
+php licensing_server/cli_license_tool.php inspect GRCO-XXXX-XXXX-XXXX-XXXX
 ```
 
 ---
 
-## 8. Admin License Dashboard
+## 5. Security Realities of Self-Hosted PHP
 
-Store administrators with `settings.manage` permissions can manage their license directly from the GroCo Admin Portal under:
-`Admin Panel -> Settings -> Software License` (`admin/license/index.php`).
-
-Features:
-- Current License Mask (`GRCO-••••-••••-••••-XXXX`)
-- Installation Node ID & Bound Domain
-- Last Verified timestamp & next scheduled check
-- "Re-verify Now" manual check button
-- "Deactivate Installation" button (frees up the license slot for server migration)
-- Audit trail log table of all licensing events
-
----
-
-## 9. GitHub Repository Security Guidelines
-
-To prevent unauthorized access to your GroCo source code:
-
-1. **Keep the Repository PRIVATE**:
-   - Go to `Repository Settings -> Danger Zone -> Change repository visibility -> Make private`.
-2. **Implement Principle of Least Privilege**:
-   - Only invite verified developers as collaborators.
-   - Assign `Read` or `Triage` roles to contractors who do not require write access.
-3. **Protect the Default Branch (`main`)**:
-   - Enable Branch Protection Rules: Require pull request reviews before merging.
-   - Require status checks to pass before merging.
-4. **Never Commit Secrets**:
-   - Ensure `.env` is listed in `.gitignore`.
-   - Never commit `licensing_server/data/license_private.pem` (the master RSA signing key).
-   - Never commit production database backups containing customer records.
-5. **Enable Two-Factor Authentication (2FA)**:
-   - Require 2FA for all GitHub organization members and collaborators.
+> [!IMPORTANT]
+> Because PHP source code executes on the customer's server, anyone with physical root access or source access can edit PHP files. No raw self-hosted PHP script can claim to be mathematically impossible to modify.
+>
+> GroCo achieves maximum real-world protection through **Defense-in-Depth**:
+> 1. Remote authority verification is the source of truth.
+> 2. Database manipulation is defeated by asymmetric RSA-2048 signatures.
+> 3. Database duplication is defeated by installation node identity binding.
+> 4. Clock tampering is defeated by server-authoritative timestamps.
+> 5. Critical business analytics require valid remote authority execution.
+> 6. License failure is strictly non-destructive (customer database records and files are never destroyed).

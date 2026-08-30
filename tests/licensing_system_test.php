@@ -44,12 +44,7 @@ echo "\n======================================================================\n
 echo " GROCO — MANDATORY LICENSING HARDENING (28-SCENARIO AUDIT SUITE)\n";
 echo "======================================================================\n\n";
 
-// Use an isolated sqlite database for testing authority
-$testDb = __DIR__ . '/isolated_test_licensing.sqlite';
-if (file_exists($testDb)) {
-    @unlink($testDb);
-}
-$server = new LicenseServer($testDb);
+$server = new LicenseServer();
 $publicKey = $server->getPublicKey();
 
 // Clean local client database state
@@ -473,9 +468,6 @@ assert_test(
 // -------------------------------------------------------------------------
 unset($server);
 gc_collect_cycles();
-if (file_exists($testDb)) {
-    @unlink($testDb);
-}
 putenv('APP_ENV=development');
 putenv('LICENSE_SERVER_URL=');
 unset($_SERVER['HTTP_HOST']);

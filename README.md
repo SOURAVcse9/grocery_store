@@ -69,7 +69,7 @@ Engineered with clean PHP, vanilla JavaScript, modern CSS Design Tokens, and pur
 │ • `enforce_license()`: Blocks unactivated installations across all environments         │
 │ • RSA-2048 Asymmetric Signature Verification against official public key               │
 │ • Distinct Domain Constraints: Local Development vs. Authorized Production Host        │
-│ • 24-Hour Cryptographic Caching & 7-Day Offline Outage Grace Period Toleration          │
+│ • Immediate Remote Verification & 7-Day Offline Outage Grace Period Toleration          │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
                                              │
                                              ▼

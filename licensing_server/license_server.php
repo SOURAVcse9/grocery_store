@@ -111,6 +111,7 @@ class LicenseServer
                 customer_email TEXT NOT NULL,
                 product TEXT NOT NULL DEFAULT 'GroCo Grocery Store',
                 license_type TEXT NOT NULL DEFAULT 'production',
+                feature_entitlements TEXT NULL,
                 status TEXT NOT NULL DEFAULT 'active',
                 activation_limit INTEGER NOT NULL DEFAULT 1,
                 activation_count INTEGER NOT NULL DEFAULT 0,
@@ -138,9 +139,10 @@ class LicenseServer
 
         try {
             $this->pdo->exec("ALTER TABLE licenses ADD COLUMN license_type TEXT NOT NULL DEFAULT 'production'");
-        } catch (\Throwable $e) {
-            // Already exists
-        }
+        } catch (\Throwable $e) {}
+        try {
+            $this->pdo->exec("ALTER TABLE licenses ADD COLUMN feature_entitlements TEXT NULL");
+        } catch (\Throwable $e) {}
     }
 
     /**
@@ -181,7 +183,8 @@ class LicenseServer
         int $activationLimit = 1,
         ?string $expiresAt = null,
         string $notes = '',
-        string $licenseType = 'production'
+        string $licenseType = 'production',
+        ?array $featureEntitlements = null
     ): array {
         $licenseKey = $this->generateLicenseKey();
         $licenseType = in_array(strtolower($licenseType), ['development', 'trial', 'production'], true)
@@ -194,11 +197,20 @@ class LicenseServer
 
         $normalizedDomains = array_values(array_unique(array_map([$this, 'normalizeDomain'], $allowedDomains)));
 
+        $defaultEntitlements = [
+            'pos' => true,
+            'erp' => true,
+            'advanced_reports' => true,
+            'multi_branch' => false,
+            'inventory_valuation' => true,
+        ];
+        $entitlements = $featureEntitlements !== null ? array_merge($defaultEntitlements, $featureEntitlements) : $defaultEntitlements;
+
         $stmt = $this->pdo->prepare("
             INSERT INTO licenses (
-                license_key, customer_name, customer_email, product, license_type, status,
+                license_key, customer_name, customer_email, product, license_type, feature_entitlements, status,
                 activation_limit, activation_count, allowed_domains, created_at, expires_at, notes
-            ) VALUES (?, ?, ?, 'GroCo Grocery Store', ?, 'active', ?, 0, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, 'GroCo Grocery Store', ?, ?, 'active', ?, 0, ?, ?, ?, ?)
         ");
 
         $now = (new DateTimeImmutable())->format('Y-m-d H:i:s');
@@ -207,6 +219,7 @@ class LicenseServer
             $customerName,
             $customerEmail,
             $licenseType,
+            json_encode($entitlements),
             $activationLimit,
             json_encode($normalizedDomains),
             $now,
@@ -224,6 +237,7 @@ class LicenseServer
         $row = $stmt->fetch();
         if ($row) {
             $row['allowed_domains'] = json_decode($row['allowed_domains'] ?: '[]', true) ?: [];
+            $row['feature_entitlements'] = json_decode($row['feature_entitlements'] ?: '{"pos":true,"erp":true,"advanced_reports":true,"multi_branch":false,"inventory_valuation":true}', true);
         }
         return $row ?: null;
     }
@@ -234,6 +248,7 @@ class LicenseServer
         $rows = $stmt->fetchAll();
         foreach ($rows as &$r) {
             $r['allowed_domains'] = json_decode($r['allowed_domains'] ?: '[]', true) ?: [];
+            $r['feature_entitlements'] = json_decode($r['feature_entitlements'] ?: '{"pos":true,"erp":true,"advanced_reports":true,"multi_branch":false,"inventory_valuation":true}', true);
         }
         return $rows;
     }
@@ -254,6 +269,101 @@ class LicenseServer
             WHERE license_key = ?
         ");
         return $stmt->execute([$status, $revokedAt, $reason, $licenseKey]);
+    }
+
+    /**
+     * Renew an existing commercial license for an additional duration.
+     */
+    public function renewLicense(string $licenseKey, int $extendDays = 365, ?string $newExpiresAt = null, string $reason = 'Commercial subscription renewal'): array
+    {
+        $license = $this->getLicense($licenseKey);
+        if (!$license) {
+            return ['success' => false, 'error' => 'INVALID_LICENSE', 'message' => 'License not found.'];
+        }
+
+        $now = new DateTimeImmutable();
+        if ($newExpiresAt) {
+            $expiryStr = $newExpiresAt;
+        } else {
+            $baseTime = (!empty($license['expires_at']) && strtotime($license['expires_at']) > $now->getTimestamp())
+                ? new DateTimeImmutable($license['expires_at'])
+                : $now;
+            $expiryStr = $baseTime->modify("+{$extendDays} days")->format('Y-m-d H:i:s');
+        }
+
+        $stmt = $this->pdo->prepare("
+            UPDATE licenses 
+            SET expires_at = ?, status = 'active', notes = COALESCE(? || ' | ' || notes, notes)
+            WHERE license_key = ?
+        ");
+        $stmt->execute([$expiryStr, "Renewed until {$expiryStr} ({$reason})", $licenseKey]);
+
+        $updated = $this->getLicense($licenseKey);
+        return [
+            'success' => true,
+            'message' => "License successfully renewed until {$expiryStr}.",
+            'license' => $updated,
+        ];
+    }
+
+    /**
+     * Authoritative remote calculation for ERP inventory valuation and wholesale pricing analytics.
+     */
+    public function calculateBusinessValuation(string $licenseKey, string $installationId, array $inventoryItems): array
+    {
+        $license = $this->getLicense($licenseKey);
+        if (!$license || $license['status'] !== 'active') {
+            return ['success' => false, 'error' => 'UNAUTHORIZED', 'message' => 'Active commercial license required for business calculation operations.'];
+        }
+
+        $stmtInst = $this->pdo->prepare("SELECT * FROM installations WHERE license_id = ? AND installation_id = ? AND status = 'active'");
+        $stmtInst->execute([$license['id'], $installationId]);
+        if (!$stmtInst->fetch()) {
+            return ['success' => false, 'error' => 'UNAUTHORIZED_NODE', 'message' => 'Installation node not authorized.'];
+        }
+
+        $entitlements = $license['feature_entitlements'] ?? [];
+        if (isset($entitlements['inventory_valuation']) && $entitlements['inventory_valuation'] === false) {
+            return ['success' => false, 'error' => 'FEATURE_NOT_ENTITLED', 'message' => 'Inventory valuation module is not enabled in your license tier.'];
+        }
+
+        $totalValuation = 0.0;
+        $itemCalculations = [];
+        foreach ($inventoryItems as $item) {
+            $qty = max(0, (float)($item['qty'] ?? 0));
+            $unitCost = max(0, (float)($item['unit_cost'] ?? 0));
+            $holdingCostRate = (float)($item['holding_rate'] ?? 0.02);
+            $itemValue = $qty * $unitCost;
+            $carryingCost = $itemValue * $holdingCostRate;
+            $netValue = $itemValue + $carryingCost;
+            $totalValuation += $netValue;
+            $itemCalculations[] = [
+                'item_id' => $item['id'] ?? 'unknown',
+                'qty' => $qty,
+                'unit_cost' => $unitCost,
+                'raw_valuation' => round($itemValue, 2),
+                'carrying_cost' => round($carryingCost, 2),
+                'net_valuation' => round($netValue, 2),
+            ];
+        }
+
+        $calcPayload = [
+            'license_key' => $licenseKey,
+            'installation_id' => $installationId,
+            'calculation_type' => 'inventory_valuation_fifo_carrying',
+            'item_count' => count($itemCalculations),
+            'total_valuation' => round($totalValuation, 2),
+            'calculated_at' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+            'server_time' => time(),
+            'item_breakdown' => $itemCalculations,
+        ];
+
+        $sig = $this->signPayload($calcPayload);
+        return [
+            'success' => true,
+            'payload' => $calcPayload,
+            'signature' => $sig,
+        ];
     }
 
     /**
@@ -383,6 +493,14 @@ class LicenseServer
             throw $e;
         }
 
+        $entitlements = $license['feature_entitlements'] ?? [
+            'pos' => true,
+            'erp' => true,
+            'advanced_reports' => true,
+            'multi_branch' => false,
+            'inventory_valuation' => true,
+        ];
+
         // Build signed payload
         $payload = [
             'license_key' => $licenseKey,
@@ -393,7 +511,10 @@ class LicenseServer
             'domain' => $normalizedDomain,
             'status' => 'active',
             'expires_at' => $license['expires_at'],
+            'issued_at' => $license['created_at'] ?? $now,
+            'server_time' => time(),
             'verified_at' => $now,
+            'feature_entitlements' => $entitlements,
             'nonce' => $nonce ?: bin2hex(random_bytes(16)),
         ];
 
@@ -486,6 +607,14 @@ class LicenseServer
         $this->pdo->prepare("UPDATE licenses SET last_verified_at = ? WHERE id = ?")
             ->execute([$now, $license['id']]);
 
+        $entitlements = $license['feature_entitlements'] ?? [
+            'pos' => true,
+            'erp' => true,
+            'advanced_reports' => true,
+            'multi_branch' => false,
+            'inventory_valuation' => true,
+        ];
+
         $payload = [
             'license_key' => $licenseKey,
             'customer_name' => $license['customer_name'],
@@ -495,7 +624,10 @@ class LicenseServer
             'domain' => $normalizedDomain,
             'status' => $license['status'],
             'expires_at' => $license['expires_at'],
+            'issued_at' => $license['created_at'] ?? $now,
+            'server_time' => time(),
             'verified_at' => $now,
+            'feature_entitlements' => $entitlements,
             'nonce' => $nonce ?: bin2hex(random_bytes(16)),
         ];
 

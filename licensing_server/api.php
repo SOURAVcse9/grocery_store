@@ -110,12 +110,55 @@ try {
             echo json_encode($res, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
             break;
 
+        case 'renew':
+            $licenseKey = trim((string)($data['license_key'] ?? ''));
+            $days = isset($data['days']) ? (int)$data['days'] : 365;
+            $newExpiresAt = !empty($data['expires_at']) ? trim((string)$data['expires_at']) : null;
+            $reason = trim((string)($data['reason'] ?? 'Commercial subscription renewal'));
+
+            if (!$licenseKey) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'MISSING_PARAMETERS', 'message' => 'license_key is required.']);
+                exit;
+            }
+
+            $res = $server->renewLicense($licenseKey, $days, $newExpiresAt, $reason);
+            if (!$res['success']) {
+                http_response_code(400);
+            }
+            echo json_encode($res, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            break;
+
+        case 'business_operation':
+            $licenseKey = trim((string)($data['license_key'] ?? ''));
+            $installationId = trim((string)($data['installation_id'] ?? ''));
+            $operation = trim((string)($data['operation'] ?? 'inventory_valuation'));
+            $items = is_array($data['items'] ?? null) ? $data['items'] : [];
+
+            if (!$licenseKey || !$installationId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'MISSING_PARAMETERS', 'message' => 'license_key and installation_id are required.']);
+                exit;
+            }
+
+            if ($operation === 'inventory_valuation') {
+                $res = $server->calculateBusinessValuation($licenseKey, $installationId, $items);
+                if (!$res['success']) {
+                    http_response_code(403);
+                }
+                echo json_encode($res, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'UNKNOWN_OPERATION', 'message' => "Operation '{$operation}' is not supported."]);
+            }
+            break;
+
         default:
             http_response_code(404);
             echo json_encode([
                 'success' => false,
                 'error' => 'UNKNOWN_ACTION',
-                'message' => 'Action must be activate, verify, deactivate, or public_key.',
+                'message' => 'Action must be activate, verify, deactivate, renew, business_operation, or public_key.',
             ]);
             break;
     }
