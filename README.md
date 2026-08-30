@@ -5,7 +5,7 @@
 [![Frontend](https://img.shields.io/badge/Frontend-Vanilla%20JS%20%2F%20CSS3%20Tokens-F7DF1E?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![License Security](https://img.shields.io/badge/Licensing-RSA--2048%20Signed-1a9d55?style=flat&logo=shield&logoColor=white)](docs/LICENSING_SYSTEM.md)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=flat&logo=pwa&logoColor=white)]()
-[![Repository Model](https://img.shields.io/badge/GitHub-Public%20Open%20Source-blue.svg?style=flat)]()
+[![Repository Model](https://img.shields.io/badge/GitHub-Public%20Repository-blue.svg?style=flat)]()
 
 **GroCo** is a full-featured, enterprise-grade Grocery E-Commerce Storefront seamlessly integrated with a back-office Retail ERP, Point-of-Sale (POS) terminal, multi-warehouse inventory manager, double-entry financial ledger, and customer relationship system.
 
@@ -24,7 +24,8 @@ Engineered with clean PHP, vanilla JavaScript, modern CSS Design Tokens, and pur
 - [Software Licensing & Installation Protection](#-software-licensing--installation-protection)
   - [Public GitHub Repository Security Model](#public-github-repository-security-model)
   - [License Tiers: Development vs. Production](#license-tiers-development-vs-production)
-  - [Asymmetric Cryptographic Authority (RSA-2048)](#asymmetric-cryptographic-authority-rsa-2048)
+  - [Immediate Remote Verification & RSA-2048 Cryptography](#immediate-remote-verification--rsa-2048-cryptography)
+  - [Commercial 1-Year Subscriptions & Seamless Renewal](#commercial-1-year-subscriptions--seamless-renewal)
 - [Project Directory Structure](#-project-directory-structure)
 - [Security & Compliance](#-security--compliance)
 - [Prerequisites](#-prerequisites)
@@ -64,12 +65,12 @@ Engineered with clean PHP, vanilla JavaScript, modern CSS Design Tokens, and pur
              └───────────────────────────────┬───────────────────────────────┘
                                              ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                              CENTRAL LICENSING MIDDLEWARE                               │
+│                              CENTRAL LICENSING GATEKEEPER                               │
 ├─────────────────────────────────────────────────────────────────────────────────────────┤
 │ • `enforce_license()`: Blocks unactivated installations across all environments         │
 │ • RSA-2048 Asymmetric Signature Verification against official public key               │
 │ • Distinct Domain Constraints: Local Development vs. Authorized Production Host        │
-│ • Immediate Remote Verification & 7-Day Offline Outage Grace Period Toleration          │
+│ • Immediate Remote Verification on Incoming Web Requests with 7-Day Outage Grace Period │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
                                              │
                                              ▼
@@ -185,13 +186,23 @@ The licensing engine enforces two strict license tiers:
 | **Attempt on Public Web** | **Blocked** (`DEV_LICENSE_ON_PRODUCTION`) | Allowed on bound domain |
 | **Intended User** | Internal core developers, evaluators | Commercial clients, live deployments |
 
-### Asymmetric Cryptographic Authority (RSA-2048)
+### Immediate Remote Verification & RSA-2048 Cryptography
 
-1. The licensing server holds a 2048-bit RSA **private signing key** (`licensing_server/data/license_private.pem`). This key is strictly excluded by `.gitignore` and **never committed to GitHub**.
-2. The GroCo application embeds only the matching RSA **public verification key**.
-3. During activation and periodic verification handshakes, the server returns an RSA-signed JSON payload.
-4. Any attempt to modify the stored license status (e.g., manually changing `status` to `active` or altering `expires_at` in MySQL) invalidates the signature and immediately pauses application execution.
+1. **Authoritative Signing Authority**: The licensing server holds a 2048-bit RSA **private signing key** (`licensing_server/data/license_private.pem`). This key is strictly excluded by `.gitignore` and **never committed to GitHub**.
+2. **Public Key Verification**: The GroCo application embeds only the matching RSA **public verification key**.
+3. **Immediate Remote Verification**: Every normal incoming web request reaching `enforce_license()` performs live cryptographic verification against the central authority. When an administrator revokes a license, the **very next request** to the application is blocked.
+4. **Tamper Containment**: Any attempt to modify the stored license status (e.g., manually changing `status` to `active` or altering `expires_at` in MySQL) invalidates the signature and immediately pauses application execution.
 5. **Outage Resilience**: If your remote licensing server experiences temporary network downtime, active installations continue operating without interruption under a **7-day grace period**.
+
+### Commercial 1-Year Subscriptions & Seamless Renewal
+
+- When a 1-year subscription expires, the remote authority transitions the license status to `EXPIRED`.
+- The merchant renews their subscription with the software provider.
+- The administrator updates the license expiry via the CLI tool:
+  ```bash
+  php licensing_server/cli_license_tool.php renew GRCO-XXXX-XXXX-XXXX-XXXX --days=365
+  ```
+- On the next web request, the store automatically fetches the updated signed payload and restores full operation with **zero downtime, zero code changes, and no reinstallation**.
 
 ---
 
@@ -268,7 +279,8 @@ grocery-store/
 │   └── LICENSING_SYSTEM.md          # Comprehensive Licensing & Security Architecture Guide
 │
 ├── tests/                           # Automated Test Suites
-│   └── licensing_system_test.php    # 28-Scenario Mandatory Licensing Hardening Audit
+│   ├── licensing_system_test.php    # 28-Scenario Mandatory Licensing Hardening Audit
+│   └── licensing_security_hardening_test.php # 32-Scenario Attack Matrix & Security Audit
 │
 ├── admin_full_audit_test.php        # Admin portal automated regression test runner
 ├── admin_db_integrity_scan.php      # Database integrity & foreign-key scan runner
@@ -404,10 +416,15 @@ The application cryptographically validates the token, binds the installation to
 
 ### 3. Generating a Production License (For Commercial Deployments)
 ```bash
-php licensing_server/cli_license_tool.php create --customer="Retail Client Ltd" --email="billing@retail.com" --domains="shop.retail.com" --type=production --limit=1
+php licensing_server/cli_license_tool.php create --customer="Retail Client Ltd" --email="billing@retail.com" --domains="shop.retail.com" --type=production --limit=1 --expires="2027-08-30"
 ```
 
-### 4. Other License Management Commands
+### 4. Renewing a Commercial Subscription
+```bash
+php licensing_server/cli_license_tool.php renew GRCO-XXXX-XXXX-XXXX-XXXX --days=365
+```
+
+### 5. Other License Management Commands
 ```bash
 # List all registered licenses and activation counts
 php licensing_server/cli_license_tool.php list
@@ -433,7 +450,8 @@ GroCo includes an exhaustive suite of automated regression and audit tests that 
 
 | Test Script | Location | Assertions | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Mandatory Licensing Hardening** | `tests/licensing_system_test.php` | **33 Tests / 28 Scenarios** | Validates public repo clone blocking, dev vs. prod license tiers, RSA signatures, domain binding, outage tolerance, and absence of bypasses. |
+| **Licensing Security Hardening Audit** | `tests/licensing_security_hardening_test.php` | **32 Tests / 32 Scenarios** | 32-scenario zero-trust attack matrix testing clone blocking, tampering, expiry, outage, and renewal flows. |
+| **Mandatory Licensing Hardening** | `tests/licensing_system_test.php` | **33 Tests / 28 Scenarios** | Validates public repo clone blocking, dev vs. prod license tiers, RSA signatures, domain binding, and outage tolerance. |
 | **Dark Theme & Form Controls** | `public/dark_theme_form_controls_test.php` | **38 Tests** | Validates CSS tokens, native select `<option>` dark styling, zero inline white backgrounds, and custom select ARIA semantics. |
 | **About & Contact Responsiveness** | `public/about_contact_responsive_audit_test.php` | **40 Tests** | Simulates a 13-breakpoint matrix ($320\text{px} \rightarrow 1440\text{px}$), verifying container constraints and zero horizontal overflow. |
 | **Customer Review Image & Lightbox** | `public/customer_review_image_e2e_test.php` | **23 Tests** | Verifies secure image uploads, storage resolution, thumbnail buttons, and modal lightbox viewer logic. |
@@ -445,7 +463,10 @@ GroCo includes an exhaustive suite of automated regression and audit tests that 
 
 ### Running the Test Suites via CLI:
 ```bash
-# Run Mandatory Licensing Hardening Audit (28 Scenarios)
+# Run 32-Scenario Licensing Security Hardening Audit
+php tests/licensing_security_hardening_test.php
+
+# Run 28-Scenario Mandatory Licensing Audit
 php tests/licensing_system_test.php
 
 # Run Dark Theme Form Controls Test

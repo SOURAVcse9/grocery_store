@@ -1,13 +1,15 @@
 # ==============================================================================
-# GroCo Grocery Store — Production-Safe .gitignore
+# GroCo Grocery Store — Production-Safe & Security-Hardened .gitignore
 # ==============================================================================
-# Designed specifically for the GroCo PHP / MySQL E-Commerce & ERP Architecture.
-# Protects secrets, credentials, user uploads, logs, cache, and database dumps,
-# while preserving all application source code, configs, migrations, and assets.
+# Designed specifically for the GroCo PHP / MySQL E-Commerce & Retail ERP Platform.
+# Guarantees zero secret leakage (RSA private keys, SQLite authority databases,
+# environment variables, customer uploads, financial dumps, and session logs),
+# while strictly preserving all application source code, configs, migrations,
+# test suites, and frontend asset directories.
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# 1. Environment & Secret Configuration
+# 1. Environment Secrets & Configuration
 # ------------------------------------------------------------------------------
 .env
 .env.*
@@ -19,20 +21,47 @@ config.private.php
 database.local.php
 db.local.php
 local.php
+auth.json
 secrets/
 private/
 credentials/
+*.secret
+*.secret.*
+
+# ------------------------------------------------------------------------------
+# 2. Cryptographic Keys, Certificates & Authority Databases
+# ------------------------------------------------------------------------------
+# Licensing authority SQLite database and private RSA signing keys
 licensing_server/data/
 licensing_server/*.pem
 licensing_server/*.key
 licensing_server/*.sqlite
+licensing_server/*.sqlite3
+licensing_server/*.db
+license_private.pem
+authority_private.pem
+
+# Generic private keys and certificates (preserves public distribution keys)
+*.key
+*.pem
+*.pfx
+*.p12
+*.crt
+*.cer
+*.der
+*.csr
+*.jks
 storage/*.key
+storage/install_id.key
+
+# SQLite database files
 *.sqlite
 *.sqlite3
 *.db
+*.sdb
 
 # ------------------------------------------------------------------------------
-# 2. Runtime Storage, Logs & Cache
+# 3. Runtime Storage, Logs, Caches & Sessions
 # ------------------------------------------------------------------------------
 # Storage directory runtime artifacts
 storage/logs/**
@@ -47,12 +76,12 @@ storage/backups/**
 !storage/backups/**/
 !storage/backups/**/.gitkeep
 
-# User and customer uploads (avatars, reviews, products, categories, brands, banners)
+# User & customer uploads (avatars, reviews, product galleries, categories, banners)
 storage/uploads/**
 !storage/uploads/**/
 !storage/uploads/**/.gitkeep
 
-# Public runtime uploads & audit logs
+# Public runtime uploads & error logs
 public/logs/**
 !public/logs/**/
 !public/logs/.htaccess
@@ -68,9 +97,11 @@ admin/uploads/**
 !admin/uploads/**/
 !admin/uploads/**/.gitkeep
 
-# General log files
+# General log & session files
 *.log
 *.log.*
+sess_*
+session_*
 
 # General cache & temporary runtime files
 *.cache
@@ -79,15 +110,18 @@ admin/uploads/**
 cache/
 tmp/
 temp/
+scratch/
 
 # ------------------------------------------------------------------------------
-# 3. Database Backups, Dumps & Ad-hoc Exports
+# 4. Database Backups, Dumps & Ad-hoc Exports
 # ------------------------------------------------------------------------------
-# Prevent accidental upload of production database dumps containing real user data
+# Prevent accidental upload of production database dumps containing real customer data
 *.dump
+*.bak
 *.bak.sql
 *.backup.sql
 *.tmp.sql
+*.export.sql
 database/backups/
 database/backup/
 database/dumps/
@@ -100,9 +134,8 @@ database/*.csv
 database/archive.zip
 
 # ------------------------------------------------------------------------------
-# 4. Generated Reports & Data Exports
+# 5. Generated Reports & Data Exports
 # ------------------------------------------------------------------------------
-# Ignore runtime-generated exports (CSV, PDF, Excel) outside documentation
 admin/reports/exports/*.csv
 admin/reports/exports/*.pdf
 admin/reports/exports/*.xlsx
@@ -110,7 +143,7 @@ storage/exports/
 *.export.csv
 
 # ------------------------------------------------------------------------------
-# 5. Test Artifacts & Code Coverage
+# 6. Test Artifacts, Scratch Scripts & Code Coverage
 # ------------------------------------------------------------------------------
 coverage/
 .phpunit.result.cache
@@ -120,14 +153,9 @@ screenshots/
 *.test.log
 
 # ------------------------------------------------------------------------------
-# 6. PHP / Composer
+# 7. PHP / Composer & Node Dependencies
 # ------------------------------------------------------------------------------
 vendor/
-# Note: composer.lock should be committed in applications when Composer is used
-
-# ------------------------------------------------------------------------------
-# 7. Node / Frontend Tooling (if added)
-# ------------------------------------------------------------------------------
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -135,7 +163,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # ------------------------------------------------------------------------------
-# 8. IDE & Editor Metadata
+# 8. IDE, Editor & Workspace Metadata
 # ------------------------------------------------------------------------------
 .vscode/*
 !.vscode/settings.json
@@ -143,6 +171,7 @@ pnpm-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 .idea/
+.history/
 *.code-workspace
 *.sublime-project
 *.sublime-workspace
@@ -168,19 +197,9 @@ Desktop.ini
 *.stackdump
 
 # ------------------------------------------------------------------------------
-# 10. Security Keys & Certificates
+# 10. Explicit Preservation of Essential Architecture Schemas & Test Suites
 # ------------------------------------------------------------------------------
-*.pem
-*.key
-*.crt
-*.p12
-*.pfx
-*.jks
-
-# ------------------------------------------------------------------------------
-# 11. Preservation of Required Architecture Assets & Migration Schemas
-# ------------------------------------------------------------------------------
-# Explicitly ensure production .htaccess files are NEVER ignored
+# Guarantee all Apache configuration files are NEVER ignored
 !.htaccess
 !public/.htaccess
 !storage/.htaccess
@@ -188,15 +207,18 @@ Desktop.ini
 !public/logs/.htaccess
 !public/uploads/.htaccess
 
-# Ensure permanent static placeholder images are always tracked
+# Guarantee permanent static placeholder images and assets are tracked
 !public/assets/images/**
 !public/assets/icons/**
 !public/assets/fonts/**
 
-# Keep all essential application code, test suites, and schema files trackable
+# Guarantee core database migration SQL schemas are tracked
 !database/pos_erp_migrations.sql
 !database/license_migrations.sql
+
+# Guarantee all regression & security test suites are tracked
 !admin_full_audit_test.php
 !admin_db_integrity_scan.php
 !tests/licensing_system_test.php
+!tests/licensing_security_hardening_test.php
 !docs/LICENSING_SYSTEM.md
