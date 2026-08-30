@@ -6,3 +6,14 @@
 
 # Prevent direct index browsing
 Options -Indexes
+
+# Block direct access to all sensitive files and extensions
+<FilesMatch "^\.env|\.(env|pem|key|sqlite|sqlite3|db|sql|log|bak|tmp|dump)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Deny,Allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

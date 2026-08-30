@@ -1,0 +1,24 @@
+# GroCo Licensing Authority Directory Security
+Options -Indexes
+
+# Block CLI administrative utility from direct HTTP access
+<Files "cli_license_tool.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Deny,Allow
+        Deny from all
+    </IfModule>
+</Files>
+
+# Block all private keys, sqlite databases, and pem files
+<FilesMatch "\.(pem|key|sqlite|sqlite3|db|lock)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Deny,Allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

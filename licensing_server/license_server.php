@@ -323,45 +323,65 @@ class LicenseServer
             ];
         }
 
-        // Check if installation already exists
-        $stmtInst = $this->pdo->prepare("SELECT * FROM installations WHERE license_id = ? AND installation_id = ?");
-        $stmtInst->execute([$license['id'], $installationId]);
-        $existingInst = $stmtInst->fetch();
-
         $now = (new DateTimeImmutable())->format('Y-m-d H:i:s');
 
-        if (!$existingInst) {
-            // Check activation limit
-            if ($license['activation_count'] >= $license['activation_limit']) {
-                return [
-                    'success' => false,
-                    'error' => 'ACTIVATION_LIMIT_EXCEEDED',
-                    'message' => "Activation limit of {$license['activation_limit']} installation(s) reached for this license.",
-                ];
+        // Atomic Transaction: check limit + insert installation
+        $this->pdo->beginTransaction();
+        try {
+            // Re-fetch fresh license with transaction lock
+            $stmtFresh = $this->pdo->prepare("SELECT * FROM licenses WHERE id = ?");
+            $stmtFresh->execute([$license['id']]);
+            $freshLicense = $stmtFresh->fetch();
+
+            $stmtInst = $this->pdo->prepare("SELECT * FROM installations WHERE license_id = ? AND installation_id = ?");
+            $stmtInst->execute([$license['id'], $installationId]);
+            $existingInst = $stmtInst->fetch();
+
+            if (!$existingInst) {
+                // Strict atomic count check against actual active installations
+                $stmtCount = $this->pdo->prepare("SELECT COUNT(*) FROM installations WHERE license_id = ? AND status = 'active'");
+                $stmtCount->execute([$license['id']]);
+                $activeCount = (int)$stmtCount->fetchColumn();
+
+                if ($activeCount >= (int)$freshLicense['activation_limit'] || (int)$freshLicense['activation_count'] >= (int)$freshLicense['activation_limit']) {
+                    $this->pdo->rollBack();
+                    return [
+                        'success' => false,
+                        'error' => 'ACTIVATION_LIMIT_EXCEEDED',
+                        'message' => "Activation limit of {$freshLicense['activation_limit']} installation(s) reached for this license.",
+                    ];
+                }
+
+                // Record new installation
+                $stmtInsert = $this->pdo->prepare("
+                    INSERT INTO installations (license_id, installation_id, domain, ip_address, status, activated_at, last_verified_at)
+                    VALUES (?, ?, ?, ?, 'active', ?, ?)
+                ");
+                $stmtInsert->execute([$license['id'], $installationId, $normalizedDomain, $clientIp, $now, $now]);
+
+                // Increment activation count to match actual count
+                $this->pdo->prepare("UPDATE licenses SET activation_count = ? WHERE id = ?")
+                    ->execute([$activeCount + 1, $license['id']]);
+            } else {
+                // Update existing installation record
+                $stmtUpdate = $this->pdo->prepare("
+                    UPDATE installations 
+                    SET domain = ?, ip_address = ?, status = 'active', last_verified_at = ?
+                    WHERE id = ?
+                ");
+                $stmtUpdate->execute([$normalizedDomain, $clientIp, $now, $existingInst['id']]);
             }
 
-            // Record new installation
-            $stmtInsert = $this->pdo->prepare("
-                INSERT INTO installations (license_id, installation_id, domain, ip_address, status, activated_at, last_verified_at)
-                VALUES (?, ?, ?, ?, 'active', ?, ?)
-            ");
-            $stmtInsert->execute([$license['id'], $installationId, $normalizedDomain, $clientIp, $now, $now]);
+            // Update license last verified
+            $this->pdo->prepare("UPDATE licenses SET last_verified_at = ? WHERE id = ?")->execute([$now, $license['id']]);
 
-            // Increment activation count
-            $this->pdo->prepare("UPDATE licenses SET activation_count = activation_count + 1 WHERE id = ?")
-                ->execute([$license['id']]);
-        } else {
-            // Update existing installation record
-            $stmtUpdate = $this->pdo->prepare("
-                UPDATE installations 
-                SET domain = ?, ip_address = ?, status = 'active', last_verified_at = ?
-                WHERE id = ?
-            ");
-            $stmtUpdate->execute([$normalizedDomain, $clientIp, $now, $existingInst['id']]);
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
         }
-
-        // Update license last verified
-        $this->pdo->prepare("UPDATE licenses SET last_verified_at = ? WHERE id = ?")->execute([$now, $license['id']]);
 
         // Build signed payload
         $payload = [
@@ -496,20 +516,36 @@ class LicenseServer
     {
         $license = $this->getLicense($licenseKey);
         if (!$license) {
-            return ['success' => false, 'error' => 'INVALID_LICENSE'];
+            return ['success' => false, 'error' => 'INVALID_LICENSE', 'message' => 'License not found.'];
         }
 
-        $stmt = $this->pdo->prepare("DELETE FROM installations WHERE license_id = ? AND installation_id = ?");
-        $stmt->execute([$license['id'], $installationId]);
-        $deleted = $stmt->rowCount();
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM installations WHERE license_id = ? AND installation_id = ?");
+            $stmt->execute([$license['id'], $installationId]);
+            $deleted = $stmt->rowCount();
 
-        if ($deleted > 0) {
-            $this->pdo->prepare("UPDATE licenses SET activation_count = MAX(0, activation_count - 1) WHERE id = ?")
-                ->execute([$license['id']]);
-            return ['success' => true, 'message' => 'Installation deactivated successfully.'];
+            if ($deleted > 0) {
+                // Reconcile actual active count atomically
+                $stmtCount = $this->pdo->prepare("SELECT COUNT(*) FROM installations WHERE license_id = ? AND status = 'active'");
+                $stmtCount->execute([$license['id']]);
+                $realCount = (int)$stmtCount->fetchColumn();
+
+                $this->pdo->prepare("UPDATE licenses SET activation_count = ? WHERE id = ?")
+                    ->execute([$realCount, $license['id']]);
+
+                $this->pdo->commit();
+                return ['success' => true, 'message' => 'Installation deactivated successfully.'];
+            }
+
+            $this->pdo->rollBack();
+            return ['success' => false, 'error' => 'INSTALLATION_NOT_FOUND', 'message' => 'No active installation found for this license and installation ID.'];
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
         }
-
-        return ['success' => false, 'error' => 'INSTALLATION_NOT_FOUND'];
     }
 
     public function signPayload(array $payload): string

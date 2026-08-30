@@ -21,6 +21,7 @@ require_once __DIR__ . '/license_server.php';
 use GroCo\Licensing\LicenseServer;
 
 if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
     die("CLI only.\n");
 }
 

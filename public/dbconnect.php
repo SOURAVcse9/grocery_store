@@ -174,7 +174,7 @@ require_once PUBLIC_PATH . '/csrf.php';
 require_once PUBLIC_PATH . '/includes/auth.php';
 require_once PUBLIC_PATH . '/includes/license.php';
 
-// Enforce software licensing & activation (bypassed automatically in local development mode)
+// Enforce mandatory software licensing & cryptographic activation across all environments
 enforce_license();
 
 // Trigger automatic cookie logins

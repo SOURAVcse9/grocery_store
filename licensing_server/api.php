@@ -31,6 +31,17 @@ try {
 
     $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
+    // Enforce HTTP POST for state-changing operations
+    if (in_array($action, ['activate', 'verify', 'deactivate'], true) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        http_response_code(405);
+        echo json_encode([
+            'success' => false,
+            'error' => 'METHOD_NOT_ALLOWED',
+            'message' => 'Action requires HTTP POST request.',
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     switch ($action) {
         case 'public_key':
             echo json_encode([
