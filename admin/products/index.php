@@ -200,13 +200,13 @@ try {
         <!-- Search -->
         <div class="form-field-group" style="margin:0;">
             <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Keyword Search</label>
-            <input type="text" name="search" placeholder="Name, SKU, Slug..." value="<?= e($search) ?>" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+            <input type="text" name="search" placeholder="Name, SKU, Slug..." value="<?= e($search) ?>" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
         </div>
 
         <!-- Category -->
         <div class="form-field-group" style="margin:0;">
             <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Category</label>
-            <select name="category_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="category_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="0">All Categories</option>
                 <?php foreach ($categories as $c): ?>
                     <option value="<?= $c['id'] ?>" <?= $catFilter === (int)$c['id'] ? 'selected' : '' ?>><?= e($c['name']) ?></option>
@@ -217,7 +217,7 @@ try {
         <!-- Brand -->
         <div class="form-field-group" style="margin:0;">
             <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Brand</label>
-            <select name="brand_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="brand_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="0">All Brands</option>
                 <?php foreach ($brands as $b): ?>
                     <option value="<?= $b['id'] ?>" <?= $brandFilter === (int)$b['id'] ? 'selected' : '' ?>><?= e($b['name']) ?></option>
@@ -228,7 +228,7 @@ try {
         <!-- Stock -->
         <div class="form-field-group" style="margin:0;">
             <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Stock Level</label>
-            <select name="stock" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="stock" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">All Stocks</option>
                 <option value="low" <?= $stockFilter === 'low' ? 'selected' : '' ?>>Low Stock</option>
                 <option value="out" <?= $stockFilter === 'out' ? 'selected' : '' ?>>Out of Stock</option>
@@ -238,7 +238,7 @@ try {
         <!-- Status -->
         <div class="form-field-group" style="margin:0;">
             <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Status</label>
-            <select name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">All Statuses</option>
                 <option value="Published" <?= $statusFilter === 'Published' ? 'selected' : '' ?>>Published</option>
                 <option value="Draft" <?= $statusFilter === 'Draft' ? 'selected' : '' ?>>Draft</option>
@@ -250,7 +250,7 @@ try {
         <!-- Sort -->
         <div class="form-field-group" style="margin:0;">
             <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Sort Order</label>
-            <select name="sort" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="sort" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Newest First</option>
                 <option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Oldest First</option>
                 <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Price: Low to High</option>
@@ -276,7 +276,7 @@ try {
         <div style="padding:var(--space-3) var(--space-5); border-bottom:1px solid var(--color-border); background:var(--color-bg); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <!-- Bulk select action dropdown -->
             <div style="display:flex; align-items:center; gap:10px;">
-                <select name="bulk_action" id="bulkActionSelect" style="padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:#fff; outline:none; font-weight:600;">
+                <select name="bulk_action" id="bulkActionSelect" style="padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:var(--color-surface); color:var(--color-text); outline:none; font-weight:600;">
                     <option value="">Bulk Actions</option>
                     <?php if ($viewFilter === 'trash'): ?>
                         <option value="restore">Bulk Restore</option>

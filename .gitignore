@@ -1,0 +1,191 @@
+# ==============================================================================
+# GroCo Grocery Store — Production-Safe .gitignore
+# ==============================================================================
+# Designed specifically for the GroCo PHP / MySQL E-Commerce & ERP Architecture.
+# Protects secrets, credentials, user uploads, logs, cache, and database dumps,
+# while preserving all application source code, configs, migrations, and assets.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Secret Configuration
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+config.local.php
+config.private.php
+database.local.php
+db.local.php
+local.php
+secrets/
+private/
+credentials/
+
+# ------------------------------------------------------------------------------
+# 2. Runtime Storage, Logs & Cache
+# ------------------------------------------------------------------------------
+# Storage directory runtime artifacts
+storage/logs/**
+!storage/logs/**/
+!storage/logs/**/.gitkeep
+
+storage/cache/**
+!storage/cache/**/
+!storage/cache/**/.gitkeep
+
+storage/backups/**
+!storage/backups/**/
+!storage/backups/**/.gitkeep
+
+# User and customer uploads (avatars, reviews, products, categories, brands, banners)
+storage/uploads/**
+!storage/uploads/**/
+!storage/uploads/**/.gitkeep
+
+# Public runtime uploads & audit logs
+public/logs/**
+!public/logs/**/
+!public/logs/.htaccess
+!public/logs/**/.gitkeep
+
+public/uploads/**
+!public/uploads/**/
+!public/uploads/.htaccess
+!public/uploads/**/.gitkeep
+
+# Admin runtime uploads
+admin/uploads/**
+!admin/uploads/**/
+!admin/uploads/**/.gitkeep
+
+# General log files
+*.log
+*.log.*
+
+# General cache & temporary runtime files
+*.cache
+*.tmp
+*.temp
+cache/
+tmp/
+temp/
+
+# ------------------------------------------------------------------------------
+# 3. Database Backups, Dumps & Ad-hoc Exports
+# ------------------------------------------------------------------------------
+# Prevent accidental upload of production database dumps containing real user data
+*.dump
+*.bak.sql
+*.backup.sql
+*.tmp.sql
+database/backups/
+database/backup/
+database/dumps/
+backups/
+
+# Ignore duplicate/adhoc dump copies, order exports, and external data archives
+database/* (1).sql
+database/*.bak
+database/*.csv
+database/archive.zip
+
+# ------------------------------------------------------------------------------
+# 4. Generated Reports & Data Exports
+# ------------------------------------------------------------------------------
+# Ignore runtime-generated exports (CSV, PDF, Excel) outside documentation
+admin/reports/exports/*.csv
+admin/reports/exports/*.pdf
+admin/reports/exports/*.xlsx
+storage/exports/
+*.export.csv
+
+# ------------------------------------------------------------------------------
+# 5. Test Artifacts & Code Coverage
+# ------------------------------------------------------------------------------
+coverage/
+.phpunit.result.cache
+test-results/
+playwright-report/
+screenshots/
+*.test.log
+
+# ------------------------------------------------------------------------------
+# 6. PHP / Composer
+# ------------------------------------------------------------------------------
+vendor/
+# Note: composer.lock should be committed in applications when Composer is used
+
+# ------------------------------------------------------------------------------
+# 7. Node / Frontend Tooling (if added)
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------------------------------------------------------------
+# 8. IDE & Editor Metadata
+# ------------------------------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+
+# ------------------------------------------------------------------------------
+# 9. Operating System Artifacts
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+*.stackdump
+
+# ------------------------------------------------------------------------------
+# 10. Security Keys & Certificates
+# ------------------------------------------------------------------------------
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+
+# ------------------------------------------------------------------------------
+# 11. Preservation of Required Architecture Assets & Migration Schemas
+# ------------------------------------------------------------------------------
+# Explicitly ensure production .htaccess files are NEVER ignored
+!.htaccess
+!public/.htaccess
+!storage/.htaccess
+!database/.htaccess
+!public/logs/.htaccess
+!public/uploads/.htaccess
+
+# Ensure permanent static placeholder images are always tracked
+!public/assets/images/**
+!public/assets/icons/**
+!public/assets/fonts/**
+
+# Keep all essential application code, test suites, and schema files trackable
+!database/pos_erp_migrations.sql
+!admin_full_audit_test.php
+!admin_db_integrity_scan.php

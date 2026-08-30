@@ -140,7 +140,7 @@ try {
 <div class="dashboard-card" style="padding:var(--space-4); margin-bottom:var(--space-4);">
     <form method="get" style="display:flex; gap:12px; align-items:end; max-width:500px;">
         <div class="form-field-group" style="margin:0; flex:1;">
-            <select name="date_range" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="date_range" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="all">All Historic POS Sales</option>
                 <option value="today" <?= $filterDate === 'today' ? 'selected' : '' ?>>Today's Sales</option>
                 <option value="yesterday" <?= $filterDate === 'yesterday' ? 'selected' : '' ?>>Yesterday's Sales</option>

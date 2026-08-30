@@ -446,7 +446,7 @@ try {
             
             <div class="form-field-group">
                 <label for="prodStatus" style="font-weight:700;">Listing Status</label>
-                <select id="prodStatus" name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="prodStatus" name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="Published" <?= $product['status'] === 'Published' ? 'selected' : '' ?>>Published</option>
                     <option value="Draft" <?= $product['status'] === 'Draft' ? 'selected' : '' ?>>Draft</option>
                     <option value="Hidden" <?= $product['status'] === 'Hidden' ? 'selected' : '' ?>>Hidden</option>
@@ -473,7 +473,7 @@ try {
             
             <div class="form-field-group">
                 <label for="prodCat" style="font-weight:700;">Parent Category *</label>
-                <select id="prodCat" name="category_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="prodCat" name="category_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">Select Category</option>
                     <?php foreach ($parents as $pCat): ?>
                         <option value="<?= $pCat['id'] ?>" style="font-weight:700;" <?= (int)$product['category_id'] === (int)$pCat['id'] ? 'selected' : '' ?>><?= e($pCat['name']) ?></option>
@@ -488,7 +488,7 @@ try {
 
             <div class="form-field-group">
                 <label for="prodBrand" style="font-weight:700;">Brand / Maker</label>
-                <select id="prodBrand" name="brand_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="prodBrand" name="brand_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">Select Brand</option>
                     <?php foreach ($brands as $b): ?>
                         <option value="<?= $b['id'] ?>" <?= (int)$product['brand_id'] === (int)$b['id'] ? 'selected' : '' ?>><?= e($b['name']) ?></option>

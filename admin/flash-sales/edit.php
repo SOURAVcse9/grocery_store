@@ -109,7 +109,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label for="fsProduct" style="font-weight:700;">Select Product *</label>
-            <select id="fsProduct" name="product_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select id="fsProduct" name="product_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">Choose product...</option>
                 <?php foreach ($products as $p): ?>
                     <option value="<?= $p['id'] ?>" <?= $p['id'] === $fs['product_id'] ? 'selected' : '' ?>><?= e($p['name']) ?> (৳<?= number_format((float)$p['price'], 2) ?>)</option>
@@ -124,7 +124,7 @@ if (method_is('post')) {
             </div>
             <div class="form-field-group">
                 <label for="fsStatus" style="font-weight:700;">Campaign status</label>
-                <select id="fsStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="fsStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="1" <?= (int)$fs['is_active'] === 1 ? 'selected' : '' ?>>Enabled (Active)</option>
                     <option value="0" <?= (int)$fs['is_active'] === 0 ? 'selected' : '' ?>>Disabled (Inactive)</option>
                 </select>

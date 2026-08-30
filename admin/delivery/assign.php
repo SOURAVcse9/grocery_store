@@ -100,7 +100,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label style="font-weight:700;">Select Order *</label>
-            <select name="order_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="order_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">Select order...</option>
                 <?php foreach ($orders as $o): ?>
                     <option value="<?= $o['id'] ?>"><?= e($o['order_number']) ?> (Value: ৳<?= number_format((float)$o['total_amount'], 2) ?>)</option>
@@ -110,7 +110,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label style="font-weight:700;">Select Delivery Agent *</label>
-            <select name="delivery_boy_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="delivery_boy_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">Select delivery boy...</option>
                 <?php foreach ($boys as $b): ?>
                     <option value="<?= $b['id'] ?>"><?= e($b['name']) ?></option>

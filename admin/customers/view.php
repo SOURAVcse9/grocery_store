@@ -667,7 +667,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
 
                     <div class="form-field-group">
                         <label style="font-weight:700;">Notification Type</label>
-                        <select name="notif_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                        <select name="notif_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                             <option value="account">Account Alert</option>
                             <option value="order">Order Update</option>
                             <option value="coupon">Coupon Discount Notice</option>
@@ -687,7 +687,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
 
                     <div class="form-field-group">
                         <label style="font-weight:700;">Select Template Type</label>
-                        <select name="email_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                        <select name="email_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                             <option value="welcome">Welcome Onboarding Email</option>
                             <option value="password_reset">Password Recovery URL</option>
                             <option value="promotion">Promo Event Notification</option>

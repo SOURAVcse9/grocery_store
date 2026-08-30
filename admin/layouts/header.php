@@ -46,6 +46,7 @@ $__admin_avatar = image_url($__admin['avatar'] ?? null, 'users');
     <!-- Chart.js CDN for responsive analytics widget integration -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="<?= asset('js/theme.js') ?>"></script>
+    <script src="<?= BASE_URL ?>/../admin/assets/js/custom-select.js"></script>
 </head>
 <body class="admin-body">
     <div class="admin-layout-wrapper">

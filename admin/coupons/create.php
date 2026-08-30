@@ -105,7 +105,7 @@ if (method_is('post')) {
             </div>
             <div class="form-field-group">
                 <label for="couponType" style="font-weight:700;">Discount Type *</label>
-                <select id="couponType" name="type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="couponType" name="type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="percentage">Percentage Off (%)</option>
                     <option value="fixed">Fixed Amount Off (৳)</option>
                     <option value="free_shipping">Free Shipping</option>
@@ -153,7 +153,7 @@ if (method_is('post')) {
             </div>
             <div class="form-field-group">
                 <label for="couponStatus" style="font-weight:700;">Active Status</label>
-                <select id="couponStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="couponStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="1">Enabled (Active)</option>
                     <option value="0">Disabled (Inactive)</option>
                 </select>

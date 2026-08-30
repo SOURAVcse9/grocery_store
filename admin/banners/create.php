@@ -114,7 +114,7 @@ if (method_is('post')) {
             </div>
             <div class="form-field-group">
                 <label for="bannerType" style="font-weight:700;">Banner Display Type *</label>
-                <select id="bannerType" name="type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="bannerType" name="type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="desktop">Desktop Banner (Hero Slider)</option>
                     <option value="tablet">Tablet Slider</option>
                     <option value="mobile">Mobile Slider</option>
@@ -127,7 +127,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label for="bannerImage" style="font-weight:700;">Select Banner Image File *</label>
-            <input type="file" id="bannerImage" name="image" required accept="image/*" style="width:100%; padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <input type="file" id="bannerImage" name="image" required accept="image/*" style="width:100%; padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
             <span class="field-help-text">PNG, JPG, JPEG, or WEBP. Max file size: 3MB.</span>
         </div>
 
@@ -155,7 +155,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label for="bannerStatus" style="font-weight:700;">Active Status</label>
-            <select id="bannerStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select id="bannerStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="1">Enabled (Visible)</option>
                 <option value="0">Disabled (Hidden)</option>
             </select>

@@ -155,7 +155,7 @@ try {
         <!-- Status -->
         <div class="form-field-group" style="margin:0;">
             <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Order Status</label>
-            <select name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">All Statuses</option>
                 <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>Pending</option>
                 <option value="confirmed" <?= $statusFilter === 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
@@ -171,7 +171,7 @@ try {
         <!-- Payment status -->
         <div class="form-field-group" style="margin:0;">
             <label style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Payment Status</label>
-            <select name="payment_status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="payment_status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">All Payments</option>
                 <option value="pending" <?= $paymentFilter === 'pending' ? 'selected' : '' ?>>Pending</option>
                 <option value="paid" <?= $paymentFilter === 'paid' ? 'selected' : '' ?>>Paid</option>
@@ -202,7 +202,7 @@ try {
         <!-- Table Action Header -->
         <div style="padding:var(--space-3) var(--space-5); border-bottom:1px solid var(--color-border); background:var(--color-bg); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div style="display:flex; align-items:center; gap:10px;">
-                <select name="bulk_action" id="bulkActionSelect" style="padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:#fff; outline:none; font-weight:600;">
+                <select name="bulk_action" id="bulkActionSelect" style="padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:var(--color-surface); color:var(--color-text); outline:none; font-weight:600;">
                     <option value="">Bulk Status Update</option>
                     <option value="confirmed">Set Confirmed</option>
                     <option value="processing">Set Processing</option>

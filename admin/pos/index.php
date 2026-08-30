@@ -126,17 +126,17 @@ try {
             <div class="dashboard-card" style="padding:12px; margin:0; display:flex; gap:10px; flex-wrap:wrap; position:relative;">
                 <div style="position:relative; flex:1.5; display:flex; align-items:center;">
                     <input type="text" id="posFilterSearch" autocomplete="off" placeholder="Scan SKU/Barcode or type product name..." onkeyup="filterPOSCatalog();" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
-                    <div id="posAutocompleteDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1005; max-height:250px; overflow-y:auto; margin-top:2px;"></div>
+                    <div id="posAutocompleteDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1005; max-height:250px; overflow-y:auto; margin-top:2px;"></div>
                 </div>
                 
-                <select id="posFilterCat" onchange="filterPOSCatalog();" style="flex:1; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:#fff;">
+                <select id="posFilterCat" onchange="filterPOSCatalog();" style="flex:1; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">All Categories</option>
                     <?php foreach ($categories as $cat): ?>
                         <option value="<?= $cat['id'] ?>"><?= e($cat['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <select id="posFilterBrand" onchange="filterPOSCatalog();" style="flex:1; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:#fff;">
+                <select id="posFilterBrand" onchange="filterPOSCatalog();" style="flex:1; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">All Brands</option>
                     <?php foreach ($brands as $b): ?>
                         <option value="<?= $b['id'] ?>"><?= e($b['name']) ?></option>
@@ -163,7 +163,7 @@ try {
                          onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e($p['name']) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>, '<?= e($img) ?>', '<?= e($p['sku'] ?? '') ?>');" 
                          style="padding:10px; text-align:center; cursor:pointer; margin:0; transition: 0.1s;">
                         
-                        <div style="width:100%; height:70px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--color-border); background:#fff; margin-bottom:6px;">
+                        <div style="width:100%; height:70px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--color-border); background:var(--color-surface); margin-bottom:6px;">
                             <img src="<?= e($img) ?>" alt="" style="width:100%; height:100%; object-fit:cover;">
                         </div>
                         <strong style="font-size:11px; color:var(--color-text); display:block; height:32px; overflow:hidden; line-height:16px; margin-bottom:4px;"><?= e($p['name']) ?></strong>
@@ -196,7 +196,7 @@ try {
                                data-default-wallet="<?= $defaultWalkin['wallet_balance'] ?>"
                                data-default-points="<?= $defaultWalkin['reward_points'] ?>"
                                data-default-name="Walk-in Customer">
-                        <div id="posCustomerAutocomplete" style="display:none; position:absolute; top:100%; right:0; width:220px; background:#fff; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1006; max-height:200px; overflow-y:auto; margin-top:2px;"></div>
+                        <div id="posCustomerAutocomplete" style="display:none; position:absolute; top:100%; right:0; width:220px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1006; max-height:200px; overflow-y:auto; margin-top:2px;"></div>
                     </div>
                 </div>
 
@@ -386,9 +386,9 @@ function renderTouchCart() {
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; gap:2px; width:65px; flex-shrink:0;">
                 <div style="display:flex; align-items:center; gap:4px;">
-                    <button type="button" onclick="updateTouchQty(${item.id}, -1);" style="border:1px solid var(--color-border); background:#fff; width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">-</button>
+                    <button type="button" onclick="updateTouchQty(${item.id}, -1);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">-</button>
                     <strong style="font-size:11px;">${item.qty}</strong>
-                    <button type="button" onclick="updateTouchQty(${item.id}, 1);" style="border:1px solid var(--color-border); background:#fff; width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">+</button>
+                    <button type="button" onclick="updateTouchQty(${item.id}, 1);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">+</button>
                 </div>
             </div>
             <div style="width:100px; text-align:right; font-size:10px; color:var(--color-text-muted); line-height:1.3; flex-shrink:0;">
@@ -479,7 +479,7 @@ window.updateLoyaltyUI = updateLoyaltyUI;
 <!-- Checkout Split Payment Modal -->
 <div class="modal fade" id="checkoutPaymentModal" tabindex="-1" aria-hidden="true" style="z-index: 1055;">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:#fff;">
+        <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:var(--color-surface);">
             <div class="modal-header" style="border-bottom:1px solid var(--color-border); padding:16px 20px;">
                 <h5 class="modal-title" style="font-weight:800; font-size:15px; color:var(--color-text); margin:0;"><i class="fas fa-credit-card"></i> Split Payment Terminal</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size:12px; border:none; background:transparent; cursor:pointer;"><i class="fas fa-times"></i></button>
@@ -529,7 +529,7 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                         <div id="cardDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
                             <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Card Type *</label>
-                                <select id="splitCardType" class="form-control" style="font-size:11px; background:#fff; height:auto; padding:4px 8px;">
+                                <select id="splitCardType" class="form-control" style="font-size:11px; background:var(--color-surface); color:var(--color-text); height:auto; padding:4px 8px;">
                                     <option value="Visa">Visa</option>
                                     <option value="MasterCard">MasterCard</option>
                                     <option value="Amex">Amex</option>
@@ -559,7 +559,7 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                         <div id="mobileDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
                             <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Provider *</label>
-                                <select id="splitMobileProvider" class="form-control" style="font-size:11px; background:#fff; height:auto; padding:4px 8px;">
+                                <select id="splitMobileProvider" class="form-control" style="font-size:11px; background:var(--color-surface); color:var(--color-text); height:auto; padding:4px 8px;">
                                     <option value="bKash">bKash</option>
                                     <option value="Nagad">Nagad</option>
                                     <option value="Rocket">Rocket</option>
@@ -623,7 +623,7 @@ window.updateLoyaltyUI = updateLoyaltyUI;
 <!-- Create Customer Modal -->
 <div class="modal fade" id="createCustomerModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:#fff;">
+        <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:var(--color-surface);">
             <div class="modal-header" style="border-bottom:1px solid var(--color-border); padding:16px 20px;">
                 <h5 class="modal-title" style="font-weight:800; font-size:15px; color:var(--color-text); margin:0;">Create New Customer</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size:12px; border:none; background:transparent; cursor:pointer;"><i class="fas fa-times"></i></button>
@@ -650,7 +650,7 @@ window.updateLoyaltyUI = updateLoyaltyUI;
                             </div>
                             <div>
                                 <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px;">Gender (Optional)</label>
-                                <select id="custNewGender" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:#fff;">
+                                <select id="custNewGender" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
                                     <option value="">— Select —</option>
                                     <option value="male">Male</option>
                                     <option value="female">Female</option>

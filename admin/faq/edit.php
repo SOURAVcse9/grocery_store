@@ -100,7 +100,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label for="faqCategory" style="font-weight:700;">FAQ Category *</label>
-            <select id="faqCategory" name="category" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select id="faqCategory" name="category" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">Select Category</option>
                 <option value="General" <?= $faq['category'] === 'General' ? 'selected' : '' ?>>General</option>
                 <option value="Ordering" <?= $faq['category'] === 'Ordering' ? 'selected' : '' ?>>Ordering</option>
@@ -126,7 +126,7 @@ if (method_is('post')) {
             </div>
             <div class="form-field-group">
                 <label for="faqStatus" style="font-weight:700;">Visibility Status</label>
-                <select id="faqStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="faqStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="1" <?= (int)$faq['is_active'] === 1 ? 'selected' : '' ?>>Active (Visible)</option>
                     <option value="0" <?= (int)$faq['is_active'] === 0 ? 'selected' : '' ?>>Disabled (Hidden)</option>
                 </select>

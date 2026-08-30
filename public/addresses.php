@@ -280,7 +280,7 @@ require_once __DIR__ . '/header.php';
     }
 }
 .address-premium-card {
-    background: #ffffff;
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 24px;
@@ -417,7 +417,8 @@ require_once __DIR__ . '/header.php';
     border: 1px solid var(--color-border);
     border-radius: 8px;
     font-size: 14px;
-    background-color: #ffffff;
+    background-color: var(--color-surface);
+    color: var(--color-text);
     outline: none;
     transition: border-color 150ms ease, box-shadow 150ms ease;
 }

@@ -563,3 +563,23 @@ Stack trace:
 [29-Aug-2026 21:21:34 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 15, order_id: 0, slug: lifebuoy-soap-total-100g, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
 [29-Aug-2026 21:22:51 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 13, order_id: 0, slug: maggi-masala-noodles-pack-of-8, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
 [29-Aug-2026 21:22:51 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 4, order_id: 0, slug: artisan-sourdough-bread, review_exists: 0, purchase_exists: 1, delivered_exists: 0, permission_result: 0
+[30-Aug-2026 12:35:07 Asia/Dhaka] PHP Fatal error:  Uncaught ErrorException: Undefined variable $pdo in Command line code:1
+Stack trace:
+#0 Command line code(1): error_handler(2, 'Undefined varia...', 'Command line co...', 1)
+#1 {main}
+  thrown in Command line code on line 1
+[30-Aug-2026 12:35:15 Asia/Dhaka] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed after headers have already been sent in C:\xampp\htdocs\grocery-store\public\dbconnect.php on line 141
+[30-Aug-2026 12:35:15 Asia/Dhaka] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in C:\xampp\htdocs\grocery-store\public\dbconnect.php on line 149
+[30-Aug-2026 12:43:05 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 8, order_id: 0, slug: miniket-rice-premium-5kg, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
+[30-Aug-2026 12:43:06 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 5, order_id: 0, slug: boneless-chicken-breast, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
+[30-Aug-2026 12:43:06 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 4, order_id: 0, slug: artisan-sourdough-bread, review_exists: 0, purchase_exists: 1, delivered_exists: 0, permission_result: 0
+[30-Aug-2026 12:43:08 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 18, order_id: 0, slug: bun, review_exists: 1, purchase_exists: 1, delivered_exists: 1, permission_result: 0
+[30-Aug-2026 12:43:10 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 18, order_id: 0, slug: bun, review_exists: 1, purchase_exists: 1, delivered_exists: 1, permission_result: 0
+[30-Aug-2026 12:43:12 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 4, order_id: 0, slug: artisan-sourdough-bread, review_exists: 0, purchase_exists: 1, delivered_exists: 0, permission_result: 0
+[30-Aug-2026 12:43:21 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 18, order_id: 0, slug: bun, review_exists: 1, purchase_exists: 1, delivered_exists: 1, permission_result: 0
+[30-Aug-2026 12:43:22 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 19, order_id: 0, slug: bun-copy-178, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
+[30-Aug-2026 12:44:11 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 18, order_id: 0, slug: bun, review_exists: 1, purchase_exists: 1, delivered_exists: 1, permission_result: 0
+[30-Aug-2026 12:44:38 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 18, order_id: 0, slug: bun, review_exists: 1, purchase_exists: 1, delivered_exists: 1, permission_result: 0
+[30-Aug-2026 12:45:42 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 15, order_id: 0, slug: lifebuoy-soap-total-100g, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
+[30-Aug-2026 12:45:53 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 14, order_id: 0, slug: frozen-chicken-nuggets-500g, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0
+[30-Aug-2026 12:45:54 Asia/Dhaka] [Verified Purchase Review Debug] customer_id: 34, product_id: 13, order_id: 0, slug: maggi-masala-noodles-pack-of-8, review_exists: 0, purchase_exists: 0, delivered_exists: 0, permission_result: 0

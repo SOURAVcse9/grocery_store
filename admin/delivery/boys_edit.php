@@ -121,7 +121,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label style="font-weight:700;">Duty Status</label>
-            <select name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="active" <?= $b['status'] === 'active' ? 'selected' : '' ?>>Active (On Duty)</option>
                 <option value="inactive" <?= $b['status'] === 'inactive' ? 'selected' : '' ?>>Inactive (Off Duty)</option>
             </select>

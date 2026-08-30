@@ -292,7 +292,7 @@ if ($reportAction === 'x_report' && $activeShift) {
 
                     <div class="form-field-group">
                         <label style="font-weight:700;">Type of entry *</label>
-                        <select name="tx_type" style="width:100%; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; background:#fff;">
+                        <select name="tx_type" style="width:100%; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; background:var(--color-surface); color:var(--color-text);">
                             <option value="cash_in">Cash-In (Add Drawer Change)</option>
                             <option value="cash_out">Cash-Out (Safe Drop / Drawer Payout)</option>
                         </select>

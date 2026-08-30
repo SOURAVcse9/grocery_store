@@ -112,7 +112,7 @@ if (method_is('post')) {
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" class="grid-2">
             <div class="form-field-group">
                 <label for="testiRating" style="font-weight:700;">Rating Rating (1-5 Stars)</label>
-                <select id="testiRating" name="rating" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="testiRating" name="rating" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="5" <?= (int)$t['rating'] === 5 ? 'selected' : '' ?>>5 Stars</option>
                     <option value="4" <?= (int)$t['rating'] === 4 ? 'selected' : '' ?>>4 Stars</option>
                     <option value="3" <?= (int)$t['rating'] === 3 ? 'selected' : '' ?>>3 Stars</option>
@@ -122,7 +122,7 @@ if (method_is('post')) {
             </div>
             <div class="form-field-group">
                 <label for="testiStatus" style="font-weight:700;">Display status</label>
-                <select id="testiStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="testiStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="1" <?= (int)$t['is_active'] === 1 ? 'selected' : '' ?>>Visible (Active)</option>
                     <option value="0" <?= (int)$t['is_active'] === 0 ? 'selected' : '' ?>>Hidden (Disabled)</option>
                 </select>

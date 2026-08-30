@@ -96,7 +96,7 @@ try {
 
             <div class="form-field-group">
                 <label style="font-weight:700;">Select Customer *</label>
-                <select name="customer_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="customer_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">Choose customer...</option>
                     <?php foreach ($customers as $c): ?>
                         <option value="<?= $c['id'] ?>"><?= e($c['full_name']) ?> (<?= e($c['phone']) ?>)</option>

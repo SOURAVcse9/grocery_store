@@ -132,7 +132,7 @@ try {
             <input type="text" name="search" placeholder="Search logs, operators..." value="<?= e($search) ?>" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
         </div>
         <div class="form-field-group" style="margin:0; flex:1;">
-            <select name="action_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="action_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">All Actions</option>
                 <?php foreach ($activityTypes as $type): ?>
                     <option value="<?= e($type) ?>" <?= $actionFilter === $type ? 'selected' : '' ?>><?= e($type) ?></option>

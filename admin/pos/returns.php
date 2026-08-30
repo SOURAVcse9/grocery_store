@@ -211,7 +211,7 @@ if (method_is('post')) {
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;" class="grid-2">
                     <div class="form-field-group" style="margin:0;">
                         <label style="font-weight:700;">Refund Settled Method</label>
-                        <select name="refund_method" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                        <select name="refund_method" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                             <option value="cash">Dispense Cash Drawer Refund</option>
                             <?php if ($order['user_id'] !== null): ?>
                                 <option value="wallet">Credit Customer Digital Wallet</option>

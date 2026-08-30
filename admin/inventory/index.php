@@ -95,7 +95,7 @@ try {
             <input type="text" name="search" placeholder="Search by product name..." value="<?= e($search) ?>" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
         </div>
         <div class="form-field-group" style="margin:0; flex:1;">
-            <select name="stock_alert" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="stock_alert" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">All Stock Levels</option>
                 <option value="low" <?= $stockAlert === 'low' ? 'selected' : '' ?>>Low Stock Only</option>
                 <option value="out" <?= $stockAlert === 'out' ? 'selected' : '' ?>>Out of Stock Only</option>

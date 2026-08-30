@@ -74,7 +74,7 @@ try {
         <h1 style="font-size:var(--fs-xl); font-weight:800; color:var(--color-text); margin:0;">Dashboard Overview</h1>
         <p style="font-size:var(--fs-sm); color:var(--color-text-muted); margin:4px 0 0 0;">Welcome back, <strong><?= e($__admin['full_name']) ?></strong>! Here is what's happening at your store today.</p>
     </div>
-    <div style="font-size:12px; color:var(--color-text-muted); font-weight:600; background:#fff; padding:8px 16px; border:1px solid var(--color-border); border-radius:var(--radius-pill);">
+    <div style="font-size:12px; color:var(--color-text-muted); font-weight:600; background:var(--color-surface); padding:8px 16px; border:1px solid var(--color-border); border-radius:var(--radius-pill);">
         <i class="far fa-calendar-days" style="color:var(--color-primary); margin-right:4px;"></i> <?= date('l, M d, Y') ?>
     </div>
 </div>

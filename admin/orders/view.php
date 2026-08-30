@@ -329,7 +329,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
                 
                 <div class="form-field-group">
                     <label for="orderStatusSel" style="font-weight:700;">Order Status</label>
-                    <select id="orderStatusSel" name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                    <select id="orderStatusSel" name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                         <option value="pending" <?= $order['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
                         <option value="confirmed" <?= $order['status'] === 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
                         <option value="processing" <?= $order['status'] === 'processing' ? 'selected' : '' ?>>Processing</option>
@@ -343,7 +343,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
 
                 <div class="form-field-group">
                     <label for="payStatusSel" style="font-weight:700;">Payment Status</label>
-                    <select id="payStatusSel" name="payment_status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                    <select id="payStatusSel" name="payment_status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                         <option value="pending" <?= ($order['payment_status'] ?? 'pending') === 'pending' ? 'selected' : '' ?>>Pending</option>
                         <option value="paid" <?= ($order['payment_status'] ?? 'pending') === 'paid' ? 'selected' : '' ?>>Paid</option>
                         <option value="failed" <?= ($order['payment_status'] ?? 'pending') === 'failed' ? 'selected' : '' ?>>Failed</option>

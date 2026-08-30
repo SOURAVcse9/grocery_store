@@ -148,7 +148,7 @@ if (method_is('post')) {
             </div>
             <div class="form-field-group">
                 <label for="bannerType" style="font-weight:700;">Banner Display Type *</label>
-                <select id="bannerType" name="type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="bannerType" name="type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="desktop" <?= $b['type'] === 'desktop' ? 'selected' : '' ?>>Desktop Banner (Hero Slider)</option>
                     <option value="tablet" <?= $b['type'] === 'tablet' ? 'selected' : '' ?>>Tablet Slider</option>
                     <option value="mobile" <?= $b['type'] === 'mobile' ? 'selected' : '' ?>>Mobile Slider</option>
@@ -161,7 +161,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label for="bannerImage" style="font-weight:700;">Replace Banner Image File</label>
-            <input type="file" id="bannerImage" name="image" accept="image/*" style="width:100%; padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <input type="file" id="bannerImage" name="image" accept="image/*" style="width:100%; padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
             <span class="field-help-text">Leave empty if you wish to keep the current image file below.</span>
             
             <div style="margin-top: 10px;">
@@ -194,7 +194,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label for="bannerStatus" style="font-weight:700;">Active Status</label>
-            <select id="bannerStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select id="bannerStatus" name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="1" <?= (int)$b['is_active'] === 1 ? 'selected' : '' ?>>Enabled (Visible)</option>
                 <option value="0" <?= (int)$b['is_active'] === 0 ? 'selected' : '' ?>>Disabled (Hidden)</option>
             </select>

@@ -81,7 +81,7 @@ try {
             
             <div class="form-field-group">
                 <label for="expenseCategory" style="font-weight:700;">Expense Category *</label>
-                <select id="expenseCategory" name="category" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select id="expenseCategory" name="category" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">-- Choose Category --</option>
                     <option value="electricity">Electricity</option>
                     <option value="rent">Rent</option>

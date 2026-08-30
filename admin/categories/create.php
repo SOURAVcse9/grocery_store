@@ -129,7 +129,7 @@ try {
 
         <div class="form-field-group">
             <label for="catParent" style="font-weight:700;">Parent Category (Leave empty for root)</label>
-            <select id="catParent" name="parent_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select id="catParent" name="parent_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="">None (Root Category)</option>
                 <?php foreach ($parentCategories as $parent): ?>
                     <option value="<?= $parent['id'] ?>"><?= e($parent['name']) ?></option>

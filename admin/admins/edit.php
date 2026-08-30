@@ -179,7 +179,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
             </div>
             <div class="form-field-group">
                 <label style="font-weight:700;">Assign Security Role *</label>
-                <select name="role_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="role_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">Select role...</option>
                     <?php foreach ($roles as $r): ?>
                         <?php if ((int)$r['id'] === 1 && $__admin['role_name'] !== 'Super Admin') continue; ?>
@@ -191,7 +191,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
 
         <div class="form-field-group">
             <label style="font-weight:700;">Active Account Status</label>
-            <select name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="1" <?= (int)$ad['is_active'] === 1 ? 'selected' : '' ?>>Enabled (Active)</option>
                 <option value="0" <?= (int)$ad['is_active'] === 0 ? 'selected' : '' ?>>Disabled (Locked)</option>
             </select>

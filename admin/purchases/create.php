@@ -110,7 +110,7 @@ if (method_is('post')) {
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;" class="grid-2">
             <div class="form-field-group">
                 <label style="font-weight:700;">Select Supplier *</label>
-                <select name="supplier_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="supplier_id" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">Choose vendor...</option>
                     <?php foreach ($suppliers as $s): ?>
                         <option value="<?= $s['id'] ?>"><?= e($s['name']) ?></option>
@@ -130,7 +130,7 @@ if (method_is('post')) {
             <?php for ($i = 0; $i < 5; $i++): ?>
                 <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px;" class="grid-3">
                     <div class="form-field-group" style="margin:0;">
-                        <select name="items[<?= $i ?>][product_id]" style="width:100%; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:#fff;">
+                        <select name="items[<?= $i ?>][product_id]" style="width:100%; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:var(--color-surface); color:var(--color-text);">
                             <option value="">Choose item...</option>
                             <?php foreach ($products as $p): ?>
                                 <option value="<?= $p['id'] ?>"><?= e($p['name']) ?> (Current retail: ৳<?= number_format((float)$p['price'], 2) ?>)</option>

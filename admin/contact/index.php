@@ -91,7 +91,7 @@ try {
 
 <!-- Tabs & Search bar -->
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4); flex-wrap:wrap; gap:12px;">
-    <div style="display:inline-flex; border:1px solid var(--color-border); border-radius:var(--radius-pill); overflow:hidden; background:#fff;">
+    <div style="display:inline-flex; border:1px solid var(--color-border); border-radius:var(--radius-pill); overflow:hidden; background:var(--color-surface);">
         <a href="?filter=inbox" style="padding:8px 16px; font-size:12px; text-decoration:none; font-weight:700; <?= $filter === 'inbox' ? 'background:var(--color-primary); color:#fff;' : 'color:var(--color-text-muted);' ?>">Inbox</a>
         <a href="?filter=archived" style="padding:8px 16px; font-size:12px; text-decoration:none; font-weight:700; <?= $filter === 'archived' ? 'background:var(--color-primary); color:#fff;' : 'color:var(--color-text-muted);' ?>">Archived</a>
     </div>

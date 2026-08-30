@@ -113,7 +113,7 @@ try {
 
             <div class="form-field-group">
                 <label style="font-weight:700;">Target Audience</label>
-                <select name="target_audience" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="target_audience" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="customers">All Store Customers (role_id != 1)</option>
                     <option value="admins">All Administrators Feed</option>
                 </select>
@@ -131,7 +131,7 @@ try {
 
             <div class="form-field-group">
                 <label style="font-weight:700;">Notification Style Category</label>
-                <select name="notif_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="notif_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="promo">Promo / Coupon Alert</option>
                     <option value="account">Account Status Warning</option>
                     <option value="alert">System Alert Notice</option>

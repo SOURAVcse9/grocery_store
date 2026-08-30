@@ -80,7 +80,7 @@ try {
             </button>
             
             <!-- Dropdown Pane -->
-            <div id="notifDropdownPane" style="display:none; position:absolute; right:0; top:45px; width:300px; background:#fff; border:1px solid var(--admin-color-border); border-radius:var(--radius-md); box-shadow:var(--shadow-md); z-index:1010; padding: var(--space-3) 0;">
+            <div id="notifDropdownPane" style="display:none; position:absolute; right:0; top:45px; width:300px; background:var(--admin-color-surface); border:1px solid var(--admin-color-border); border-radius:var(--radius-md); box-shadow:var(--shadow-md); z-index:1010; padding: var(--space-3) 0;">
                 <div style="padding:4px 16px 8px 16px; border-bottom:1px solid var(--admin-color-border); display:flex; justify-content:space-between; align-items:center;">
                     <strong style="font-size:12px; color:var(--admin-color-text);">Notifications</strong>
                     <?php if ($unreadNotifCount > 0): ?>
@@ -132,7 +132,7 @@ try {
             </div>
             
             <!-- Profile Dropdown Pane -->
-            <div id="profileDropdownPane" style="display:none; position:absolute; right:0; top:52px; width:200px; background:#fff; border:1px solid var(--admin-color-border); border-radius:var(--radius-md); box-shadow:var(--shadow-md); z-index:1010; padding: var(--space-2) 0;">
+            <div id="profileDropdownPane" style="display:none; position:absolute; right:0; top:52px; width:200px; background:var(--admin-color-surface); border:1px solid var(--admin-color-border); border-radius:var(--radius-md); box-shadow:var(--shadow-md); z-index:1010; padding: var(--space-2) 0;">
                 <a href="<?= BASE_URL ?>/../admin/profile.php" style="padding:10px 16px; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--admin-color-text); text-decoration:none;" class="dropdown-item">
                     <i class="far fa-user-circle" style="font-size:14px; width:16px;"></i> My Profile
                 </a>

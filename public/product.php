@@ -522,7 +522,7 @@ $breadcrumbs = [
                             <form method="get" action="#tabReviews" style="display:flex; align-items:center; gap:8px;">
                                 <input type="hidden" name="slug" value="<?= e($product['slug']) ?>">
                                 <label for="reviewSortSelect" style="font-size:12px; color:var(--color-text-muted);">Sort by:</label>
-                                <select id="reviewSortSelect" name="sort_reviews" onchange="this.form.submit()" style="font-size:12px; padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-pill); outline:none; background:#fff; cursor:pointer;">
+                                <select id="reviewSortSelect" name="sort_reviews" onchange="this.form.submit()" class="sort-select" data-custom-select style="font-size:12px; padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-pill); outline:none; background:var(--color-surface); color:var(--color-text); cursor:pointer;">
                                     <option value="latest" <?= $sort === 'latest' ? 'selected' : '' ?>>Latest</option>
                                     <option value="highest" <?= $sort === 'highest' ? 'selected' : '' ?>>Highest Rating</option>
                                     <option value="lowest" <?= $sort === 'lowest' ? 'selected' : '' ?>>Lowest Rating</option>

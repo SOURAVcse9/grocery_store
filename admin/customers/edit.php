@@ -147,7 +147,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" class="grid-2">
             <div class="form-field-group">
                 <label style="font-weight:700;">Gender</label>
-                <select name="gender" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="gender" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">Unspecified</option>
                     <option value="Male" <?= $u['gender'] === 'Male' ? 'selected' : '' ?>>Male</option>
                     <option value="Female" <?= $u['gender'] === 'Female' ? 'selected' : '' ?>>Female</option>
@@ -163,14 +163,14 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" class="grid-2">
             <div class="form-field-group">
                 <label style="font-weight:700;">Identity Verified Status</label>
-                <select name="is_verified" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="is_verified" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="1" <?= (int)$u['is_verified'] === 1 ? 'selected' : '' ?>>Verified</option>
                     <option value="0" <?= (int)$u['is_verified'] === 0 ? 'selected' : '' ?>>Unverified</option>
                 </select>
             </div>
             <div class="form-field-group">
                 <label style="font-weight:700;">Email Verified</label>
-                <select name="email_verified" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="email_verified" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="1" <?= (int)($u['email_verified'] ?? 0) === 1 ? 'selected' : '' ?>>Verified</option>
                     <option value="0" <?= (int)($u['email_verified'] ?? 0) === 0 ? 'selected' : '' ?>>Unverified</option>
                 </select>
@@ -180,14 +180,14 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" class="grid-2">
             <div class="form-field-group">
                 <label style="font-weight:700;">Phone Verified</label>
-                <select name="phone_verified" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="phone_verified" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="1" <?= (int)($u['phone_verified'] ?? 0) === 1 ? 'selected' : '' ?>>Verified</option>
                     <option value="0" <?= (int)($u['phone_verified'] ?? 0) === 0 ? 'selected' : '' ?>>Unverified</option>
                 </select>
             </div>
             <div class="form-field-group">
                 <label style="font-weight:700;">Account Status</label>
-                <select name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="is_active" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="1" <?= (int)$u['is_active'] === 1 ? 'selected' : '' ?>>Active</option>
                     <option value="0" <?= (int)$u['is_active'] === 0 ? 'selected' : '' ?>>Deactivated (Suspended)</option>
                 </select>

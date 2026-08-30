@@ -139,7 +139,7 @@ try {
 
             <div class="form-field-group">
                 <label style="font-weight:700;">Transaction Type *</label>
-                <select name="type" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="type" required style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="expense">Expense (Debit)</option>
                     <option value="income">Income (Credit)</option>
                 </select>
@@ -147,7 +147,7 @@ try {
 
             <div class="form-field-group">
                 <label style="font-weight:700;">Expense category (If Expense)</label>
-                <select name="category_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                <select name="category_id" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">None / Not Applicable</option>
                     <?php foreach ($categories as $cat): ?>
                         <option value="<?= $cat['id'] ?>"><?= e($cat['name']) ?></option>
@@ -168,7 +168,7 @@ try {
             <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:10px;" class="grid-2">
                 <div class="form-field-group">
                     <label style="font-weight:700;">Payment Method</label>
-                    <select name="payment_method" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                    <select name="payment_method" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                         <option value="cash">Cash</option>
                         <option value="bkash">bKash</option>
                         <option value="rocket">Rocket</option>
@@ -177,7 +177,7 @@ try {
                 </div>
                 <div class="form-field-group">
                     <label style="font-weight:700;">Reconciled Status</label>
-                    <select name="reconciled" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                    <select name="reconciled" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                         <option value="0">Unreconciled</option>
                         <option value="1">Reconciled</option>
                     </select>
@@ -195,14 +195,14 @@ try {
         <div class="dashboard-card" style="padding:var(--space-4); margin:0;">
             <form method="get" style="display:flex; gap:12px; align-items:end; max-width:600px;">
                 <div class="form-field-group" style="margin:0; flex:1;">
-                    <select name="filter_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                    <select name="filter_type" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                         <option value="">All Transactions</option>
                         <option value="expense" <?= $filterType === 'expense' ? 'selected' : '' ?>>Expenses Only</option>
                         <option value="income" <?= $filterType === 'income' ? 'selected' : '' ?>>Income Only</option>
                     </select>
                 </div>
                 <div class="form-field-group" style="margin:0; flex:1;">
-                    <select name="filter_reconciled" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+                    <select name="filter_reconciled" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                         <option value="">All Reconciliation states</option>
                         <option value="1" <?= $filterReconciled === '1' ? 'selected' : '' ?>>Reconciled</option>
                         <option value="0" <?= $filterReconciled === '0' ? 'selected' : '' ?>>Unreconciled</option>

@@ -125,7 +125,7 @@ try {
         <!-- Action Header -->
         <div style="padding:var(--space-3) var(--space-5); border-bottom:1px solid var(--color-border); background:var(--color-bg); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div style="display:flex; align-items:center; gap:10px;">
-                <select name="bulk_action" id="bulkActionSelect" style="padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:#fff; outline:none; font-weight:600;">
+                <select name="bulk_action" id="bulkActionSelect" style="padding:6px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; background:var(--color-surface); color:var(--color-text); outline:none; font-weight:600;">
                     <option value="">Bulk Coupon Actions</option>
                     <option value="enable">Enable Selected</option>
                     <option value="disable">Disable Selected</option>

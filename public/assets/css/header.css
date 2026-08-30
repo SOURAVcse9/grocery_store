@@ -47,7 +47,7 @@
   outline: none;
   transition: border-color var(--transition-fast), background var(--transition-fast);
 }
-.header-search input:focus { background: #fff; border-color: var(--color-primary); }
+.header-search input:focus { background: var(--color-surface); border-color: var(--color-primary); }
 .header-search button {
   position: absolute;
   right: 5px; top: 50%; transform: translateY(-50%);

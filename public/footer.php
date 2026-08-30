@@ -87,6 +87,7 @@ declare(strict_types=1);
 <script src="<?= asset('js/pwa.js') ?>"></script>
 <script src="<?= asset('js/security.js') ?>"></script>
 <script src="<?= asset('js/newsletter.js') ?>"></script>
+<script src="<?= asset('js/custom-select.js') ?>"></script>
 <?php if (!empty($extraScripts) && is_array($extraScripts)): ?>
     <?php foreach ($extraScripts as $__js): ?>
         <script src="<?= asset($__js) ?>"></script>

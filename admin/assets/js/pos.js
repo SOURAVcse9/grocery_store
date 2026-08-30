@@ -433,7 +433,7 @@
     products.forEach((p, idx) => {
       const div = document.createElement('div');
       div.className = 'autocomplete-item';
-      div.style.cssText = 'padding:8px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center; background:#fff;';
+      div.style.cssText = 'padding:8px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); color:var(--color-text);';
       
       let statusStr = '';
       let styleColor = 'var(--color-text)';
@@ -519,7 +519,7 @@
     customers.forEach((c) => {
       const div = document.createElement('div');
       div.className = 'cust-autocomplete-item';
-      div.style.cssText = 'padding:7px 12px; cursor:pointer; font-size:11px; border-bottom:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center; background:#fff;';
+      div.style.cssText = 'padding:7px 12px; cursor:pointer; font-size:11px; border-bottom:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); color:var(--color-text);';
       
       div.innerHTML = `
         <div>

@@ -218,7 +218,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
             <!-- Rating Filter -->
             <div class="form-field-group" style="margin:0;">
                 <label for="adminRating" style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Rating Stars</label>
-                <select id="adminRating" name="rating" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff; cursor:pointer;">
+                <select id="adminRating" name="rating" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text); cursor:pointer;">
                     <option value="0">All Stars</option>
                     <?php for ($s = 5; $s >= 1; $s--): ?>
                         <option value="<?= $s ?>" <?= $ratingFilter === $s ? 'selected' : '' ?>><?= $s ?>★ Rating</option>
@@ -229,7 +229,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
             <!-- Status Filter -->
             <div class="form-field-group" style="margin:0;">
                 <label for="adminStatus" style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Status</label>
-                <select id="adminStatus" name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff; cursor:pointer;">
+                <select id="adminStatus" name="status" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text); cursor:pointer;">
                     <option value="">All Statuses</option>
                     <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>Pending</option>
                     <option value="approved" <?= $statusFilter === 'approved' ? 'selected' : '' ?>>Approved</option>
@@ -241,7 +241,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
             <!-- Sort option -->
             <div class="form-field-group" style="margin:0;">
                 <label for="adminSort" style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Sort Order</label>
-                <select id="adminSort" name="sort" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff; cursor:pointer;">
+                <select id="adminSort" name="sort" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text); cursor:pointer;">
                     <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Newest First</option>
                     <option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Oldest First</option>
                     <option value="rating_desc" <?= $sort === 'rating_desc' ? 'selected' : '' ?>>Highest Rating</option>

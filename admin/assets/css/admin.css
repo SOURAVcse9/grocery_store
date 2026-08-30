@@ -547,3 +547,82 @@ html[data-theme="dark"] .admin-data-table th {
   background: var(--color-bg);
   color: var(--color-text-secondary);
 }
+
+/* --------------------------------------------------------------------- */
+/* Admin Form Controls & Native Select Overrides                          */
+/* --------------------------------------------------------------------- */
+.admin-body select,
+.admin-body input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+.admin-body textarea {
+  background-color: var(--admin-color-surface);
+  color: var(--admin-color-text);
+  border: 1px solid var(--admin-color-border);
+  border-radius: var(--radius-sm);
+  color-scheme: light;
+}
+
+.admin-body select option,
+.admin-body select optgroup {
+  background-color: var(--admin-color-surface);
+  color: var(--admin-color-text);
+}
+
+/* Admin Dark Theme Form Controls */
+html[data-theme="dark"] .admin-body select,
+html[data-theme="dark"] .admin-body input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+html[data-theme="dark"] .admin-body textarea,
+html[data-theme="dark"] .admin-body .dashboard-card select,
+html[data-theme="dark"] .admin-body .dashboard-card input {
+  background-color: var(--admin-color-surface) !important;
+  color: var(--admin-color-text) !important;
+  border-color: var(--admin-color-border) !important;
+  color-scheme: dark !important;
+}
+
+html[data-theme="dark"] .admin-body select:focus,
+html[data-theme="dark"] .admin-body input:focus,
+html[data-theme="dark"] .admin-body textarea:focus {
+  border-color: var(--admin-color-primary) !important;
+  box-shadow: 0 0 0 3px var(--admin-color-primary-light) !important;
+  outline: none !important;
+}
+
+html[data-theme="dark"] .admin-body select option,
+html[data-theme="dark"] .admin-body select optgroup {
+  background-color: #1c2128 !important;
+  color: #e6e8eb !important;
+  color-scheme: dark !important;
+}
+
+html[data-theme="dark"] .admin-body input::placeholder,
+html[data-theme="dark"] .admin-body textarea::placeholder {
+  color: var(--admin-color-text-faint) !important;
+  opacity: 0.85;
+}
+
+html[data-theme="dark"] .admin-body input[type="file"] {
+  background-color: var(--admin-color-surface) !important;
+  color: var(--admin-color-text) !important;
+}
+html[data-theme="dark"] .admin-body input[type="file"]::file-selector-button {
+  background-color: #272d37 !important;
+  color: var(--admin-color-text) !important;
+  border: 1px solid var(--admin-color-border) !important;
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+/* Admin Custom Select Overrides */
+html[data-theme="dark"] .admin-body .custom-select-trigger {
+  background-color: var(--admin-color-surface) !important;
+  color: var(--admin-color-text) !important;
+  border-color: var(--admin-color-border) !important;
+}
+
+html[data-theme="dark"] .admin-body .custom-select-menu {
+  background-color: #1c2128 !important;
+  color: #e6e8eb !important;
+  border-color: var(--admin-color-border) !important;
+}
+

@@ -131,7 +131,7 @@ if (method_is('post')) {
 
         <div class="form-field-group">
             <label style="font-weight:700;">Delivery Status *</label>
-            <select name="status" id="statusSelect" required onchange="toggleInputs(this.value);" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:#fff;">
+            <select name="status" id="statusSelect" required onchange="toggleInputs(this.value);" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; background:var(--color-surface); color:var(--color-text);">
                 <option value="picked_up" <?= $assign['status'] === 'picked_up' ? 'selected' : '' ?>>Picked Up / Out for Delivery</option>
                 <option value="delivered" <?= $assign['status'] === 'delivered' ? 'selected' : '' ?>>Delivered (Requires OTP)</option>
                 <option value="failed" <?= $assign['status'] === 'failed' ? 'selected' : '' ?>>Delivery Failed</option>
