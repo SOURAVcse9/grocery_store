@@ -22,6 +22,14 @@ local.php
 secrets/
 private/
 credentials/
+licensing_server/data/
+licensing_server/*.pem
+licensing_server/*.key
+licensing_server/*.sqlite
+storage/*.key
+*.sqlite
+*.sqlite3
+*.db
 
 # ------------------------------------------------------------------------------
 # 2. Runtime Storage, Logs & Cache
@@ -187,5 +195,8 @@ Desktop.ini
 
 # Keep all essential application code, test suites, and schema files trackable
 !database/pos_erp_migrations.sql
+!database/license_migrations.sql
 !admin_full_audit_test.php
 !admin_db_integrity_scan.php
+!tests/licensing_system_test.php
+!docs/LICENSING_SYSTEM.md

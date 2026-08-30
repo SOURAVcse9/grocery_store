@@ -138,6 +138,12 @@ $currentUri = $_SERVER['REQUEST_URI'];
                         <span>Settings</span>
                     </a>
                 </li>
+                <li>
+                    <a href="<?= BASE_URL ?>/../admin/license/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/license/') ? 'active' : '' ?>">
+                        <i class="fas fa-certificate"></i>
+                        <span>Software License</span>
+                    </a>
+                </li>
             <?php endif; ?>
 
             <!-- Administrators -->

@@ -172,6 +172,10 @@ require_once PUBLIC_PATH . '/includes/helpers.php';
 require_once PUBLIC_PATH . '/includes/validation.php';
 require_once PUBLIC_PATH . '/csrf.php';
 require_once PUBLIC_PATH . '/includes/auth.php';
+require_once PUBLIC_PATH . '/includes/license.php';
+
+// Enforce software licensing & activation (bypassed automatically in local development mode)
+enforce_license();
 
 // Trigger automatic cookie logins
 check_remember_me_autologin();
