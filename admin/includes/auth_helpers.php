@@ -243,8 +243,8 @@ function admin_logout(): void
     );
 
     // Delete remember cookie
-    if (isset($_COOKIE['admin_remember'])) {
-        setcookie('admin_remember', '', [
+    if (isset($_COOKIE['admin_remember']) && !headers_sent()) {
+        @setcookie('admin_remember', '', [
             'expires' => time() - 3600,
             'path' => '/admin',
             'secure' => true,
@@ -287,13 +287,15 @@ function attempt_admin_cookie_login(): bool
             $up->execute(['token' => $newHash, 'id' => $admin['id']]);
 
             // Write new cookie (valid for 30 days)
-            setcookie('admin_remember', $newToken, [
-                'expires' => time() + (30 * 86400),
-                'path' => '/admin',
-                'secure' => true,
-                'httponly' => true,
-                'samesite' => 'Lax'
-            ]);
+            if (!headers_sent()) {
+                @setcookie('admin_remember', $newToken, [
+                    'expires' => time() + (30 * 86400),
+                    'path' => '/admin',
+                    'secure' => true,
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]);
+            }
 
             log_admin_login((int)$admin['id'], 'Remember Cookie', true);
             log_admin_activity('auto_login', 'Logged in automatically via remember cookie');
@@ -306,3 +308,40 @@ function attempt_admin_cookie_login(): bool
 
     return false;
 }
+
+/**
+ * generate_temporary_admin_otp()
+ * Generates a cryptographically secure random One-Time Password for new/reset admins.
+ * Format: GRC-XXXX-XXXX (e.g. GRC-9K4P-72XQ)
+ */
+function generate_temporary_admin_otp(): string
+{
+    $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    $len = strlen($chars);
+    
+    $part1 = '';
+    for ($i = 0; $i < 4; $i++) {
+        $part1 .= $chars[random_int(0, $len - 1)];
+    }
+    
+    $part2 = '';
+    for ($i = 0; $i < 4; $i++) {
+        $part2 .= $chars[random_int(0, $len - 1)];
+    }
+
+    return 'GRC-' . $part1 . '-' . $part2;
+}
+
+/**
+ * admin_must_change_password()
+ * Returns true if the currently logged-in administrator is required to update their temporary password.
+ */
+function admin_must_change_password(): bool
+{
+    $admin = current_admin();
+    if (!$admin) {
+        return false;
+    }
+    return ((int) ($admin['must_change_password'] ?? 0)) === 1;
+}
+

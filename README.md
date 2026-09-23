@@ -450,33 +450,35 @@ GroCo includes an exhaustive suite of automated regression and audit tests that 
 
 | Test Script | Location | Assertions | Purpose |
 | :--- | :--- | :--- | :--- |
+| **Admin Email Customer Signup Block** | `tests/admin_email_customer_registration_block_test.php` | **6 Tests** | Enforces policy that administrator emails cannot register or create customer storefront accounts. |
+| **Production Dual Auth & Account Linking** | `tests/production_dual_auth_test.php` | **22 Tests** | Verifies Email+Password + Google OAuth account mapping to single permanent `users.id`, cart merge, and IDOR protection. |
+| **Production SMTP & Dual Auth Profile** | `tests/production_smtp_password_reset_test.php` | **22 Tests** | Validates SHA-256 password resets, 1-hour expiration, Google account password creation, and vector SVG fallback. |
+| **Authentication & RBAC Security Audit** | `tests/authentication_security_test.php` | **29 Tests** | Audits Super Admin OTP generation, forced password update, Google OAuth CSRF tokens, and Admin/Customer role separation. |
+| **Auth UI Redesign Verification** | `tests/auth_ui_redesign_test.php` | **12 Tests** | Validates centered dark-mode authentication card, Google button on top, and rounded design token compliance. |
 | **Licensing Security Hardening Audit** | `tests/licensing_security_hardening_test.php` | **32 Tests / 32 Scenarios** | 32-scenario zero-trust attack matrix testing clone blocking, tampering, expiry, outage, and renewal flows. |
 | **Mandatory Licensing Hardening** | `tests/licensing_system_test.php` | **33 Tests / 28 Scenarios** | Validates public repo clone blocking, dev vs. prod license tiers, RSA signatures, domain binding, and outage tolerance. |
-| **Dark Theme & Form Controls** | `public/dark_theme_form_controls_test.php` | **38 Tests** | Validates CSS tokens, native select `<option>` dark styling, zero inline white backgrounds, and custom select ARIA semantics. |
-| **About & Contact Responsiveness** | `public/about_contact_responsive_audit_test.php` | **40 Tests** | Simulates a 13-breakpoint matrix ($320\text{px} \rightarrow 1440\text{px}$), verifying container constraints and zero horizontal overflow. |
-| **Customer Review Image & Lightbox** | `public/customer_review_image_e2e_test.php` | **23 Tests** | Verifies secure image uploads, storage resolution, thumbnail buttons, and modal lightbox viewer logic. |
-| **Product Page & Cross-Sells** | `public/responsive_product_audit_test.php` | **25 Tests** | Validates fluid card grids, FBT summary responsiveness, and mobile layouts. |
-| **Customer Reviews Lifecycle** | `public/customer_review_audit_test.php` | **36 Tests** | Enforces delivered-order review permissions, rating recalculations, and moderation workflows. |
-| **Zero-VAT System Reconciliation** | `public/zero_vat_reconciliation_test.php` | **14 Tests** | Confirms 0.00% VAT calculations across cart, orders, coupons, and POS sales. |
 | **Admin Portal Full Audit** | `admin_full_audit_test.php` | **Comprehensive** | Tests admin authentication, RBAC authorization, product CRUD, and inventory mutation. |
 | **Database Integrity Scan** | `admin_db_integrity_scan.php` | **13 Invariants** | Scans for orphaned records, negative prices, ledger mismatches, and structural anomalies. |
 
 ### Running the Test Suites via CLI:
 ```bash
+# Run Production Dual Auth & Account Linking Suite
+php tests/production_dual_auth_test.php
+
+# Run Production SMTP & Password Reset Test
+php tests/production_smtp_password_reset_test.php
+
+# Run Admin Email Customer Signup Block Test
+php tests/admin_email_customer_registration_block_test.php
+
+# Run Authentication & RBAC Security Audit
+php tests/authentication_security_test.php
+
 # Run 32-Scenario Licensing Security Hardening Audit
 php tests/licensing_security_hardening_test.php
 
 # Run 28-Scenario Mandatory Licensing Audit
 php tests/licensing_system_test.php
-
-# Run Dark Theme Form Controls Test
-php public/dark_theme_form_controls_test.php
-
-# Run Zero-VAT Reconciliation Audit
-php public/zero_vat_reconciliation_test.php
-
-# Run Responsive Product & Layout Matrix Test
-php public/about_contact_responsive_audit_test.php
 
 # Run Full Admin & Inventory Audit
 php admin_full_audit_test.php

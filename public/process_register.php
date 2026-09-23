@@ -57,7 +57,12 @@ if ($v->hasErrors()) {
 // 2. Database Uniqueness Checks (Email & Phone)
 // --------------------------------------------------------------------------
 try {
-    $pdo = db();
+    // Strictly prevent administrator emails from registering customer accounts
+    if (is_admin_email($email)) {
+        flash('auth', 'This email address belongs to an administrator account and cannot be registered as a customer. Please log in via the Admin Panel or use a different email.', 'error');
+        set_old_input($_POST);
+        redirect(url_for('register.php'));
+    }
 
     // Check duplicate email
     $emailCheck = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');

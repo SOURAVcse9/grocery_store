@@ -1,10 +1,10 @@
 <?php
 /**
  * ==========================================================================
- * public/sitemap.php — Dynamic XML Sitemap Generator
+ * public/sitemap.php — Production XML Sitemap Generator
  * ==========================================================================
- * Queries active catalog products and categories, compiling them into a
- * valid XML sitemap for SEO crawlers.
+ * Dynamically queries active catalog products, categories, and public pages,
+ * compiling a valid, search-engine compliant XML sitemap.
  * ==========================================================================
  */
 
@@ -18,54 +18,61 @@ header('Content-Type: application/xml; charset=utf-8');
 $pdo = db();
 $pages = [];
 
-// 1. Core Static pages
+$appUrl = getenv('APP_URL') ?: ($_ENV['APP_URL'] ?? BASE_URL);
+$appUrl = rtrim($appUrl, '/');
+
+// 1. Core Public Static Pages
 $staticPages = [
-    '', // Home
-    'about.php',
-    'contact.php',
-    'offers.php',
-    'wishlist.php',
-    'compare.php'
+    ''               => ['freq' => 'daily',   'prio' => '1.0'],
+    'products.php'   => ['freq' => 'daily',   'prio' => '0.9'],
+    'categories.php' => ['freq' => 'weekly',  'prio' => '0.8'],
+    'about.php'      => ['freq' => 'monthly', 'prio' => '0.5'],
+    'contact.php'    => ['freq' => 'monthly', 'prio' => '0.5'],
+    'faq.php'        => ['freq' => 'monthly', 'prio' => '0.4'],
+    'privacy.php'    => ['freq' => 'yearly',  'prio' => '0.3'],
+    'terms.php'      => ['freq' => 'yearly',  'prio' => '0.3'],
 ];
 
-foreach ($staticPages as $sp) {
+foreach ($staticPages as $page => $meta) {
+    $loc = empty($page) ? $appUrl . '/' : $appUrl . '/public/' . $page;
     $pages[] = [
-        'loc'        => site_url($sp),
+        'loc'        => $loc,
         'lastmod'    => date('Y-m-d'),
-        'changefreq' => 'daily',
-        'priority'   => empty($sp) ? '1.0' : '0.6'
+        'changefreq' => $meta['freq'],
+        'priority'   => $meta['prio']
     ];
 }
 
 try {
-    // 2. Fetch all active products
-    $prodStmt = $pdo->query('
-        SELECT slug, updated_at FROM products 
-        WHERE is_active = 1 AND deleted_at IS NULL
+    // 2. Fetch all active categories
+    $catStmt = $pdo->query('
+        SELECT slug, updated_at FROM categories 
+        WHERE is_active = 1 
         ORDER BY id DESC
     ');
-    while ($p = $prodStmt->fetch()) {
-        $lastmod = !empty($p['updated_at']) ? date('Y-m-d', strtotime($p['updated_at'])) : date('Y-m-d');
+    while ($c = $catStmt->fetch(PDO::FETCH_ASSOC)) {
+        $lastmod = !empty($c['updated_at']) ? date('Y-m-d', strtotime($c['updated_at'])) : date('Y-m-d');
         $pages[] = [
-            'loc'        => site_url('product.php?slug=' . $p['slug']),
+            'loc'        => $appUrl . '/public/products.php?category=' . urlencode($c['slug']),
             'lastmod'    => $lastmod,
             'changefreq' => 'weekly',
             'priority'   => '0.8'
         ];
     }
 
-    // 3. Fetch all active categories
-    $catStmt = $pdo->query('
-        SELECT slug FROM categories 
-        WHERE is_active = 1 
+    // 3. Fetch all active products
+    $prodStmt = $pdo->query('
+        SELECT slug, updated_at FROM products 
+        WHERE is_active = 1 AND deleted_at IS NULL
         ORDER BY id DESC
     ');
-    while ($c = $catStmt->fetch()) {
+    while ($p = $prodStmt->fetch(PDO::FETCH_ASSOC)) {
+        $lastmod = !empty($p['updated_at']) ? date('Y-m-d', strtotime($p['updated_at'])) : date('Y-m-d');
         $pages[] = [
-            'loc'        => site_url('products.php?category=' . $c['slug']),
-            'lastmod'    => date('Y-m-d'),
+            'loc'        => $appUrl . '/public/product.php?slug=' . urlencode($p['slug']),
+            'lastmod'    => $lastmod,
             'changefreq' => 'weekly',
-            'priority'   => '0.7'
+            'priority'   => '0.9'
         ];
     }
 
@@ -79,10 +86,10 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <?php foreach ($pages as $p): ?>
         <url>
-            <loc><?= e($p['loc']) ?></loc>
-            <lastmod><?= e($p['lastmod']) ?></lastmod>
-            <changefreq><?= e($p['changefreq']) ?></changefreq>
-            <priority><?= e($p['priority']) ?></priority>
+            <loc><?= htmlspecialchars($p['loc'], ENT_XML1, 'UTF-8') ?></loc>
+            <lastmod><?= htmlspecialchars($p['lastmod'], ENT_XML1, 'UTF-8') ?></lastmod>
+            <changefreq><?= htmlspecialchars($p['changefreq'], ENT_XML1, 'UTF-8') ?></changefreq>
+            <priority><?= htmlspecialchars($p['priority'], ENT_XML1, 'UTF-8') ?></priority>
         </url>
     <?php endforeach; ?>
 </urlset>

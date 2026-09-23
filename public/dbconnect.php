@@ -17,6 +17,34 @@
 declare(strict_types=1);
 
 // --------------------------------------------------------------------------
+// Environment Loader (.env)
+// --------------------------------------------------------------------------
+$__envFilePath = dirname(__DIR__) . '/.env';
+if (file_exists($__envFilePath) && is_readable($__envFilePath)) {
+    $__envLines = file($__envFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($__envLines as $__envLine) {
+        $__envLine = trim($__envLine);
+        if ($__envLine === '' || str_starts_with($__envLine, '#')) {
+            continue;
+        }
+        if (str_contains($__envLine, '=')) {
+            [$__envKey, $__envVal] = explode('=', $__envLine, 2);
+            $__envKey = trim($__envKey);
+            $__envVal = trim($__envVal);
+            if ((str_starts_with($__envVal, '"') && str_ends_with($__envVal, '"')) ||
+                (str_starts_with($__envVal, "'") && str_ends_with($__envVal, "'"))) {
+                $__envVal = substr($__envVal, 1, -1);
+            }
+            if (!array_key_exists($__envKey, $_SERVER) && !array_key_exists($__envKey, $_ENV)) {
+                putenv("{$__envKey}={$__envVal}");
+                $_ENV[$__envKey] = $__envVal;
+                $_SERVER[$__envKey] = $__envVal;
+            }
+        }
+    }
+}
+
+// --------------------------------------------------------------------------
 // Environment
 // --------------------------------------------------------------------------
 // Set APP_ENV=production on the live server (e.g. via Apache SetEnv, or
@@ -53,8 +81,8 @@ if (!defined('BASE_URL')) {
     $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
     // Directory the app is running from (e.g. /grocery-store/public)
     $scriptDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
-    // If the request is routed through api/ or ajax/ folders, strip them to keep BASE_URL unified
-    $scriptDir = preg_replace('/\/(api|ajax)$/i', '', $scriptDir);
+    // If the request is routed through api/, ajax/, auth/, or subfolders, strip them to keep BASE_URL unified to public root
+    $scriptDir = preg_replace('/\/(api|ajax|auth|includes)(\/.*)?$/i', '', $scriptDir);
     // If running from admin panel, redirect base URL to public storefront root
     if (str_contains($scriptDir, '/admin')) {
         $scriptDir = preg_replace('/\/admin(\/.*)?$/i', '', $scriptDir) . '/public';
@@ -171,6 +199,7 @@ require_once PUBLIC_PATH . '/includes/functions.php';
 require_once PUBLIC_PATH . '/includes/helpers.php';
 require_once PUBLIC_PATH . '/includes/validation.php';
 require_once PUBLIC_PATH . '/csrf.php';
+require_once PUBLIC_PATH . '/includes/mailer.php';
 require_once PUBLIC_PATH . '/includes/auth.php';
 require_once PUBLIC_PATH . '/includes/license.php';
 

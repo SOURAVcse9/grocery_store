@@ -69,18 +69,26 @@
     const installDrawer = document.getElementById('pwaInstallDrawer');
     const btnConfirm = document.getElementById('btnPwaInstallConfirm');
     const btnDismiss = document.getElementById('btnPwaInstallDismiss');
+    const btnCloseX = document.getElementById('btnPwaCloseX');
+
+    // Do not show install prompt on authentication or admin pages
+    const isAuthOrAdminPage = /login\.php|register\.php|forgot-password\.php|reset-password\.php|\/admin\//i.test(window.location.pathname);
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      // Prevent browser's default prompt banner
       e.preventDefault();
-      // Stash the event so it can be triggered later
+      // Stash event so it can be triggered on user action
       deferredPrompt = e;
 
-      // Check if user already dismissed install drawer in this session
-      const dismissed = sessionStorage.getItem('pwa_install_dismissed');
+      // Check persistent dismissal
+      const dismissed = localStorage.getItem('pwa_install_dismissed') || sessionStorage.getItem('pwa_install_dismissed');
 
-      if (installDrawer && !dismissed) {
-        installDrawer.classList.add('show');
+      if (installDrawer && !dismissed && !isAuthOrAdminPage) {
+        setTimeout(() => {
+          if (deferredPrompt && !localStorage.getItem('pwa_install_dismissed')) {
+            installDrawer.classList.add('show');
+          }
+        }, 4000);
       }
     });
 
@@ -89,6 +97,8 @@
 
       // Hide custom drawer
       installDrawer?.classList.remove('show');
+      localStorage.setItem('pwa_install_dismissed', '1');
+
       // Show native installation prompt
       deferredPrompt.prompt();
 
@@ -100,11 +110,14 @@
       deferredPrompt = null;
     });
 
-    btnDismiss?.addEventListener('click', () => {
+    const dismissDrawer = () => {
       installDrawer?.classList.remove('show');
-      // Set session flag to not prompt again during active session
+      localStorage.setItem('pwa_install_dismissed', '1');
       sessionStorage.setItem('pwa_install_dismissed', '1');
-    });
+    };
+
+    btnDismiss?.addEventListener('click', dismissDrawer);
+    btnCloseX?.addEventListener('click', dismissDrawer);
 
     // Detect successful installation
     window.addEventListener('appinstalled', (e) => {

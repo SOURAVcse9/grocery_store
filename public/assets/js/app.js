@@ -62,11 +62,16 @@
     const trigger = menu.querySelector('.user-menu-trigger');
     trigger?.addEventListener('click', (e) => {
       e.stopPropagation();
-      menu.classList.toggle('is-open');
+      const isOpen = menu.classList.toggle('is-open');
+      trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
   });
   document.addEventListener('click', () => {
-    document.querySelectorAll('.user-menu.is-open').forEach((m) => m.classList.remove('is-open'));
+    document.querySelectorAll('.user-menu.is-open').forEach((m) => {
+      m.classList.remove('is-open');
+      const trigger = m.querySelector('.user-menu-trigger');
+      trigger?.setAttribute('aria-expanded', 'false');
+    });
   });
 
   // ---------------------------------------------------------------------

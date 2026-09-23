@@ -221,7 +221,13 @@ function get_licensing_server_url(): string
     if ($envUrl) {
         return $envUrl;
     }
-    return license_config('LICENSE_SERVER_URL', 'http://localhost:8080/grocery-store/licensing_server/api.php');
+    $configured = license_config('LICENSE_SERVER_URL');
+    if ($configured) {
+        return $configured;
+    }
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8080';
+    return $scheme . '://' . $host . '/grocery-store/licensing_server/api.php';
 }
 
 /**
@@ -249,8 +255,8 @@ function activate_license_remote(string $licenseKey, ?string $domain = null, ?st
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 12);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 6);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
 
     $rawResponse = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -258,15 +264,29 @@ function activate_license_remote(string $licenseKey, ?string $domain = null, ?st
     curl_close($ch);
 
     if ($rawResponse === false) {
-        log_license_event('ACTIVATION_FAILED', 'License server connection failed', $curlErr);
-        return [
-            'success' => false,
-            'error' => 'CONNECTION_FAILED',
-            'message' => 'Unable to connect to the GroCo licensing server. Please check your internet connection or try again later.',
-        ];
-    }
+        // Fallback for local development when loopback HTTP connections fail on Windows Apache
+        $localServerFile = ROOT_PATH . '/licensing_server/license_server.php';
+        if (file_exists($localServerFile)) {
+            require_once $localServerFile;
+            try {
+                $localServer = new \GroCo\Licensing\LicenseServer();
+                $res = $localServer->activate($licenseKey, $domain, $installationId, $postData['nonce'], '127.0.0.1');
+            } catch (\Throwable $ex) {
+                log_license_event('ACTIVATION_FAILED', 'Local license fallback failed: ' . $ex->getMessage());
+            }
+        }
 
-    $res = json_decode($rawResponse, true);
+        if (!isset($res)) {
+            log_license_event('ACTIVATION_FAILED', 'License server connection failed', $curlErr);
+            return [
+                'success' => false,
+                'error' => 'CONNECTION_FAILED',
+                'message' => 'Unable to connect to the GroCo licensing server. Please check your internet connection or try again later.',
+            ];
+        }
+    } else {
+        $res = json_decode($rawResponse, true);
+    }
     if (!is_array($res) || !isset($res['success'])) {
         log_license_event('ACTIVATION_FAILED', 'Invalid JSON from licensing server', substr($rawResponse, 0, 300));
         return [

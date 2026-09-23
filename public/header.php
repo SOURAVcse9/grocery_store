@@ -242,23 +242,31 @@ try {
             </a>
 
             <?php if ($__user): ?>
-                <div class="user-menu">
-                    <div class="user-menu-trigger">
+                <div class="user-menu" id="userMenuDropdown">
+                    <button type="button" class="user-menu-trigger" id="userMenuTriggerBtn" aria-label="Customer Account Menu" aria-haspopup="true" aria-expanded="false">
+                        <?php 
+                        $headerAvatar = user_avatar_url($__user['avatar'], $__user['full_name'] ?? 'Customer'); 
+                        $fallbackInitial = generate_initials_svg_data_uri($__user['full_name'] ?? 'Customer');
+                        ?>
                         <img
                             class="user-avatar"
-                            src="<?= e(image_url($__user['avatar'], 'users')) ?>"
+                            src="<?= e($headerAvatar) ?>"
                             alt="<?= e($__user['full_name']) ?>"
+                            onerror="this.onerror=null;this.src='<?= e($fallbackInitial) ?>';"
                         >
-                    </div>
-                    <div class="user-dropdown">
+                        <i class="fas fa-chevron-down user-menu-caret"></i>
+                    </button>
+                    <div class="user-dropdown" id="userDropdownMenu" role="menu" aria-label="User Account Links">
                         <div class="user-dropdown-head">
                             <strong><?= e($__user['full_name']) ?></strong>
-                            <span><?= $__user['role_name'] === 'admin' ? 'Administrator' : 'Customer' ?></span>
+                            <span><?= ($__user['role_name'] ?? '') === 'admin' ? 'Administrator' : 'Customer Account' ?></span>
                         </div>
-                        <a href="<?= url_for('account.php') ?>"><i class="fas fa-user-circle"></i> <?= e(t('account')) ?></a>
+                        <a href="<?= url_for('account.php') ?>"><i class="fas fa-gauge-high"></i> <?= e(t('account')) ?> / Dashboard</a>
+                        <a href="<?= url_for('profile.php') ?>"><i class="fas fa-id-card"></i> Profile &amp; Security</a>
                         <a href="<?= url_for('orders.php') ?>"><i class="fas fa-box"></i> <?= e(t('orders')) ?></a>
-                        <a href="<?= url_for('profile.php') ?>"><i class="fas fa-gear"></i> <?= e(t('profile')) ?></a>
-                        <?php if ($__user['role_name'] === 'admin' || isset($_SESSION['admin_id'])): ?>
+                        <a href="<?= url_for('addresses.php') ?>"><i class="fas fa-map-location-dot"></i> My Addresses</a>
+                        <a href="<?= url_for('wishlist.php') ?>"><i class="fas fa-heart"></i> <?= e(t('wishlist')) ?></a>
+                        <?php if (isset($_SESSION['admin_id']) && !empty($_SESSION['admin_authenticated'])): ?>
                             <a href="<?= BASE_URL ?>/../admin/index.php"><i class="fas fa-shield-halved"></i> Admin Panel</a>
                         <?php endif; ?>
                         <a href="<?= url_for('logout.php') ?>" class="danger"><i class="fas fa-arrow-right-from-bracket"></i> <?= e(t('logout')) ?></a>

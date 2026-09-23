@@ -1,10 +1,10 @@
 <?php
 /**
  * ==========================================================================
- * public/reset-password.php — Password Reset Processing Page
+ * public/reset-password.php — Password Reset Completion Page
  * ==========================================================================
- * Authenticates active token hashes, collects new user passwords, validates
- * strength scores, updates credentials, and invalidates tokens.
+ * Validates cryptographically hashed reset tokens, enforces strong password
+ * policies, updates customer password, and invalidates previous sessions.
  * ==========================================================================
  */
 
@@ -17,215 +17,301 @@ if (is_logged_in()) {
     redirect(url_for('account.php'));
 }
 
-$token = input('token', '', 'get');
-if (empty($token)) {
-    $token = input('token', '', 'post');
-}
+$pageTitle = 'Reset Password — ' . site_name();
+$pageDescription = 'Set a new secure password for your GroCo customer account.';
+$extraStylesheets = ['css/auth.css'];
 
-if (empty($token)) {
-    flash('forgot', 'Missing password reset token.', 'error');
-    redirect(url_for('forgot-password.php'));
-}
-
-$hashedToken = hash('sha256', $token);
-$pdo = db();
+$rawToken = trim(input('token', '', 'get') ?: input('token', '', 'post'));
+$tokenState = 'invalid'; // 'valid' | 'invalid' | 'used' | 'expired'
 $resetRecord = null;
+$pdo = db();
 
-try {
-    // Lookup token
-    $stmt = $pdo->prepare('
-        SELECT pr.*, u.full_name, u.email 
+if (!empty($rawToken)) {
+    $tokenHash = hash('sha256', $rawToken);
+
+    $tokenStmt = $pdo->prepare('
+        SELECT pr.*, u.id as customer_id, u.email, u.full_name, u.is_active
         FROM password_resets pr
         JOIN users u ON u.id = pr.user_id
-        WHERE pr.token = :token AND pr.used = 0 AND pr.expires_at >= NOW()
+        WHERE pr.token = :token
         LIMIT 1
     ');
-    $stmt->execute(['token' => $hashedToken]);
-    $resetRecord = $stmt->fetch();
+    $tokenStmt->execute(['token' => $tokenHash]);
+    $resetRecord = $tokenStmt->fetch();
 
-    if (!$resetRecord) {
-        flash('forgot', 'Invalid or expired password reset link. Please request a new one.', 'error');
-        redirect(url_for('forgot-password.php'));
+    if (!$resetRecord || (int)$resetRecord['is_active'] !== 1) {
+        $tokenState = 'invalid';
+    } elseif ((int)$resetRecord['used'] === 1) {
+        $tokenState = 'used';
+    } elseif (strtotime((string)$resetRecord['expires_at']) <= time()) {
+        $tokenState = 'expired';
+    } else {
+        $tokenState = 'valid';
     }
-
-} catch (PDOException $e) {
-    error_log('[reset-password.php] Error: ' . $e->getMessage());
-    flash('forgot', 'A database error occurred. Please try again.', 'error');
-    redirect(url_for('forgot-password.php'));
 }
 
-// Handle password updates
-if (method_is('post')) {
-    // Verify CSRF
-    verify_csrf_or_fail();
-
-    $password = input('password', '');
-    $passwordConfirm = input('password_confirm', '');
-
-    $v = new Validator();
-    $v->required('password', $password, 'New password is required.')
-      ->length('password', $password, 8, 100, 'Password must be at least 8 characters long.')
-      ->custom('password', preg_match('/[0-9]/', $password) && preg_match('/[^A-Za-z0-9]/', $password), 'Password must contain at least one number and one special character.')
-      ->required('password_confirm', $passwordConfirm, 'Please confirm your new password.')
-      ->custom('password_confirm', $password === $passwordConfirm, 'Passwords do not match.');
-
-    if ($v->hasErrors()) {
-        flash('reset', $v->first(), 'error');
+// Process POST Password Reset
+if (method_is('post') && $tokenState === 'valid') {
+    if (!verify_csrf()) {
+        flash('auth', 'Security token expired. Please try submitting again.', 'error');
     } else {
-        try {
-            $pdo->beginTransaction();
+        $newPassword = input('new_password', '');
+        $confirmPassword = input('confirm_password', '');
 
-            // 1. Update user password and clear remember token
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $updateUser = $pdo->prepare('UPDATE users SET password = :pass, remember_token = NULL WHERE id = :uid');
-            $updateUser->execute([
-                'pass' => $hashedPassword,
-                'uid'  => (int) $resetRecord['user_id']
-            ]);
+        $v = new Validator();
+        $v->required('new_password', $newPassword, 'New password is required.')
+          ->length('new_password', $newPassword, 8, 100, 'Password must be at least 8 characters long.')
+          ->required('confirm_password', $confirmPassword, 'Please confirm your new password.')
+          ->custom('confirm_password', $newPassword === $confirmPassword, 'Passwords do not match.');
 
-            // 2. Invalidate reset token
-            $updateToken = $pdo->prepare('UPDATE password_resets SET used = 1 WHERE id = :id');
-            $updateToken->execute(['id' => (int) $resetRecord['id']]);
+        // Verify password complexity (uppercase, lowercase, number)
+        if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)) {
+            $v->addError('new_password', 'Password must include uppercase, lowercase, and a number.');
+        }
 
-            $pdo->commit();
+        if ($v->hasErrors()) {
+            flash('auth', $v->first() ?? 'Validation failed.', 'error');
+        } else {
+            try {
+                $pdo->beginTransaction();
 
-            // Clear remember cookies to force login on all active devices
-            setcookie('remember_me', '', time() - 3600, '/', '', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'), true);
+                $customerId = (int) $resetRecord['customer_id'];
+                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
 
-            flash('auth', 'Password reset successfully! You can now sign in with your new password.', 'success');
-            redirect(url_for('login.php'));
+                // Update user password and increment session_version to invalidate old sessions
+                $updateUser = $pdo->prepare('
+                    UPDATE users 
+                    SET password = :pass, 
+                        failed_logins = 0,
+                        last_password_change = NOW(),
+                        session_version = session_version + 1,
+                        remember_token = NULL,
+                        updated_at = NOW()
+                    WHERE id = :id
+                ');
+                $updateUser->execute([
+                    'pass' => $hashedPassword,
+                    'id'   => $customerId
+                ]);
 
-        } catch (PDOException $e) {
-            $pdo->rollBack();
-            error_log('[reset-password.php] Reset failed: ' . $e->getMessage());
-            flash('reset', 'Failed to update password. Please try again.', 'error');
+                // Mark reset token as used and invalidate all active tokens for this user
+                $markUsed = $pdo->prepare('UPDATE password_resets SET used = 1 WHERE user_id = :uid');
+                $markUsed->execute(['uid' => $customerId]);
+
+                $pdo->commit();
+
+                flash('auth', 'Password updated successfully. Your password has been changed. You can now sign in with your email and new password.', 'success');
+                redirect(url_for('login.php'));
+
+            } catch (PDOException $e) {
+                $pdo->rollBack();
+                error_log('[reset-password.php] Error: ' . $e->getMessage());
+                flash('auth', 'An error occurred while resetting your password. Please try again.', 'error');
+            }
         }
     }
 }
 
-$pageTitle = 'Choose New Password — ' . site_name();
-$pageDescription = 'Choose a strong, secure new password for your customer account.';
-
-$extraStylesheets = ['css/auth.css'];
-
 require_once __DIR__ . '/header.php';
 ?>
 
-<div class="container">
+<div class="auth-page-container">
     <div class="auth-wrapper">
-        <div class="auth-card">
+        <div class="auth-card" role="main">
             
-            <div class="auth-header">
-                <span class="auth-logo"><i class="fas fa-shopping-basket"></i> Grocery Store</span>
-                <h1 class="auth-title">Choose New Password</h1>
-                <p class="auth-subtext">Set a secure password for <strong><?= e($resetRecord['email']) ?></strong></p>
+            <!-- Brand Section -->
+            <div class="auth-brand-section">
+                <a href="<?= url_for('index.php') ?>" class="auth-brand-logo" aria-label="GroCo Grocery Store">
+                    <span class="brand-icon"><i class="fas fa-shopping-basket"></i></span>
+                    <span class="brand-name"><?= e(site_name()) ?></span>
+                </a>
             </div>
 
-            <!-- Validation alerts -->
-            <?php display_flash_alerts('reset'); ?>
+            <!-- Header -->
+            <div class="auth-header">
+                <h1 class="auth-title">Reset Your Password</h1>
+                <p class="auth-subtext">
+                    <?= ($tokenState === 'valid') ? 'Enter and confirm your new secure password.' : 'Password Reset Verification' ?>
+                </p>
+            </div>
 
-            <!-- Form -->
-            <form action="<?= current_url() ?>" method="post" class="auth-form" id="resetPasswordForm">
-                <?= csrf_field() ?>
-                <input type="hidden" name="token" value="<?= e($token) ?>">
+            <!-- Flash Error / Status Alerts -->
+            <?php display_flash_alerts('auth'); ?>
 
-                <div class="form-field-group">
-                    <label for="password">New Password *</label>
-                    <div class="password-input-wrapper">
-                        <input type="password" id="password" name="password" placeholder="Min. 8 characters with numbers & symbols" required autocomplete="new-password" autofocus>
-                        <button type="button" class="password-toggle-btn" aria-label="Toggle Password Visibility">
-                            <i class="far fa-eye"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Strength meter -->
-                    <div class="strength-meter-container">
-                        <div class="strength-bar-bg">
-                            <div class="strength-bar-fill" id="strengthBar"></div>
+            <?php if ($tokenState === 'valid'): ?>
+                <!-- Password Reset Form -->
+                <form action="<?= current_url() ?>" method="post" class="auth-form" id="resetPasswordForm">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="token" value="<?= e($rawToken) ?>">
+
+                    <div class="form-field-group">
+                        <label for="new_password">New Password *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" 
+                                   id="new_password" 
+                                   name="new_password" 
+                                   class="auth-input" 
+                                   placeholder="Minimum 8 characters" 
+                                   required 
+                                   autocomplete="new-password" 
+                                   autofocus>
+                            <button type="button" 
+                                    class="password-toggle-btn" 
+                                    id="toggleNewPassBtn" 
+                                    aria-label="Toggle password visibility" 
+                                    tabindex="-1">
+                                <i class="far fa-eye" id="toggleNewPassIcon"></i>
+                            </button>
                         </div>
-                        <span class="strength-meter-text" id="strengthText">Strength: Too Short</span>
+
+                        <!-- Live Strength Meter -->
+                        <div class="strength-meter-container" id="resetStrengthContainer" style="display: none;">
+                            <div class="strength-bar-bg">
+                                <div class="strength-bar-fill" id="resetStrengthFill"></div>
+                            </div>
+                            <span class="strength-meter-text" id="resetStrengthText">Strength: Too Short</span>
+                        </div>
                     </div>
+
+                    <div class="form-field-group">
+                        <label for="confirm_password">Confirm New Password *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" 
+                                   id="confirm_password" 
+                                   name="confirm_password" 
+                                   class="auth-input" 
+                                   placeholder="Re-enter your new password" 
+                                   required 
+                                   autocomplete="new-password">
+                            <button type="button" 
+                                    class="password-toggle-btn" 
+                                    id="toggleConfirmPassBtn" 
+                                    aria-label="Toggle confirm password visibility" 
+                                    tabindex="-1">
+                                <i class="far fa-eye" id="toggleConfirmPassIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-auth-submit" id="btnSubmitReset">
+                        <span class="btn-text">Update Password</span>
+                        <span class="btn-spinner" style="display: none;" aria-hidden="true">
+                            <i class="fas fa-circle-notch fa-spin"></i>
+                        </span>
+                    </button>
+                </form>
+
+            <?php elseif ($tokenState === 'used'): ?>
+                <!-- Used Token Message -->
+                <div style="text-align: center; padding: 12px 0;">
+                    <p style="font-size: 14px; color: var(--color-text-muted); line-height: 1.6; margin-bottom: 24px;">
+                        This password reset link has already been used.
+                    </p>
+                    <a href="<?= url_for('forgot-password.php') ?>" class="btn-auth-submit" style="text-decoration: none;">
+                        Request a new link &rarr;
+                    </a>
                 </div>
 
-                <div class="form-field-group">
-                    <label for="password_confirm">Confirm Password *</label>
-                    <div class="password-input-wrapper">
-                        <input type="password" id="password_confirm" name="password_confirm" placeholder="Confirm new password" required autocomplete="new-password">
-                        <button type="button" class="password-toggle-btn" aria-label="Toggle Confirm Password Visibility">
-                            <i class="far fa-eye"></i>
-                        </button>
-                    </div>
+            <?php elseif ($tokenState === 'expired'): ?>
+                <!-- Expired Token Message -->
+                <div style="text-align: center; padding: 12px 0;">
+                    <p style="font-size: 14px; color: var(--color-text-muted); line-height: 1.6; margin-bottom: 24px;">
+                        This password reset link has expired.
+                    </p>
+                    <a href="<?= url_for('forgot-password.php') ?>" class="btn-auth-submit" style="text-decoration: none;">
+                        Request a new link &rarr;
+                    </a>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-auth-submit">Update Password</button>
-            </form>
+            <?php else: ?>
+                <!-- Invalid Token Message -->
+                <div style="text-align: center; padding: 12px 0;">
+                    <p style="font-size: 14px; color: var(--color-text-muted); line-height: 1.6; margin-bottom: 24px;">
+                        This password reset link is invalid or has expired.
+                    </p>
+                    <a href="<?= url_for('forgot-password.php') ?>" class="btn-auth-submit" style="text-decoration: none;">
+                        Request a new link &rarr;
+                    </a>
+                </div>
+            <?php endif; ?>
+
+            <!-- Footer Navigation -->
+            <div class="auth-footer-nav">
+                Back to <a href="<?= url_for('login.php') ?>">Sign In</a>
+            </div>
 
         </div>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Show / Hide Password Toggle
-    const toggleBtns = document.querySelectorAll('.password-toggle-btn');
-    toggleBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const input = btn.parentElement.querySelector('input');
-            const icon = btn.querySelector('i');
-            
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.replace('far', 'fas');
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
+document.addEventListener('DOMContentLoaded', function () {
+    // Password Toggles
+    function setupToggle(btnId, inputId, iconId) {
+        var btn = document.getElementById(btnId);
+        var input = document.getElementById(inputId);
+        var icon = document.getElementById(iconId);
+        if (btn && input && icon) {
+            btn.addEventListener('click', function () {
+                var isPass = input.type === 'password';
+                input.type = isPass ? 'text' : 'password';
+                icon.className = isPass ? 'far fa-eye-slash' : 'far fa-eye';
+            });
+        }
+    }
+    setupToggle('toggleNewPassBtn', 'new_password', 'toggleNewPassIcon');
+    setupToggle('toggleConfirmPassBtn', 'confirm_password', 'toggleConfirmPassIcon');
+
+    // Strength Meter
+    var passInput = document.getElementById('new_password');
+    var meterWrap = document.getElementById('resetStrengthContainer');
+    var fillBar = document.getElementById('resetStrengthFill');
+    var textLabel = document.getElementById('resetStrengthText');
+
+    if (passInput && meterWrap && fillBar && textLabel) {
+        passInput.addEventListener('input', function () {
+            var val = this.value;
+            if (val.length === 0) {
+                meterWrap.style.display = 'none';
+                return;
+            }
+            meterWrap.style.display = 'flex';
+
+            var score = 0;
+            if (val.length >= 8) score++;
+            if (val.length >= 12) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+
+            fillBar.className = 'strength-bar-fill';
+            if (score <= 2) {
+                fillBar.classList.add('weak');
+                textLabel.textContent = 'Strength: Weak';
+                textLabel.style.color = '#ef4444';
+            } else if (score <= 3) {
+                fillBar.classList.add('fair');
+                textLabel.textContent = 'Strength: Good';
+                textLabel.style.color = '#f59e0b';
             } else {
-                input.type = 'password';
-                icon.classList.replace('fas', 'far');
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
+                fillBar.classList.add('strong');
+                textLabel.textContent = 'Strength: Strong';
+                textLabel.style.color = '#10b981';
             }
         });
-    });
+    }
 
-    // Password strength calculation
-    const passwordInput = document.getElementById('password');
-    const strengthBar = document.getElementById('strengthBar');
-    const strengthText = document.getElementById('strengthText');
-
-    passwordInput?.addEventListener('input', () => {
-        const val = passwordInput.value;
-        const result = checkPasswordStrength(val);
-
-        strengthBar.style.width = result.percent + '%';
-        strengthBar.style.backgroundColor = result.color;
-        strengthText.textContent = 'Strength: ' + result.label;
-    });
-
-    function checkPasswordStrength(pass) {
-        if (!pass || pass.length < 4) {
-            return { percent: 10, color: '#f05252', label: 'Too Short' };
-        }
-
-        let score = 0;
-        if (pass.length >= 8) score++;
-        if (pass.length >= 12) score++;
-        if (/[A-Z]/.test(pass)) score++;
-        if (/[a-z]/.test(pass)) score++;
-        if (/[0-9]/.test(pass)) score++;
-        if (/[^A-Za-z0-9]/.test(pass)) score++;
-
-        switch (score) {
-            case 0:
-            case 1:
-            case 2:
-                return { percent: 25, color: '#f05252', label: 'Weak' };
-            case 3:
-            case 4:
-                return { percent: 60, color: '#ff9800', label: 'Medium' };
-            case 5:
-                return { percent: 80, color: '#eab308', label: 'Strong' };
-            case 6:
-            default:
-                return { percent: 100, color: '#1a9d55', label: 'Very Strong' };
-        }
+    // Submit Loading
+    var form = document.getElementById('resetPasswordForm');
+    var btn = document.getElementById('btnSubmitReset');
+    if (form && btn) {
+        form.addEventListener('submit', function () {
+            btn.classList.add('is-loading');
+            var btnText = btn.querySelector('.btn-text');
+            var btnSpinner = btn.querySelector('.btn-spinner');
+            if (btnText) btnText.textContent = 'Updating password...';
+            if (btnSpinner) btnSpinner.style.display = 'inline-flex';
+        });
     }
 });
 </script>

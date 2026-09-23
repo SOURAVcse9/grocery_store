@@ -184,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    placeholder="GRCO-XXXX-XXXX-XXXX-XXXX" 
                    autocomplete="off" 
                    required
-                   maxlength="24"
+                   maxlength="29"
                    value="<?= e($_POST['license_key'] ?? '') ?>">
             <span style="font-size:11px; color:var(--color-text-faint); margin-top:4px; display:block;">
                 Provided in your GroCo customer onboarding purchase receipt.
@@ -238,10 +238,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-// Auto-format license key with hyphens
+// Auto-format license key with hyphens cleanly
 document.getElementById('license_key').addEventListener('input', function(e) {
     let val = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (val.startsWith('GRCO')) {
+    while (val.startsWith('GRCO')) {
         val = val.substring(4);
     }
     let parts = ['GRCO'];

@@ -1,8 +1,7 @@
-# Deny all web access to sensitive database dumps
-<IfModule mod_authz_core.c>
-    Require all denied
-</IfModule>
+# ==============================================================================
+# database/.htaccess — Deny All Direct Web Access
+# ==============================================================================
+Require all denied
 <IfModule !mod_authz_core.c>
-    Order Deny,Allow
     Deny from all
 </IfModule>

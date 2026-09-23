@@ -1,19 +1,58 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule ^$ public/ [L]
-    RewriteRule ^((?!public/|admin/|licensing_server/).*)$ public/$1 [L]
-</IfModule>
+# ==============================================================================
+# GroCo Grocery Store — Root Apache Configuration (.htaccess)
+# ==============================================================================
 
-# Prevent direct index browsing
+# Disable directory browsing
 Options -Indexes
 
-# Block direct access to all sensitive files and extensions
-<FilesMatch "^\.env|\.(env|pem|key|sqlite|sqlite3|db|sql|log|bak|tmp|dump)$">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
+# ------------------------------------------------------------------------------
+# 1. Block Access to Sensitive Files, Schemas, & Secret Configurations
+# ------------------------------------------------------------------------------
+<FilesMatch "(?i)^(\.env|\.git|\.gitignore|composer\.(json|lock)|tree\.txt|.*\.sql|.*\.log|.*\.bak|.*\.sh|.*\.key|.*\.pem)$">
+    Require all denied
     <IfModule !mod_authz_core.c>
-        Order Deny,Allow
         Deny from all
     </IfModule>
 </FilesMatch>
+
+# ------------------------------------------------------------------------------
+# 2. Production Security Response Headers
+# ------------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 3. URL Routing & Clean SEO Rewrites
+# ------------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /grocery-store/
+
+    # Direct short URLs
+    RewriteRule ^license/?$ public/activate.php [L,QSA]
+    RewriteRule ^activate/?$ public/activate.php [L,QSA]
+    RewriteRule ^license-status/?$ public/license_status.php [L,QSA]
+    RewriteRule ^login/?$ public/login.php [L,QSA]
+    RewriteRule ^register/?$ public/register.php [L,QSA]
+    RewriteRule ^cart/?$ public/cart.php [L,QSA]
+    RewriteRule ^checkout/?$ public/checkout.php [L,QSA]
+    RewriteRule ^account/?$ public/account.php [L,QSA]
+    RewriteRule ^sitemap\.xml$ public/sitemap.xml [L]
+    RewriteRule ^robots\.txt$ public/robots.txt [L]
+
+    # Clean SEO Product and Category URLs
+    RewriteRule ^product/([a-zA-Z0-9_-]+)/?$ public/product.php?slug=$1 [L,QSA]
+    RewriteRule ^category/([a-zA-Z0-9_-]+)/?$ public/products.php?category=$1 [L,QSA]
+
+    # If already targeting an existing file or directory, serve directly
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Route root requests to public storefront
+    RewriteRule ^$ public/index.php [L,QSA]
+</IfModule>

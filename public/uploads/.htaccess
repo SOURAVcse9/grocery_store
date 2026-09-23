@@ -1,22 +1,19 @@
-# Disable script execution in uploads directory
-RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .pl .py .cgi .asp .aspx .shtml .sh .exe
-Options -ExecCGI
-<IfModule mod_php.c>
-    php_flag engine off
-</IfModule>
-<IfModule mod_php7.c>
-    php_flag engine off
-</IfModule>
-<IfModule mod_php8.c>
-    php_flag engine off
-</IfModule>
+# ==============================================================================
+# public/uploads/.htaccess — Anti-Webshell & Upload Security Protection
+# ==============================================================================
 
-<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phps|pl|py|cgi|asp|aspx|shtml|sh|exe)$">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
+# Disable directory listing and script execution
+Options -Indexes -ExecCGI
+
+# Deny execution of PHP, scripts, or executables in uploads
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phps|phar|inc|pl|py|cgi|sh|bash|exe|bat|cmd)$">
+    Require all denied
     <IfModule !mod_authz_core.c>
-        Order Deny,Allow
         Deny from all
     </IfModule>
 </FilesMatch>
+
+# Only allow safe static image and media MIME types
+<IfModule mod_mime.c>
+    RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .inc
+</IfModule>

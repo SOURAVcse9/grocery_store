@@ -1,0 +1,42 @@
+# ==============================================================================
+# GroCo Grocery Store — robots.txt
+# ==============================================================================
+
+User-agent: *
+# Disallow administrative, checkout, and private customer session routes
+Disallow: /admin/
+Disallow: /public/admin/
+Disallow: /account.php
+Disallow: /profile.php
+Disallow: /orders.php
+Disallow: /cart.php
+Disallow: /checkout.php
+Disallow: /login.php
+Disallow: /register.php
+Disallow: /forgot-password.php
+Disallow: /reset-password.php
+Disallow: /public/login.php
+Disallow: /public/register.php
+Disallow: /public/forgot-password.php
+Disallow: /public/reset-password.php
+Disallow: /public/cart.php
+Disallow: /public/checkout.php
+Disallow: /public/account.php
+Disallow: /public/profile.php
+Disallow: /public/orders.php
+
+# Allow public discovery of catalog and static assets
+Allow: /
+Allow: /public/
+Allow: /public/index.php
+Allow: /public/products.php
+Allow: /public/product.php
+Allow: /public/categories.php
+Allow: /public/about.php
+Allow: /public/contact.php
+Allow: /public/faq.php
+Allow: /public/privacy.php
+Allow: /public/terms.php
+Allow: /public/assets/
+
+Sitemap: http://localhost:8080/grocery-store/public/sitemap.php

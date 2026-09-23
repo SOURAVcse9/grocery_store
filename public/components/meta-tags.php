@@ -42,8 +42,8 @@ $isProductPage = (str_contains($_SERVER['SCRIPT_NAME'], 'product.php') && isset(
 <meta name="twitter:description" content="<?= e($pageDescription) ?>">
 <meta name="twitter:image" content="<?= e($pageImage) ?>">
 
-<!-- Secure Headers (Referrer & Client Hints) -->
-<meta name="referrer" content="no-referrer-when-downgrade">
+<!-- Secure Headers (Referrer Policy) -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
 
 <!-- --------------------------------------------------------------------- -->
 <!-- JSON-LD SEO Structured Data schemas                                   -->

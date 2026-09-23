@@ -77,11 +77,17 @@ try {
                                 <span class="status-pill pill-<?= $status ? 'completed' : 'cancelled' ?>" style="font-size:9px;">
                                     <?= $status ? 'Active' : 'Disabled' ?>
                                 </span>
+                                <?php if ((int)($ad['must_change_password'] ?? 0) === 1): ?>
+                                    <span class="status-pill pill-warning" style="font-size:9px; margin-top:3px; display:inline-block; background:#fff3bf; color:#d9480f;" title="Admin has not yet set a permanent password">
+                                        Temp OTP
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td style="padding:12px 20px; text-align:right;">
                                 <?php if ((int)$ad['id'] !== current_admin_id()): ?>
                                     <div style="display:inline-flex; gap:6px;">
-                                        <a href="edit.php?id=<?= $ad['id'] ?>" class="btn btn-primary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;"><i class="fas fa-pen"></i> Edit</a>
+                                        <a href="edit.php?id=<?= $ad['id'] ?>" class="btn btn-primary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;" title="Edit Admin"><i class="fas fa-pen"></i> Edit</a>
+                                        <a href="reset-password.php?id=<?= $ad['id'] ?>" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#fd7e14; color:#fff; text-decoration:none;" title="Reset Password & Generate New OTP"><i class="fas fa-key"></i> Reset</a>
                                         <a href="delete.php?id=<?= $ad['id'] ?>&csrf_token=<?= csrf_token() ?>" onclick="return confirm('Permanently remove this administrator account?');" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; text-decoration:none;" title="Delete Admin"><i class="fas fa-trash"></i></a>
                                     </div>
                                 <?php else: ?>

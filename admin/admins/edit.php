@@ -84,7 +84,8 @@ if (method_is('post')) {
                             UPDATE admins SET
                                 role_id = :role_id, username = :username, email = :email, 
                                 password = :password, full_name = :full_name, phone = :phone, 
-                                is_active = :active
+                                is_active = :active, must_change_password = 0, password_changed_at = NOW(),
+                                remember_token = NULL, updated_at = NOW()
                             WHERE id = :id
                         ");
                         $stmt->execute([

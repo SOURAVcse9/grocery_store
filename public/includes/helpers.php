@@ -19,9 +19,9 @@ declare(strict_types=1);
  * in this before printing it into HTML. Input validation happens on the
  * way IN (validation.php); this happens on the way OUT.
  */
-function e(?string $value): string
+function e(string|int|float|null $value): string
 {
-    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
 /**
@@ -110,6 +110,69 @@ function image_url(?string $path, string $placeholderCategory = 'ui'): string
     }
     $mtime = file_exists($filePath) ? filemtime($filePath) : time();
     return BASE_URL . '/' . $fallbackPath . '?v=' . $mtime;
+}
+
+/**
+ * generate_initials_svg_data_uri()
+ * Generates an inline SVG data URI representing customer initials on a smooth rounded badge.
+ */
+function generate_initials_svg_data_uri(string $name = 'User'): string
+{
+    $cleanName = trim($name);
+    $initials = '';
+    if (!empty($cleanName)) {
+        $words = preg_split('/\s+/', $cleanName);
+        if ($words && count($words) >= 2) {
+            $initials = mb_strtoupper(mb_substr($words[0], 0, 1) . mb_substr($words[count($words) - 1], 0, 1));
+        } else {
+            $initials = mb_strtoupper(mb_substr($cleanName, 0, min(2, mb_strlen($cleanName))));
+        }
+    }
+    if (empty($initials)) {
+        $initials = 'U';
+    }
+
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">'
+         . '<rect width="120" height="120" rx="60" fill="#0ca678"/>'
+         . '<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif" font-size="44" font-weight="700" letter-spacing="1">' . htmlspecialchars($initials, ENT_QUOTES, 'UTF-8') . '</text>'
+         . '</svg>';
+
+    return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
+}
+
+/**
+ * user_avatar_url()
+ * Resolves avatar image for customer, falling back to a crisp SVG initial avatar.
+ */
+function user_avatar_url(?string $avatarPath, string $userName = 'Customer'): string
+{
+    if (!empty($avatarPath)) {
+        // Absolute URL (e.g. Google avatar)
+        if (preg_match('#^https?://#i', $avatarPath)) {
+            return $avatarPath;
+        }
+
+        $cleaned = ltrim($avatarPath, '/');
+        // Check local uploads
+        if (str_starts_with($cleaned, 'uploads/')) {
+            $filePath = PUBLIC_PATH . '/' . $cleaned;
+            if (file_exists($filePath)) {
+                return BASE_URL . '/' . $cleaned . '?v=' . filemtime($filePath);
+            }
+        }
+
+        $directUpload = PUBLIC_PATH . '/uploads/' . $cleaned;
+        if (file_exists($directUpload)) {
+            return BASE_URL . '/uploads/' . $cleaned . '?v=' . filemtime($directUpload);
+        }
+
+        $userFolder = PUBLIC_PATH . '/uploads/users/' . $cleaned;
+        if (file_exists($userFolder)) {
+            return BASE_URL . '/uploads/users/' . $cleaned . '?v=' . filemtime($userFolder);
+        }
+    }
+
+    return generate_initials_svg_data_uri($userName);
 }
 
 /**

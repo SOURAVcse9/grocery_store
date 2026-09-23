@@ -106,9 +106,10 @@ require_once __DIR__ . '/header.php';
                 <div class="welcome-info">
                     <div class="welcome-avatar-wrapper">
                         <?php 
-                        $avatarUrl = image_url($user['avatar'], 'users');
+                        $avatarUrl = user_avatar_url($user['avatar'], $user['full_name'] ?? 'Customer');
+                        $fallbackInitial = generate_initials_svg_data_uri($user['full_name'] ?? 'Customer');
                         ?>
-                        <img class="welcome-avatar" src="<?= e($avatarUrl) ?>" alt="<?= e($user['full_name']) ?>">
+                        <img class="welcome-avatar" src="<?= e($avatarUrl) ?>" alt="<?= e($user['full_name']) ?>" onerror="this.onerror=null;this.src='<?= e($fallbackInitial) ?>';">
                     </div>
                     <div class="welcome-details">
                         <h2>Hello, <?= e($user['full_name']) ?>!</h2>

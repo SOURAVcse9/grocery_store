@@ -80,6 +80,8 @@ if (method_is('post') && $failedAttempts < 5) {
                     session_regenerate_id(true);
                     
                     $_SESSION['admin_id'] = $adminId;
+                    $_SESSION['admin_authenticated'] = true;
+                    $_SESSION['admin_role_id'] = (int) $admin['role_id'];
                     $_SESSION['admin_last_activity'] = time();
                     $_SESSION['admin_fingerprint'] = md5($_SERVER['HTTP_USER_AGENT'] ?? '');
 
@@ -108,6 +110,11 @@ if (method_is('post') && $failedAttempts < 5) {
                     // Write logs
                     log_admin_login($adminId, $identity, true);
                     log_admin_activity('login', 'Administrator logged in successfully via Form');
+
+                    // If temporary password must be changed, redirect immediately
+                    if ((int) ($admin['must_change_password'] ?? 0) === 1) {
+                        redirect_admin('change-password.php');
+                    }
 
                     redirect_admin('index.php');
                 } else {
@@ -171,7 +178,6 @@ require_once __DIR__ . '/layouts/header.php';
                 <div class="form-field-group">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                         <label for="loginPassword" style="font-weight:700; margin:0;">Password *</label>
-                        <a href="forgot-password.php" style="font-size:11px; color:var(--color-primary); font-weight:700; text-decoration:none;">Forgot Password?</a>
                     </div>
                     <div style="position:relative; display:flex; align-items:center;">
                         <i class="fas fa-lock" style="position:absolute; left:12px; color:var(--color-text-faint); font-size:13px;"></i>

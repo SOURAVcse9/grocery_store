@@ -21,6 +21,14 @@ function require_admin_auth(): void
     if (!is_admin_logged_in()) {
         redirect_to_admin_login();
     }
+
+    // Force first-time password update if temporary OTP was assigned
+    if (admin_must_change_password()) {
+        $currentScript = basename($_SERVER['SCRIPT_NAME'] ?? '');
+        if ($currentScript !== 'change-password.php' && $currentScript !== 'logout.php') {
+            redirect_admin('change-password.php');
+        }
+    }
 }
 
 /**

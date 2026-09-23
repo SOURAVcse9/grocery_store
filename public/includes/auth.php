@@ -28,12 +28,17 @@ const ROLE_CUSTOMER = 'customer';
  */
 function is_logged_in(): bool
 {
-    return !empty($_SESSION['user_id']);
+    return !empty($_SESSION['user_id']) && (!empty($_SESSION['customer_authenticated']) || !empty($_SESSION['role_id']));
 }
 
 function current_user_id(): ?int
 {
     return isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+}
+
+function current_customer_id(): ?int
+{
+    return current_user_id();
 }
 
 /**
@@ -66,7 +71,8 @@ function current_user(bool $reset = false): ?array
 
     $stmt = db()->prepare(
         'SELECT u.id, u.role_id, u.full_name, u.email, u.phone, u.avatar,
-                u.is_verified, u.is_active, r.role_name
+                u.is_verified, u.email_verified, u.is_active, u.is_banned,
+                u.google_id, u.session_version, r.role_name
          FROM users u
          JOIN roles r ON r.id = u.role_id
          WHERE u.id = :id
@@ -75,8 +81,14 @@ function current_user(bool $reset = false): ?array
     $stmt->execute(['id' => $userId]);
     $user = $stmt->fetch();
 
-    if (!$user || (int) $user['is_active'] === 0) {
-        // Account deleted/deactivated since the session was created.
+    if (!$user || (int) $user['is_active'] === 0 || (int) ($user['is_banned'] ?? 0) === 1) {
+        // Account deleted, deactivated or banned since the session was created.
+        logout_user();
+        return null;
+    }
+
+    // Multi-device session revocation check (Sign Out of All Devices)
+    if (isset($_SESSION['session_version']) && (int) ($user['session_version'] ?? 1) !== (int) $_SESSION['session_version']) {
         logout_user();
         return null;
     }
@@ -92,6 +104,47 @@ function is_admin(): bool
 }
 
 /**
+ * is_admin_email()
+ * Checks if the given email address belongs to an existing administrator in
+ * the `admins` table or `users` table with admin privileges.
+ */
+function is_admin_email(string $email): bool
+{
+    $cleanEmail = strtolower(trim($email));
+    if (empty($cleanEmail)) {
+        return false;
+    }
+
+    try {
+        $pdo = db();
+
+        // 1. Check in `admins` table
+        $stmtAdmin = $pdo->prepare('SELECT COUNT(*) FROM admins WHERE LOWER(email) = :email');
+        $stmtAdmin->execute(['email' => $cleanEmail]);
+        if ((int) $stmtAdmin->fetchColumn() > 0) {
+            return true;
+        }
+
+        // 2. Check in `users` table with admin role (role_id = 1 or roles.role_name = 'admin')
+        $stmtUser = $pdo->prepare('
+            SELECT COUNT(*) 
+            FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id
+            WHERE LOWER(u.email) = :email 
+              AND (u.role_id = 1 OR r.role_name = \'admin\')
+        ');
+        $stmtUser->execute(['email' => $cleanEmail]);
+        if ((int) $stmtUser->fetchColumn() > 0) {
+            return true;
+        }
+    } catch (Throwable $e) {
+        error_log('[is_admin_email] Error checking email: ' . $e->getMessage());
+    }
+
+    return false;
+}
+
+/**
  * require_login()
  *
  * Call at the top of any storefront page that requires a logged-in
@@ -99,6 +152,12 @@ function is_admin(): bool
  */
 function require_login(string $redirectTo = 'login.php'): void
 {
+    if (!headers_sent()) {
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+    }
+
     if (!is_logged_in()) {
         $_SESSION['intended_url'] = current_url();
         flash('auth', 'Please log in to continue.', 'info');
@@ -127,22 +186,67 @@ function require_admin(string $redirectTo = 'login.php'): void
  */
 function attempt_login(string $email, string $password): array|false
 {
+    $email = strtolower(trim($email));
     $stmt = db()->prepare(
-        'SELECT id, role_id, full_name, email, password, is_active
+        'SELECT id, role_id, full_name, email, password, is_active, is_banned, session_version, failed_logins
          FROM users WHERE email = :email LIMIT 1'
     );
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch();
 
-    if (!$user || (int) $user['is_active'] === 0) {
+    if (!$user || (int) $user['is_active'] === 0 || (int) ($user['is_banned'] ?? 0) === 1) {
+        return false;
+    }
+
+    // Google-only account without password
+    if (empty($user['password'])) {
         return false;
     }
 
     if (!password_verify($password, $user['password'])) {
+        // Increment failed logins
+        db()->prepare('UPDATE users SET failed_logins = failed_logins + 1 WHERE id = :id')
+            ->execute(['id' => (int) $user['id']]);
         return false;
     }
 
+    // Reset failed logins on success
+    db()->prepare('UPDATE users SET failed_logins = 0 WHERE id = :id')
+        ->execute(['id' => (int) $user['id']]);
+
     return $user;
+}
+
+/**
+ * sign_out_all_devices()
+ *
+ * Increments session_version in the database so all other active browser sessions
+ * are immediately rejected on their next request.
+ */
+function sign_out_all_devices(int $userId, bool $keepCurrentSession = true): bool
+{
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare('UPDATE users SET session_version = session_version + 1, remember_token = NULL WHERE id = :id');
+        $stmt->execute(['id' => $userId]);
+
+        // Refetch new session_version
+        $verStmt = $pdo->prepare('SELECT session_version FROM users WHERE id = :id');
+        $verStmt->execute(['id' => $userId]);
+        $newVer = (int) $verStmt->fetchColumn();
+
+        if ($keepCurrentSession && isset($_SESSION['customer_id']) && (int) $_SESSION['customer_id'] === $userId) {
+            $_SESSION['session_version'] = $newVer;
+            current_user(true);
+        } else {
+            logout_user();
+        }
+
+        return true;
+    } catch (PDOException $e) {
+        error_log('[sign_out_all_devices] ' . $e->getMessage());
+        return false;
+    }
 }
 
 /**
@@ -154,14 +258,24 @@ function attempt_login(string $email, string $password): array|false
  */
 function login_user(array $user): void
 {
+    if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+        @session_start();
+    }
     current_user(true);
     $guestToken = $_SESSION['guest_token'] ?? null;
 
     // Prevent session fixation.
-    session_regenerate_id(true);
+    if (session_status() === PHP_SESSION_ACTIVE && !headers_sent()) {
+        @session_regenerate_id(true);
+    }
 
     $_SESSION['user_id'] = (int) $user['id'];
-    $_SESSION['role_id'] = (int) $user['role_id'];
+    $_SESSION['customer_id'] = (int) $user['id'];
+    $_SESSION['customer_authenticated'] = true;
+    $_SESSION['role_id'] = (int) ($user['role_id'] ?? 2);
+    $_SESSION['session_version'] = (int) ($user['session_version'] ?? 1);
+    $_SESSION['customer_email'] = $user['email'] ?? '';
+    $_SESSION['customer_name'] = $user['full_name'] ?? '';
 
     regenerate_csrf_token();
 
@@ -266,12 +380,14 @@ function logout_user(): void
 
     $_SESSION = [];
 
-    if (ini_get('session.use_cookies')) {
+    if (ini_get('session.use_cookies') && !headers_sent()) {
         $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+        @setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
     }
 
-    session_destroy();
+    if (session_status() === PHP_SESSION_ACTIVE && !headers_sent()) {
+        @session_destroy();
+    }
 }
 
 /**
@@ -292,18 +408,20 @@ function handle_remember_me_cookie(int $userId): void
     $cookieValue = $userId . ':' . $rawToken;
     $expireTime = time() + (30 * 24 * 60 * 60); // 30 days
     
-    setcookie(
-        'remember_me',
-        $cookieValue,
-        [
-            'expires' => $expireTime,
-            'path' => '/',
-            'domain' => '',
-            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]
-    );
+    if (!headers_sent()) {
+        @setcookie(
+            'remember_me',
+            $cookieValue,
+            [
+                'expires' => $expireTime,
+                'path' => '/',
+                'domain' => '',
+                'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]
+        );
+    }
 }
 
 /**
@@ -323,18 +441,20 @@ function clear_remember_me_cookie(): void
         }
     }
     
-    setcookie(
-        'remember_me',
-        '',
-        [
-            'expires' => time() - 3600,
-            'path' => '/',
-            'domain' => '',
-            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]
-    );
+    if (!headers_sent()) {
+        @setcookie(
+            'remember_me',
+            '',
+            [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'domain' => '',
+                'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]
+        );
+    }
 }
 
 /**
@@ -355,7 +475,9 @@ function check_remember_me_autologin(): void
 
     $parts = explode(':', $cookie, 2);
     if (count($parts) !== 2) {
-        setcookie('remember_me', '', time() - 3600, '/', '', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'), true);
+        if (!headers_sent()) {
+            @setcookie('remember_me', '', time() - 3600, '/', '', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'), true);
+        }
         return;
     }
 
@@ -381,7 +503,9 @@ function check_remember_me_autologin(): void
                 // Token mismatch/hijack attempt, wipe DB token and clear cookie
                 $stmt = $pdo->prepare('UPDATE users SET remember_token = NULL WHERE id = :id');
                 $stmt->execute(['id' => $userId]);
-                setcookie('remember_me', '', time() - 3600, '/', '', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'), true);
+                if (!headers_sent()) {
+                    @setcookie('remember_me', '', time() - 3600, '/', '', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'), true);
+                }
             }
         }
     } catch (PDOException $e) {
