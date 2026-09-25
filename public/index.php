@@ -15,8 +15,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/dbconnect.php';
 
 // Set page meta details
-$pageTitle = site_name() . ' — Fresh Groceries Delivered Fast';
-$pageDescription = 'Shop fresh fruits, organic vegetables, dairy, snacks, cooking oil, and daily essentials online. Fast delivery in Bangladesh.';
+$pageTitle = site_name() . ' | Online Grocery Shopping in Bangladesh';
+$pageDescription = get_setting('site_meta_description') ?: 'Shop fresh fruits, organic vegetables, dairy, snacks, cooking oil, and daily essentials online with fast home delivery in Bangladesh.';
+$pageCanonical = build_canonical_url('');
+$pageRobots = 'index, follow';
 
 // Set stylesheets and javascript files needed for this page
 $extraStylesheets = ['css/home.css', 'css/newsletter.css'];

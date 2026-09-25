@@ -84,11 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // SEO Details
-$pageTitle = 'Contact Us — ' . site_name();
-$pageDescription = 'Get in touch with GroCo customer support. Send a message, find our office locations, view our working hours, or check our FAQs.';
-
-$canonicalUrl = current_url();
-$ogImage = asset('images/ui/logo.png');
+$pageTitle = 'Contact Us | ' . site_name();
+$pageDescription = 'Get in touch with GroCo customer support in Bangladesh. Reach us via phone, email, contact form, or visit our office in Banani, Dhaka.';
+$pageCanonical = build_canonical_url('contact.php');
+$pageRobots = 'index, follow';
+$pageImage = image_url('ui/logo.png');
 
 $breadcrumbs = [
     ['title' => 'Contact Us']

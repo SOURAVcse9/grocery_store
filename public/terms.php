@@ -23,11 +23,11 @@ try {
 }
 
 // SEO Details
-$pageTitle = ($cmsPage && !empty($cmsPage['meta_title'])) ? $cmsPage['meta_title'] : ('Terms of Service — ' . site_name());
-$pageDescription = ($cmsPage && !empty($cmsPage['meta_description'])) ? $cmsPage['meta_description'] : 'Review the Terms of Service of GroCo.';
-
-$canonicalUrl = current_url();
-$ogImage = asset('images/ui/logo.png');
+$pageTitle = ($cmsPage && !empty($cmsPage['meta_title'])) ? $cmsPage['meta_title'] : ('Terms of Service | ' . site_name());
+$pageDescription = ($cmsPage && !empty($cmsPage['meta_description'])) ? $cmsPage['meta_description'] : 'Review the Terms of Service, order policies, refund terms, and customer rights for GroCo Grocery Store in Bangladesh.';
+$pageCanonical = build_canonical_url('terms.php');
+$pageRobots = 'index, follow';
+$pageImage = image_url('ui/logo.png');
 
 $breadcrumbs = [
     ['title' => 'Terms of Service']

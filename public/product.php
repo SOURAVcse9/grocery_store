@@ -248,9 +248,20 @@ try {
     }
 }
 
-// Page layout meta
-$pageTitle = $product['name'] . ' — ' . ($product['brand_name'] ? $product['brand_name'] . ' — ' : '') . site_name();
-$pageDescription = $product['short_description'] ?? truncate($product['description'] ?? '', 160);
+// Page layout meta & SEO details
+$pageTitle = !empty($product['meta_title']) ? $product['meta_title'] : ($product['name'] . ' | Buy Online in Bangladesh | ' . site_name());
+$pageDescription = !empty($product['meta_description']) ? $product['meta_description'] : ($product['short_description'] ?? truncate($product['description'] ?? '', 160));
+$pageCanonical = build_canonical_url('product.php', ['slug' => $product['slug']]);
+$pageImage = !empty($gallery) ? image_url($gallery[0], 'products') : image_url($product['thumbnail'], 'products');
+
+// Prepare Breadcrumb trail BEFORE header.php so meta-tags.php can emit BreadcrumbList JSON-LD
+$breadcrumbs = [
+    ['title' => t('shop') ?? 'Shop', 'link' => 'products.php'],
+    ['title' => $product['category_name'] ?? 'Category', 'link' => 'products.php?category=' . ($product['category_slug'] ?? '')],
+    ['title' => $product['name']]
+];
+
+$productReviews = $reviews ?? [];
 
 $extraStylesheets = ['css/home.css', 'css/product.css', 'css/reviews.css'];
 $extraScripts = [
@@ -262,13 +273,6 @@ $extraScripts = [
 ];
 
 require_once __DIR__ . '/header.php';
-
-// Prepare Breadcrumb trail
-$breadcrumbs = [
-    ['title' => t('shop') ?? 'Shop', 'link' => 'products.php'],
-    ['title' => $product['category_name'] ?? 'Category', 'link' => 'products.php?category=' . $product['category_slug']],
-    ['title' => $product['name']]
-];
 ?>
 
 <!-- Breadcrumbs -->

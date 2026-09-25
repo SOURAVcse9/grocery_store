@@ -13,11 +13,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/dbconnect.php';
 
 // SEO Details
-$pageTitle = 'Frequently Asked Questions — ' . site_name();
-$pageDescription = 'Find answers to common questions about ordering, delivery speeds, payment methods, refund policies, and account settings.';
-
-$canonicalUrl = current_url();
-$ogImage = asset('images/ui/logo.png');
+$pageTitle = 'Frequently Asked Questions | ' . site_name();
+$pageDescription = 'Find answers to common questions about ordering groceries online, delivery areas, payment methods, returns, and refunds in Bangladesh at ' . site_name() . '.';
+$pageCanonical = build_canonical_url('faq.php');
+$pageRobots = 'index, follow';
+$pageImage = image_url('ui/logo.png');
 
 $breadcrumbs = [
     ['title' => 'FAQs']

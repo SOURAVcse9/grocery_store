@@ -13,11 +13,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/dbconnect.php';
 
 // SEO details
-$pageTitle = 'Product Categories — ' . site_name();
-$pageDescription = 'Browse products by category. Find fresh fruits, vegetables, organic foods, meat, dairy, snacks, cooking ingredients and household essentials.';
-
-$canonicalUrl = current_url();
-$ogImage = asset('images/ui/logo.png');
+$pageTitle = 'Product Categories | Buy Fresh Groceries Online | ' . site_name();
+$pageDescription = 'Browse all grocery categories at ' . site_name() . '. Find fresh fruits, vegetables, organic foods, meat, dairy, snacks, cooking ingredients and household essentials in Bangladesh.';
+$pageCanonical = build_canonical_url('categories.php');
+$pageRobots = 'index, follow';
+$ogImage = image_url('ui/logo.png');
 
 $breadcrumbs = [
     ['title' => 'Categories']

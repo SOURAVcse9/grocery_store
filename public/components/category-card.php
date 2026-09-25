@@ -26,7 +26,7 @@ $categoryUrl = url_for('products.php?category=' . e($catSlug));
 ?>
 <a href="<?= $categoryUrl ?>" class="category-card">
     <div class="category-card-image-wrapper">
-        <img class="category-card-image lazy" src="<?= asset('images/ui/placeholder.png') ?>" data-src="<?= e($imageUrl) ?>" alt="<?= e($catName) ?>" loading="lazy">
+        <img class="category-card-image" src="<?= e($imageUrl) ?>" alt="<?= e($catName) ?>" loading="lazy" decoding="async" width="160" height="160">
     </div>
     <div class="category-card-content">
         <h3 class="category-card-title"><?= e($catName) ?></h3>

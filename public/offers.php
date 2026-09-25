@@ -28,18 +28,21 @@ try {
     error_log('[offers.php] Coupon query fail: ' . $e->getMessage());
 }
 
-$pageTitle = 'Hot Deals & Coupon Offers — ' . site_name();
-$pageDescription = 'Discover hot discounts, copy active coupon codes, track ticking flash sales, and save on organic groceries.';
-
-$extraStylesheets = ['css/home.css', 'css/products.css', 'css/offers.css', 'css/newsletter.css'];
-$extraScripts = ['js/offers.js', 'js/newsletter.js', 'js/quickview.js', 'js/cart.js', 'js/wishlist.js', 'js/compare.js'];
-
-require_once __DIR__ . '/header.php';
+$pageTitle = 'Hot Deals & Coupon Offers | ' . site_name();
+$pageDescription = 'Discover hot discounts, active coupon codes, and flash sales on fresh groceries in Bangladesh at ' . site_name() . '.';
+$pageCanonical = build_canonical_url('offers.php');
+$pageRobots = 'index, follow';
+$pageImage = image_url('ui/logo.png');
 
 // Prepare Breadcrumbs trail
 $breadcrumbs = [
     ['title' => 'Hot Deals & Offers']
 ];
+
+$extraStylesheets = ['css/home.css', 'css/products.css', 'css/offers.css', 'css/newsletter.css'];
+$extraScripts = ['js/offers.js', 'js/newsletter.js', 'js/quickview.js', 'js/cart.js', 'js/wishlist.js', 'js/compare.js'];
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <!-- Breadcrumbs -->

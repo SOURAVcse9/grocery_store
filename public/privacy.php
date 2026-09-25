@@ -23,11 +23,11 @@ try {
 }
 
 // SEO Details
-$pageTitle = ($cmsPage && !empty($cmsPage['meta_title'])) ? $cmsPage['meta_title'] : ('Privacy Policy — ' . site_name());
-$pageDescription = ($cmsPage && !empty($cmsPage['meta_description'])) ? $cmsPage['meta_description'] : 'Read the privacy policy of GroCo. Learn how we collect, store, secure, and process your personal details and payment information.';
-
-$canonicalUrl = current_url();
-$ogImage = asset('images/ui/logo.png');
+$pageTitle = ($cmsPage && !empty($cmsPage['meta_title'])) ? $cmsPage['meta_title'] : ('Privacy Policy | ' . site_name());
+$pageDescription = ($cmsPage && !empty($cmsPage['meta_description'])) ? $cmsPage['meta_description'] : 'Read the privacy policy of GroCo Grocery Store. Learn how we protect your personal information and transaction data in Bangladesh.';
+$pageCanonical = build_canonical_url('privacy.php');
+$pageRobots = 'index, follow';
+$pageImage = image_url('ui/logo.png');
 
 $breadcrumbs = [
     ['title' => 'Privacy Policy']

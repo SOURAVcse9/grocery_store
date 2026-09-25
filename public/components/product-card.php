@@ -75,7 +75,7 @@ $productUrl = url_for('product.php?slug=' . e($productSlug));
 
     <!-- Image Area -->
     <a href="<?= $productUrl ?>" class="product-image-wrapper">
-        <img class="product-image lazy" src="<?= asset('images/ui/placeholder.png') ?>" data-src="<?= e($imageUrl) ?>" alt="<?= e($productName) ?>" loading="lazy">
+        <img class="product-image" src="<?= e($imageUrl) ?>" alt="<?= e($productName) ?>" loading="lazy" decoding="async" width="280" height="280">
     </a>
 
     <!-- Content Area -->

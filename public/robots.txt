@@ -1,42 +1,91 @@
 # ==============================================================================
 # GroCo Grocery Store — robots.txt
 # ==============================================================================
+# Controls web crawler accessibility for Googlebot, Bingbot, and search engines.
+# Disallows admin, internal storage, auth, cart, and checkout paths.
+# Allows full crawling of catalog products, categories, images, and public pages.
+# ==============================================================================
 
 User-agent: *
-# Disallow administrative, checkout, and private customer session routes
+
+# 1. Disallow Administrative, Internal, and Test Suites
 Disallow: /admin/
 Disallow: /public/admin/
+Disallow: /storage/
+Disallow: /database/
+Disallow: /tests/
+Disallow: /licensing_server/
+Disallow: /api/
+Disallow: /ajax/
+Disallow: /auth/
+
+# 2. Disallow Private Customer Session, Checkout & Auth Routes
 Disallow: /account.php
 Disallow: /profile.php
 Disallow: /orders.php
+Disallow: /order-details.php
+Disallow: /addresses.php
 Disallow: /cart.php
 Disallow: /checkout.php
+Disallow: /thank-you.php
+Disallow: /wishlist.php
+Disallow: /compare.php
+Disallow: /notifications.php
 Disallow: /login.php
 Disallow: /register.php
 Disallow: /forgot-password.php
 Disallow: /reset-password.php
+Disallow: /activate.php
+Disallow: /license_status.php
+Disallow: /offline.php
+
+Disallow: /public/account.php
+Disallow: /public/profile.php
+Disallow: /public/orders.php
+Disallow: /public/order-details.php
+Disallow: /public/addresses.php
+Disallow: /public/cart.php
+Disallow: /public/checkout.php
+Disallow: /public/thank-you.php
+Disallow: /public/wishlist.php
+Disallow: /public/compare.php
+Disallow: /public/notifications.php
 Disallow: /public/login.php
 Disallow: /public/register.php
 Disallow: /public/forgot-password.php
 Disallow: /public/reset-password.php
-Disallow: /public/cart.php
-Disallow: /public/checkout.php
-Disallow: /public/account.php
-Disallow: /public/profile.php
-Disallow: /public/orders.php
+Disallow: /public/activate.php
+Disallow: /public/license_status.php
+Disallow: /public/offline.php
 
-# Allow public discovery of catalog and static assets
+# 3. Allow Public Storefront, Catalog, Product Pages, Static Content & Assets
 Allow: /
+Allow: /index.php
+Allow: /products.php
+Allow: /product.php
+Allow: /categories.php
+Allow: /offers.php
+Allow: /about.php
+Allow: /contact.php
+Allow: /faq.php
+Allow: /privacy.php
+Allow: /terms.php
+Allow: /assets/
+Allow: /uploads/
+
 Allow: /public/
 Allow: /public/index.php
 Allow: /public/products.php
 Allow: /public/product.php
 Allow: /public/categories.php
+Allow: /public/offers.php
 Allow: /public/about.php
 Allow: /public/contact.php
 Allow: /public/faq.php
 Allow: /public/privacy.php
 Allow: /public/terms.php
 Allow: /public/assets/
+Allow: /public/uploads/
 
-Sitemap: http://localhost:8080/grocery-store/public/sitemap.php
+# 4. XML Sitemap Directive
+Sitemap: https://groco.site.je/sitemap.xml

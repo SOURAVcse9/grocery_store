@@ -152,38 +152,55 @@ try {
     $stmt->execute();
     $products = $stmt->fetchAll();
 
-    // 6. Build Breadcrumb links
+    // 6. Build Breadcrumb links and SEO variables
     $breadcrumbs = [
         ['title' => t('shop') ?? 'Shop', 'link' => 'products.php']
     ];
 
-    $bannerTitle = 'Store Catalog';
-    $bannerText = 'Browse through our premium selection of grocery essentials';
+    $bannerTitle = 'All Groceries & Essentials';
+    $bannerText = 'Browse through our premium selection of fresh groceries and daily household essentials.';
+    $pageRobots = 'index, follow';
+    $pageCanonical = build_canonical_url('products.php');
 
     if (!empty($categorySlug)) {
-        // Find category name for title & breadcrumb
-        $catNameQuery = $pdo->prepare('SELECT name FROM categories WHERE slug = :slug LIMIT 1');
-        $catNameQuery->execute(['slug' => $categorySlug]);
-        $catName = $catNameQuery->fetchColumn();
-        if ($catName !== false) {
+        // Find category name & description for SEO
+        $catQuery = $pdo->prepare('SELECT name, description FROM categories WHERE slug = :slug LIMIT 1');
+        $catQuery->execute(['slug' => $categorySlug]);
+        $catRow = $catQuery->fetch();
+        if ($catRow !== false) {
+            $catName = $catRow['name'];
             $breadcrumbs[] = ['title' => $catName];
             $bannerTitle = $catName;
-            $bannerText = 'Fresh and high quality products listed under ' . $catName;
+            $bannerText = !empty($catRow['description']) ? $catRow['description'] : ('Order fresh ' . $catName . ' online at best prices in Bangladesh with fast home delivery.');
+            $pageTitle = $catName . ' | Buy Fresh Groceries Online | ' . site_name();
+            $pageDescription = format_meta_description($bannerText);
+            $pageCanonical = build_canonical_url('products.php', ['category' => $categorySlug]);
         }
     } elseif (!empty($brandSlug)) {
         // Find brand name
-        $brandNameQuery = $pdo->prepare('SELECT name FROM brands WHERE slug = :slug LIMIT 1');
-        $brandNameQuery->execute(['slug' => $brandSlug]);
-        $brandName = $brandNameQuery->fetchColumn();
-        if ($brandName !== false) {
+        $brandQuery = $pdo->prepare('SELECT name, description FROM brands WHERE slug = :slug LIMIT 1');
+        $brandQuery->execute(['slug' => $brandSlug]);
+        $brandRow = $brandQuery->fetch();
+        if ($brandRow !== false) {
+            $brandName = $brandRow['name'];
             $breadcrumbs[] = ['title' => $brandName];
             $bannerTitle = $brandName;
-            $bannerText = 'Premium products manufactured by ' . $brandName;
+            $bannerText = !empty($brandRow['description']) ? $brandRow['description'] : ('Shop authentic ' . $brandName . ' products online with fast home delivery in Bangladesh.');
+            $pageTitle = $brandName . ' Products | Buy Online | ' . site_name();
+            $pageDescription = format_meta_description($bannerText);
+            $pageCanonical = build_canonical_url('products.php', ['brand' => $brandSlug]);
         }
     } elseif (!empty($searchQuery)) {
         $breadcrumbs[] = ['title' => 'Search: "' . $searchQuery . '"'];
         $bannerTitle = 'Search Results';
         $bannerText = 'Showing products matching your search query: "' . $searchQuery . '"';
+        $pageTitle = 'Search results for "' . $searchQuery . '" | ' . site_name();
+        $pageDescription = format_meta_description('Browse grocery search results for ' . $searchQuery . ' at ' . site_name() . '.');
+        $pageCanonical = build_canonical_url('products.php');
+        $pageRobots = 'noindex, follow';
+    } else {
+        $pageTitle = 'All Groceries & Daily Essentials | ' . site_name();
+        $pageDescription = format_meta_description($bannerText);
     }
 
 } catch (PDOException $e) {
@@ -192,10 +209,6 @@ try {
         die('Catalog Loading Error: ' . htmlspecialchars($e->getMessage()));
     }
 }
-
-// Page variables for layout
-$pageTitle = $bannerTitle . ' — ' . site_name();
-$pageDescription = $bannerText;
 
 $extraStylesheets = ['css/home.css', 'css/products.css'];
 $extraScripts = [

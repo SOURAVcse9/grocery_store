@@ -23,11 +23,11 @@ try {
 }
 
 // SEO details
-$pageTitle = ($cmsPage && !empty($cmsPage['meta_title'])) ? $cmsPage['meta_title'] : ('About Us — ' . site_name());
-$pageDescription = ($cmsPage && !empty($cmsPage['meta_description'])) ? $cmsPage['meta_description'] : 'Discover Bangladesh\'s premium online grocery platform.';
-
-$canonicalUrl = current_url();
-$ogImage = asset('images/ui/logo.png');
+$pageTitle = ($cmsPage && !empty($cmsPage['meta_title'])) ? $cmsPage['meta_title'] : ('About Us | ' . site_name());
+$pageDescription = ($cmsPage && !empty($cmsPage['meta_description'])) ? $cmsPage['meta_description'] : 'Learn about GroCo Grocery Store, Bangladesh\'s leading online grocery platform committed to delivering fresh, organic, and authentic daily essentials.';
+$pageCanonical = build_canonical_url('about.php');
+$pageRobots = 'index, follow';
+$pageImage = image_url('ui/logo.png');
 
 // Breadcrumb configuration
 $breadcrumbs = [
