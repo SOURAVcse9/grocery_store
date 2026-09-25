@@ -206,6 +206,7 @@ Desktop.ini
 !database/.htaccess
 !public/logs/.htaccess
 !public/uploads/.htaccess
+!tests/.htaccess
 
 # Guarantee permanent static placeholder images and assets are tracked
 !public/assets/images/**
@@ -217,8 +218,6 @@ Desktop.ini
 !database/license_migrations.sql
 
 # Guarantee all regression & security test suites are tracked
-!admin_full_audit_test.php
-!admin_db_integrity_scan.php
 !tests/licensing_system_test.php
 !tests/licensing_security_hardening_test.php
 !docs/LICENSING_SYSTEM.md
