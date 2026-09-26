@@ -204,6 +204,7 @@ Desktop.ini
 !public/.htaccess
 !storage/.htaccess
 !database/.htaccess
+!licensing_server/.htaccess
 !public/logs/.htaccess
 !public/uploads/.htaccess
 !tests/.htaccess
@@ -220,4 +221,14 @@ Desktop.ini
 # Guarantee all regression & security test suites are tracked
 !tests/licensing_system_test.php
 !tests/licensing_security_hardening_test.php
-!docs/LICENSING_SYSTEM.md
+!tests/production_dual_auth_test.php
+!tests/production_smtp_password_reset_test.php
+!tests/admin_email_customer_registration_block_test.php
+!tests/authentication_security_test.php
+!tests/auth_ui_redesign_test.php
+!tests/public_seo_audit_test.php
+!tests/security_hardening_penetration_test.php
+
+# Guarantee documentation and changelogs are tracked
+!docs/**
+!CHANGELOG_SECURITY.md
