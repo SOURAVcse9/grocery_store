@@ -149,7 +149,7 @@ try {
         case 'categories':
             if ($method === 'GET') {
                 $categories = CacheService::remember('api_categories_all', CacheService::TTL_MEDIUM, function() use ($pdo) {
-                    $stmt = $pdo->query("SELECT id, name, slug, parent_id, image, icon FROM categories WHERE (status = 'active' OR is_active = 1) ORDER BY name ASC");
+                    $stmt = $pdo->query("SELECT id, name, slug, parent_id, image, icon FROM categories WHERE is_active = 1 ORDER BY name ASC");
                     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     foreach ($rows as &$cat) {
                         $cat['image_url'] = MediaService::getUrl((string)($cat['image'] ?? ''), [], 'categories');
@@ -167,7 +167,7 @@ try {
         case 'brands':
             if ($method === 'GET') {
                 $brands = CacheService::remember('api_brands_all', CacheService::TTL_MEDIUM, function() use ($pdo) {
-                    $stmt = $pdo->query("SELECT id, name, slug, logo FROM brands WHERE (status = 'active' OR is_active = 1) ORDER BY name ASC");
+                    $stmt = $pdo->query("SELECT id, name, slug, logo FROM brands WHERE is_active = 1 ORDER BY name ASC");
                     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     foreach ($rows as &$b) {
                         $b['logo_url'] = MediaService::getUrl((string)($b['logo'] ?? ''), [], 'brands');

@@ -5,8 +5,15 @@
 # and outputs secure HTTP headers.
 # ==========================================================================
 
-# 1. Disable Directory Listing
+# 1. Disable Directory Listing & Enable Rewrites
 Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^api/v1/(.*)$ api/v1/index.php [QSA,L]
+</IfModule>
 
 # 2. Limit File Upload payloads to 5MB (5242880 bytes)
 LimitRequestBody 5242880
