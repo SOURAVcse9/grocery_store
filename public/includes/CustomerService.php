@@ -29,7 +29,7 @@ class CustomerService
         if ($userId <= 0) return null;
 
         $stmt = $this->pdo->prepare("
-            SELECT id, name, email, phone, avatar, google_id, email_verified, status, created_at, session_version
+            SELECT id, full_name as name, full_name, email, phone, avatar, google_id, email_verified, is_active, session_version, created_at
             FROM users 
             WHERE id = ?
             LIMIT 1
@@ -49,7 +49,7 @@ class CustomerService
         if ($cleanEmail === '') return null;
 
         $stmt = $this->pdo->prepare("
-            SELECT id, name, email, phone, avatar, google_id, email_verified, status, created_at
+            SELECT id, full_name as name, full_name, email, phone, avatar, google_id, email_verified, is_active, created_at
             FROM users 
             WHERE LOWER(email) = ?
             LIMIT 1
@@ -70,9 +70,9 @@ class CustomerService
         $fields = [];
         $params = [];
 
-        if (isset($data['name'])) {
-            $fields[] = "name = ?";
-            $params[] = trim((string)$data['name']);
+        if (isset($data['name']) || isset($data['full_name'])) {
+            $fields[] = "full_name = ?";
+            $params[] = trim((string)($data['full_name'] ?? $data['name']));
         }
         if (isset($data['phone'])) {
             $fields[] = "phone = ?";

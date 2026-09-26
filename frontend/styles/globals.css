@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-neutral-50 text-neutral-900 font-sans antialiased;
+  }
+}
+
+.product-card {
+  @apply bg-white rounded-xl border border-neutral-200 overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-brand-500 flex flex-col justify-between;
+}

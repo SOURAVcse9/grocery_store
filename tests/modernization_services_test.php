@@ -97,6 +97,7 @@ assertTest(
 // 3. QueueService Tests
 echo "\n--- 3. QUEUESERVICE & ASYNC JOBS ---\n";
 QueueService::init();
+QueueService::clear();
 $testJobExecuted = false;
 $GLOBALS['test_queue_ran'] = false;
 

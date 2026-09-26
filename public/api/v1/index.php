@@ -8,8 +8,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../dbconnect.php';
+require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/CacheService.php';
 require_once __DIR__ . '/../../includes/MediaService.php';
+require_once __DIR__ . '/../../includes/EventDispatcher.php';
 require_once __DIR__ . '/ApiResponse.php';
 
 // Handle CORS Preflight
@@ -403,14 +405,38 @@ try {
             break;
 
         // ----------------------------------------------------------------------
-        // ORDERS: GET /api/v1/orders & GET /api/v1/orders/{id}
+        // ORDERS: GET /api/v1/orders, GET /api/v1/orders/{id}, POST /api/v1/orders
         // ----------------------------------------------------------------------
         case 'orders':
+            $orderService = new OrderService($pdo);
+
+            if ($method === 'POST') {
+                $userId = is_logged_in() ? (int)get_current_user_id() : null;
+                $items = $input['items'] ?? [];
+                if (empty($items) || !is_array($items)) {
+                    ApiResponse::error('Cart items array cannot be empty', 400);
+                }
+
+                $orderData = [
+                    'user_id'         => $userId,
+                    'address_id'      => $input['address_id'] ?? null,
+                    'coupon_id'       => $input['coupon_id'] ?? null,
+                    'discount_amount' => (float)($input['discount_amount'] ?? 0.0),
+                    'delivery_charge' => (float)($input['delivery_charge'] ?? 5.0),
+                    'payment_method'  => (string)($input['payment_method'] ?? 'cod'),
+                    'payment_status'  => (string)($input['payment_status'] ?? 'unpaid'),
+                    'note'            => (string)($input['note'] ?? ''),
+                    'customer_email'  => (string)($input['customer_email'] ?? '')
+                ];
+
+                $created = $orderService->createOrder($orderData, $items);
+                ApiResponse::success($created, null, 201);
+            }
+
             if (!is_logged_in()) {
                 ApiResponse::unauthorized('Customer login required');
             }
             $userId = (int)get_current_user_id();
-            $orderService = new OrderService($pdo);
 
             if ($method === 'GET') {
                 if ($subId && is_numeric($subId)) {
@@ -430,6 +456,76 @@ try {
                         'total_pages' => $ordersData['total_pages']
                     ]);
                 }
+            }
+            break;
+
+        // ----------------------------------------------------------------------
+        // AUTH: POST /api/v1/auth/login, register, logout & GET /api/v1/auth/me
+        // ----------------------------------------------------------------------
+        case 'auth':
+            $custService = new CustomerService($pdo);
+
+            if ($subId === 'login' && $method === 'POST') {
+                $email = trim((string)($input['email'] ?? ''));
+                $password = (string)($input['password'] ?? '');
+
+                if ($email === '' || $password === '') {
+                    ApiResponse::error('Email and password are required', 400);
+                }
+
+                $user = attempt_login($email, $password);
+                if (!$user) {
+                    ApiResponse::error('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+                }
+
+                $_SESSION['user_id'] = (int)$user['id'];
+                $_SESSION['customer_id'] = (int)$user['id'];
+                $_SESSION['customer_authenticated'] = true;
+                $_SESSION['role_id'] = (int)$user['role_id'];
+                $_SESSION['session_version'] = (int)($user['session_version'] ?? 1);
+
+                $profile = $custService->getById((int)$user['id']);
+                ApiResponse::success(['message' => 'Logged in successfully', 'user' => $profile]);
+            } elseif ($subId === 'register' && $method === 'POST') {
+                $name = trim((string)($input['full_name'] ?? ($input['name'] ?? '')));
+                $email = strtolower(trim((string)($input['email'] ?? '')));
+                $password = (string)($input['password'] ?? '');
+                $phone = trim((string)($input['phone'] ?? ''));
+
+                if ($name === '' || $email === '' || strlen($password) < 6) {
+                    ApiResponse::error('Valid name, email, and password (min 6 chars) required', 400);
+                }
+
+                $existing = $custService->getByEmail($email);
+                if ($existing) {
+                    ApiResponse::error('An account with this email already exists', 409, 'EMAIL_EXISTS');
+                }
+
+                $hash = password_hash($password, PASSWORD_BCRYPT);
+                $stmt = $pdo->prepare("INSERT INTO users (full_name, email, password, phone, role_id, is_active, session_version, created_at) VALUES (?, ?, ?, ?, 2, 1, 1, NOW())");
+                $stmt->execute([$name, $email, $hash, $phone]);
+                $newUserId = (int)$pdo->lastInsertId();
+
+                $_SESSION['user_id'] = $newUserId;
+                $_SESSION['customer_id'] = $newUserId;
+                $_SESSION['customer_authenticated'] = true;
+                $_SESSION['role_id'] = 2;
+                $_SESSION['session_version'] = 1;
+
+                $profile = $custService->getById($newUserId);
+                ApiResponse::success(['message' => 'Account created successfully', 'user' => $profile], null, 201);
+            } elseif ($subId === 'logout' && $method === 'POST') {
+                unset($_SESSION['user_id'], $_SESSION['customer_id'], $_SESSION['customer_authenticated'], $_SESSION['role_id']);
+                ApiResponse::success(['message' => 'Logged out successfully']);
+            } elseif ($subId === 'me' && $method === 'GET') {
+                if (!is_logged_in()) {
+                    ApiResponse::unauthorized('Not authenticated');
+                }
+                $userId = (int)get_current_user_id();
+                $profile = $custService->getById($userId);
+                ApiResponse::success($profile);
+            } else {
+                ApiResponse::notFound('Auth endpoint not found');
             }
             break;
 

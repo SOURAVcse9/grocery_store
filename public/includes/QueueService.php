@@ -126,7 +126,13 @@ class QueueService
 
         try {
             $handler = $targetJob['handler'];
-            if (is_callable($handler)) {
+            if ($handler === 'send_email' && class_exists('EmailService')) {
+                $to = (string)($targetJob['payload']['to'] ?? '');
+                $subj = (string)($targetJob['payload']['subject'] ?? '');
+                $body = (string)($targetJob['payload']['body'] ?? '');
+                EmailService::sendBranded($to, $subj, $body);
+                $success = true;
+            } elseif (is_callable($handler)) {
                 call_user_func($handler, $targetJob['payload']);
                 $success = true;
             } else {
@@ -187,5 +193,14 @@ class QueueService
             $processed++;
         }
         return $processed;
+    }
+
+    /**
+     * Clear all pending/processing/failed jobs from queue
+     */
+    public static function clear(): void
+    {
+        self::init();
+        @file_put_contents(self::$queueFile, json_encode([], JSON_PRETTY_PRINT), LOCK_EX);
     }
 }
