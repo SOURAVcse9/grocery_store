@@ -166,9 +166,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <?php if ($success): ?>
-        <div style="background:rgba(64,192,87,0.1); border:1px solid #40c057; color:#2b8a3e; padding:12px 16px; border-radius:var(--radius-sm); font-size:13px; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
-            <i class="fas fa-circle-check"></i>
-            <span><?= e($success) ?></span>
+        <div style="background:rgba(64,192,87,0.1); border:1px solid #40c057; color:#2b8a3e; padding:16px; border-radius:var(--radius-sm); font-size:13px; margin-bottom:20px; display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; align-items:center; gap:8px; font-weight:700;">
+                <i class="fas fa-circle-check"></i>
+                <span><?= e($success) ?></span>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:4px;">
+                <a href="<?= url_for('index.php') ?>" style="flex:1; background-color:#2b8a3e; color:#ffffff; padding:12px 16px; border-radius:var(--radius-pill); text-decoration:none; font-weight:700; font-size:13px; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="fas fa-store"></i> Open Storefront
+                </a>
+                <a href="<?= function_exists('url_for') ? url_for('../admin/index.php') : '/grocery-store/admin/' ?>" style="flex:1; background-color:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); padding:12px 16px; border-radius:var(--radius-pill); text-decoration:none; font-weight:700; font-size:13px; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="fas fa-gauge"></i> Admin Panel
+                </a>
+            </div>
         </div>
     <?php endif; ?>
 
