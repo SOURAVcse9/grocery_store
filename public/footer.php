@@ -81,6 +81,7 @@ declare(strict_types=1);
 
 <script src="<?= asset('js/toast.js') ?>"></script>
 <script src="<?= asset('js/app.js') ?>"></script>
+<script src="<?= asset('js/cart.js') ?>"></script>
 <script src="<?= asset('js/notifications.js') ?>"></script>
 <script src="<?= asset('js/lazyload.js') ?>"></script>
 <script src="<?= asset('js/performance.js') ?>"></script>

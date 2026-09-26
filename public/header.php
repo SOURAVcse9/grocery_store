@@ -51,6 +51,10 @@ $pageCanonical   = $pageCanonical ?? current_url();
         }
         document.documentElement.setAttribute('data-theme', theme);
     })();
+    window.GROCO = window.GROCO || {
+        baseUrl: <?= json_encode(BASE_URL) ?>,
+        csrfToken: <?= json_encode(csrf_token()) ?>
+    };
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

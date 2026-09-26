@@ -13,8 +13,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/dbconnect.php';
 
 // Secure endpoint access
-require_login();
-require_method('POST');
+if (!is_logged_in()) {
+    redirect(url_for('login.php'));
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    redirect(url_for('profile.php'));
+}
+
 verify_csrf_or_fail();
 
 $user = current_user();

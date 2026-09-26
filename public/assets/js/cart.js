@@ -65,22 +65,22 @@
     drawerOverlay.addEventListener('click', () => toggleMiniCart(false));
 
     // Intercept clicks on the header cart icon link
-    const headerCartBtn = document.querySelector('a[href*="cart.php"].icon-link');
-    if (headerCartBtn && !window.location.pathname.endsWith('cart.php')) {
-      headerCartBtn.addEventListener('click', (e) => {
-        if (window.innerWidth > 768) {
-          e.preventDefault();
-          toggleMiniCart(true);
-        }
-      });
-    }
+    document.addEventListener('click', (e) => {
+      const headerCartBtn = e.target.closest('a[href*="cart.php"].icon-link');
+      if (headerCartBtn && !window.location.pathname.endsWith('cart.php')) {
+        e.preventDefault();
+        toggleMiniCart(true);
+      }
+    });
 
     // ---------------------------------------------------------------------
     // 2. Fetch and Refresh Cart Data (Dynamic totals calculations)
     // ---------------------------------------------------------------------
     async function refreshMiniCart() {
       try {
-        const res = await fetch('api/cart.php', {
+        const baseUrl = window.GROCO?.baseUrl || '';
+        const apiUrl = baseUrl ? (baseUrl + '/api/cart.php') : 'api/cart.php';
+        const res = await fetch(apiUrl, {
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const json = await res.json();
