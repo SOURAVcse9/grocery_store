@@ -135,6 +135,12 @@ try {
         $email = strtolower(trim(input('email', '')));
         $phone = trim(input('phone', ''));
         
+        // Prevent admin emails from registering as customer accounts
+        if (is_admin_email($email)) {
+            $pdo->rollBack();
+            json_response(false, 'This email address belongs to an administrator account. Please log in via the Admin Panel or use a different customer email.', [], 422);
+        }
+
         // Double-check if user already exists by email
         $userCheck = $pdo->prepare('SELECT id, role_id, full_name, email, is_active FROM users WHERE email = :email LIMIT 1');
         $userCheck->execute(['email' => $email]);

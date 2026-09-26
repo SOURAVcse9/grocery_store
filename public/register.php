@@ -144,6 +144,7 @@ if (method_is('post')) {
                     $destination = $returnUrl;
                     unset($_SESSION['intended_url']);
                     redirect(!empty($destination) && str_starts_with($destination, '/') ? $destination : url_for('account.php'));
+                    }
                 }
             }
         }

@@ -44,6 +44,13 @@ if ($v->hasErrors()) {
 try {
     $pdo = db();
 
+    // Strictly prevent customer from changing their email to an administrator email
+    if (is_admin_email($email)) {
+        flash('profile', 'This email address belongs to an administrator account and cannot be used for a customer profile.', 'error');
+        set_old_input($_POST);
+        redirect(url_for('profile.php'));
+    }
+
     // Check duplicate email (excluding current user)
     $emailStmt = $pdo->prepare('SELECT id FROM users WHERE email = :email AND id != :uid LIMIT 1');
     $emailStmt->execute(['email' => $email, 'uid' => $userId]);
