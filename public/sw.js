@@ -1,56 +1,54 @@
 /**
- * ==========================================================================
- * public/sw.js — PWA Service Worker Cache Controller
- * ==========================================================================
- * Manages caching strategies, asset versions, background synchronizations,
- * and offline fallback layouts.
- * ==========================================================================
+ * ==============================================================================
+ * public/sw.js — GroCo Modern PWA Service Worker (v2.0.0)
+ * ==============================================================================
+ * High-performance service worker with cache versioning, network-first strategy
+ * for live store data, cache-first for immutable static bundles and icons,
+ * and zero caching of sensitive admin/checkout/payment routes.
+ * ==============================================================================
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2.0.0';
 const CACHE_STATIC_NAME = `groco-static-${CACHE_VERSION}`;
 const CACHE_DYNAMIC_NAME = `groco-dynamic-${CACHE_VERSION}`;
 const CACHE_IMAGE_NAME = `groco-images-${CACHE_VERSION}`;
 
-// Static resources cached immediately during installation
+// Core static app shell pre-cached on install
 const STATIC_ASSETS = [
   'offline.php',
+  'manifest.json',
   'assets/css/style.css',
   'assets/css/header.css',
   'assets/css/footer.css',
   'assets/css/components.css',
   'assets/css/pwa.css',
-  'assets/css/performance.css',
-  'assets/js/app.js',
-  'assets/js/pwa.js',
-  'assets/js/lazyload.js',
-  'assets/js/performance.js',
+  'assets/js/theme.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'
 ];
 
-// URLs that must NEVER be cached (e.g. admin panels, checkout processors, auth endpoints)
-const BYPASS_CACHE_URLS = [
+// Routes and patterns that must NEVER be cached by the Service Worker
+const SENSITIVE_NO_CACHE_ROUTES = [
+  'admin/',
   'login.php',
   'register.php',
   'logout.php',
   'checkout.php',
   'process_checkout.php',
+  'process_register.php',
   'thank-you.php',
-  'admin/',
-  'ajax/update_cart.php',
-  'ajax/add_to_cart.php',
-  'ajax/remove_cart.php',
-  'ajax/notification.php',
-  'ajax/wishlist.php',
-  'ajax/compare.php'
+  'activate.php',
+  'license_status.php',
+  'account.php',
+  'orders.php',
+  'order-details.php',
+  'api/v1/pos/',
+  'ajax/pos/'
 ];
 
-// ---------------------------------------------------------------------
-// 1. Install Event
-// ---------------------------------------------------------------------
-self.addEventListener('install', (e) => {
-  e.waitUntil(
+// 1. Service Worker Install Lifecycle
+self.addEventListener('install', (event) => {
+  event.waitUntil(
     caches.open(CACHE_STATIC_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS);
     }).then(() => {
@@ -59,20 +57,18 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// ---------------------------------------------------------------------
-// 2. Activate Event (Automatic Cache Cleanup)
-// ---------------------------------------------------------------------
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
+// 2. Service Worker Activation & Legacy Cache Eviction
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        keys.map((key) => {
+        cacheNames.map((name) => {
           if (
-            key !== CACHE_STATIC_NAME &&
-            key !== CACHE_DYNAMIC_NAME &&
-            key !== CACHE_IMAGE_NAME
+            name !== CACHE_STATIC_NAME &&
+            name !== CACHE_DYNAMIC_NAME &&
+            name !== CACHE_IMAGE_NAME
           ) {
-            return caches.delete(key);
+            return caches.delete(name);
           }
         })
       );
@@ -82,103 +78,77 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// ---------------------------------------------------------------------
-// 3. Fetch Event Routing Rules
-// ---------------------------------------------------------------------
-self.addEventListener('fetch', (e) => {
-  const requestUrl = e.request.url;
+// 3. Request Interception & Caching Strategies
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  const url = request.url;
 
-  // Bypass cache entirely for POST requests, checkout pages, and admin controls
+  // Never intercept non-GET requests or sensitive routes
   if (
-    e.request.method !== 'GET' ||
-    BYPASS_CACHE_URLS.some((path) => requestUrl.includes(path))
+    request.method !== 'GET' ||
+    SENSITIVE_NO_CACHE_ROUTES.some((route) => url.includes(route))
   ) {
-    e.respondWith(fetch(e.request));
+    event.respondWith(fetch(request));
     return;
   }
 
-  // A. Image Assets: Cache-First
+  // Strategy A: Static Images & Icons (Cache-First with Network Fallback)
   if (
-    e.request.destination === 'image' ||
-    requestUrl.includes('/uploads/') ||
-    requestUrl.includes('/assets/images/')
+    request.destination === 'image' ||
+    url.includes('/uploads/') ||
+    url.includes('/assets/images/') ||
+    url.includes('res.cloudinary.com')
   ) {
-    e.respondWith(
-      caches.match(e.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(e.request).then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200) {
-            return networkResponse;
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_IMAGE_NAME).then((cache) => cache.put(request, clone));
           }
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_IMAGE_NAME).then((cache) => {
-            cache.put(e.request, responseToCache);
-          });
-          return networkResponse;
+          return response;
         }).catch(() => {
-          // Return default logo placeholder if image load fails offline
-          return caches.match('assets/images/icons/icon-192x192.png');
+          return caches.match('offline.php');
         });
       })
     );
     return;
   }
 
-  // B. Static Code Files (JS / CSS / Fonts): Cache-First
+  // Strategy B: CSS, JavaScript, and Web Fonts (Stale-While-Revalidate)
   if (
-    e.request.destination === 'script' ||
-    e.request.destination === 'style' ||
-    e.request.destination === 'font' ||
-    requestUrl.includes('.js') ||
-    requestUrl.includes('.css')
+    request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'font' ||
+    url.endsWith('.css') ||
+    url.endsWith('.js')
   ) {
-    e.respondWith(
-      caches.match(e.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(e.request).then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200) {
-            return networkResponse;
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const fetchPromise = fetch(request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_STATIC_NAME).then((cache) => cache.put(request, clone));
           }
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_STATIC_NAME).then((cache) => {
-            cache.put(e.request, responseToCache);
-          });
           return networkResponse;
         });
+        return cached || fetchPromise;
       })
     );
     return;
   }
 
-  // C. API requests: Network-First with Cache Fallback
-  if (requestUrl.includes('/api/')) {
-    e.respondWith(
-      fetch(e.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_DYNAMIC_NAME).then((cache) => {
-            cache.put(e.request, responseToCache);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        return caches.match(e.request);
-      })
-    );
-    return;
-  }
-
-  // D. Page Navigations: Network-First with Offline Fallback
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request).catch(() => {
+  // Strategy C: Storefront Navigations (Network-First with Offline Fallback Screen)
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() => {
         return caches.match('offline.php');
       })
     );
     return;
   }
+
+  // Default: Network Fetch
+  event.respondWith(fetch(request));
 });

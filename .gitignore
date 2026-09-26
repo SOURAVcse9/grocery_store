@@ -76,6 +76,10 @@ storage/backups/**
 !storage/backups/**/
 !storage/backups/**/.gitkeep
 
+storage/queue/**
+!storage/queue/**/
+!storage/queue/**/.gitkeep
+
 # User & customer uploads (avatars, reviews, product galleries, categories, banners)
 storage/uploads/**
 !storage/uploads/**/
