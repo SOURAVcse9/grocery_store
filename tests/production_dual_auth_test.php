@@ -167,7 +167,9 @@ assert_dual_test(
 );
 
 // Total customer count check: Alice must still be 1 row in DB
-$aliceRows = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE email = '{$email1}'")->fetchColumn();
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = :email");
+$countStmt->execute(['email' => $email1]);
+$aliceRows = (int) $countStmt->fetchColumn();
 assert_dual_test(
     $aliceRows === 1,
     "Database constraint confirmed: exactly 1 customer row exists for '{$email1}'"

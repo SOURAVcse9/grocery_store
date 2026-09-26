@@ -20,14 +20,18 @@ $reverifySuccess = false;
 
 // Handle manual re-verification check
 if (isset($_POST['action']) && $_POST['action'] === 'reverify') {
-    $res = verify_license_remote(true);
-    if ($res['valid']) {
-        $reverifySuccess = true;
-        $reverifyMsg = 'License verified successfully! Redirecting to storefront...';
-        header('Refresh: 2; URL=' . url_for('index.php'));
+    if (!verify_csrf()) {
+        $reverifyMsg = 'Security token expired. Please reload and try again.';
     } else {
-        $reverifyMsg = 'Re-verification completed: ' . ($res['reason'] ?? 'License remains inactive.');
-        $statusParam = $res['status'] ?? $statusParam;
+        $res = verify_license_remote(true);
+        if ($res['valid']) {
+            $reverifySuccess = true;
+            $reverifyMsg = 'License verified successfully! Redirecting to storefront...';
+            header('Refresh: 2; URL=' . url_for('index.php'));
+        } else {
+            $reverifyMsg = 'Re-verification completed: ' . ($res['reason'] ?? 'License remains inactive.');
+            $statusParam = $res['status'] ?? $statusParam;
+        }
     }
 }
 
@@ -175,6 +179,7 @@ $activeConfig = $statusConfig[$statusParam] ?? [
 
     <div style="display:flex; flex-direction:column; gap:10px;">
         <form method="post">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="reverify">
             <button type="submit" class="btn btn-primary" style="padding:12px 20px; font-size:13px; font-weight:700; border-radius:var(--radius-pill); border:none; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
                 <i class="fas fa-rotate"></i> Re-verify License Now

@@ -156,9 +156,9 @@ try {
 
 } catch (PDOException $e) {
     error_log('[cart.php] Error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Cart Database Error: ' . htmlspecialchars($e->getMessage()));
-    }
+    $items = [];
+    $subtotal = 0.0;
+    $grandTotal = 0.0;
 }
 
 // Page layout meta

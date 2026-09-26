@@ -59,9 +59,14 @@ try {
 
 } catch (PDOException $e) {
     error_log('[account.php] Error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Dashboard Loading Error: ' . htmlspecialchars($e->getMessage()));
-    }
+    $recentOrders = [];
+    $defaultAddress = null;
+    $stats = [
+        'total_orders'     => 0,
+        'pending_orders'   => 0,
+        'completed_orders' => 0,
+        'total_spent'      => 0.00
+    ];
 }
 
 $pageTitle = 'My Dashboard — ' . site_name();

@@ -243,9 +243,8 @@ try {
 
 } catch (PDOException $e) {
     error_log('[product.php] Load error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Product Loading Error: ' . htmlspecialchars($e->getMessage()));
-    }
+    flash('product_msg', 'Unable to display product information at this time.', 'error');
+    redirect(url_for('products.php'));
 }
 
 // Page layout meta & SEO details

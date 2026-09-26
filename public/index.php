@@ -155,10 +155,7 @@ try {
 
 } catch (PDOException $e) {
     error_log('[index.php] Database error: ' . $e->getMessage());
-    // In production fail gracefully, in dev show details
-    if (APP_DEBUG) {
-        die('Homepage Database Error: ' . htmlspecialchars($e->getMessage()));
-    }
+    $heroBanners = $categories = $featuredProducts = $dealProducts = $bestSellers = $flashSale = $flashProducts = $testimonials = $brands = [];
 }
 
 // Require Header

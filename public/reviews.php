@@ -118,9 +118,8 @@ try {
 
 } catch (PDOException $e) {
     error_log('[reviews.php] Error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Reviews index DB error: ' . htmlspecialchars($e->getMessage()));
-    }
+    $reviews = [];
+    $reviewStats = ['total' => 0, 'avg_rating' => 0.0, 'five_star' => 0, 'four_star' => 0, 'three_star' => 0, 'two_star' => 0, 'one_star' => 0];
 }
 
 // Layout metadata

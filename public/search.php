@@ -189,9 +189,11 @@ try {
 
 } catch (PDOException $e) {
     error_log('[search.php] Error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Search database error: ' . htmlspecialchars($e->getMessage()));
-    }
+    $products = [];
+    $totalCount = 0;
+    $totalPages = 1;
+    $categories = [];
+    $brands = [];
 }
 
 // Layout metadata

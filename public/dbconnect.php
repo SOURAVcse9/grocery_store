@@ -138,12 +138,11 @@ final class Database
             } catch (PDOException $e) {
                 error_log('[DB CONNECTION ERROR] ' . $e->getMessage());
 
-                if (APP_DEBUG) {
-                    die('Database connection failed: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
-                }
-
                 http_response_code(500);
-                die('Something went wrong. Please try again later.');
+                if (APP_DEBUG && APP_ENV === 'development') {
+                    die('Database connection failed. Please ensure MySQL service is running.');
+                }
+                die('System maintenance in progress. Please try again shortly.');
             }
         }
 

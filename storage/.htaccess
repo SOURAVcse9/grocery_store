@@ -1,5 +1,5 @@
 # ==============================================================================
-# storage/.htaccess — Deny All Direct Web Access
+# storage/.htaccess — Deny All Public Access
 # ==============================================================================
 Require all denied
 <IfModule !mod_authz_core.c>

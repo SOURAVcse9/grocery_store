@@ -145,9 +145,8 @@ try {
 
 } catch (PDOException $e) {
     error_log('[order-details.php] Load error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Order Database Load Error: ' . htmlspecialchars($e->getMessage()));
-    }
+    flash('orders', 'Unable to load order details at this time. Please try again later.', 'error');
+    redirect(url_for('orders.php'));
 }
 
 // Meta configurations

@@ -47,8 +47,9 @@ if ($productId > 0) {
             } elseif ($action === 'permanent') {
                 // 1. Delete main thumbnail from disk
                 if (!empty($product['thumbnail'])) {
-                    $thumbPath = __DIR__ . '/../../public/uploads/products/' . $product['thumbnail'];
-                    if (file_exists($thumbPath)) {
+                    $safeThumb = basename($product['thumbnail']);
+                    $thumbPath = __DIR__ . '/../../public/uploads/products/' . $safeThumb;
+                    if (!empty($safeThumb) && file_exists($thumbPath) && is_file($thumbPath)) {
                         @unlink($thumbPath);
                     }
                 }
@@ -59,9 +60,12 @@ if ($productId > 0) {
                 $galImages = $galStmt->fetchAll();
                 
                 foreach ($galImages as $img) {
-                    $imgPath = __DIR__ . '/../../public/uploads/products/' . $img['image_path'];
-                    if (file_exists($imgPath)) {
-                        @unlink($imgPath);
+                    if (!empty($img['image_path'])) {
+                        $safeImg = basename($img['image_path']);
+                        $imgPath = __DIR__ . '/../../public/uploads/products/' . $safeImg;
+                        if (!empty($safeImg) && file_exists($imgPath) && is_file($imgPath)) {
+                            @unlink($imgPath);
+                        }
                     }
                 }
 

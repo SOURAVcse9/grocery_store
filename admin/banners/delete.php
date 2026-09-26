@@ -35,9 +35,10 @@ if ($bannerId > 0) {
             $del->execute(['id' => $bannerId]);
 
             // Safe delete file from disk
-            $filePath = __DIR__ . '/../../public/uploads/banners/' . $b['image_path'];
-            if (file_exists($filePath) && is_file($filePath)) {
-                unlink($filePath);
+            $safeFilename = basename($b['image_path']);
+            $filePath = __DIR__ . '/../../public/uploads/banners/' . $safeFilename;
+            if (!empty($safeFilename) && file_exists($filePath) && is_file($filePath)) {
+                @unlink($filePath);
             }
 
             log_admin_activity('banners.delete', "Deleted banner: '{$b['title']}'");

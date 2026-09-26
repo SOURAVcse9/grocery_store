@@ -186,9 +186,10 @@ try {
 
 } catch (PDOException $e) {
     error_log('[orders.php] Load error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Orders Database Error: ' . htmlspecialchars($e->getMessage()));
-    }
+    $orders = [];
+    $orderItems = [];
+    $totalOrders = 0;
+    $totalPages = 1;
 }
 
 // Meta configurations

@@ -205,9 +205,11 @@ try {
 
 } catch (PDOException $e) {
     error_log('[products.php] Database load error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Catalog Loading Error: ' . htmlspecialchars($e->getMessage()));
-    }
+    $products = [];
+    $totalProducts = 0;
+    $totalPages = 1;
+    $categories = [];
+    $brands = [];
 }
 
 $extraStylesheets = ['css/home.css', 'css/products.css'];

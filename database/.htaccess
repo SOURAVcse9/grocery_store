@@ -1,5 +1,5 @@
 # ==============================================================================
-# database/.htaccess — Deny All Direct Web Access
+# database/.htaccess — Deny All Public Access to Database Schemas & Migrations
 # ==============================================================================
 Require all denied
 <IfModule !mod_authz_core.c>

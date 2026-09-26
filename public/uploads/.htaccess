@@ -1,19 +1,23 @@
 # ==============================================================================
-# public/uploads/.htaccess — Anti-Webshell & Upload Security Protection
+# public/uploads/.htaccess — Disable Script Execution in Uploads
 # ==============================================================================
-
-# Disable directory listing and script execution
 Options -Indexes -ExecCGI
 
-# Deny execution of PHP, scripts, or executables in uploads
-<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phps|phar|inc|pl|py|cgi|sh|bash|exe|bat|cmd)$">
+# Deny execution of all executable scripts and configuration files
+<FilesMatch "(?i)\.(php|php[0-9]|phtml|phar|pl|py|cgi|sh|bash|exe|asp|aspx|shtml|env|config|htaccess)$">
     Require all denied
     <IfModule !mod_authz_core.c>
         Deny from all
     </IfModule>
 </FilesMatch>
 
-# Only allow safe static image and media MIME types
-<IfModule mod_mime.c>
-    RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .inc
+# Disable PHP Engine if running as Apache module
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
 </IfModule>

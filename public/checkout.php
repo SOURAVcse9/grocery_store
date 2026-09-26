@@ -84,9 +84,10 @@ try {
 
 } catch (PDOException $e) {
     error_log('[checkout.php] Error: ' . $e->getMessage());
-    if (APP_DEBUG) {
-        die('Checkout Database Error: ' . htmlspecialchars($e->getMessage()));
-    }
+    $cartItems = [];
+    $savedAddresses = [];
+    $subtotal = 0.0;
+    $grandTotal = 0.0;
 }
 
 // Layout configuration
