@@ -1,0 +1,48 @@
+{
+    "name": "groco/grocery-store",
+    "description": "GroCo Grocery Store - Modern, High-Performance, Secure PHP E-Commerce & POS Platform",
+    "type": "project",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "GroCo Modernization & Architecture Team",
+            "role": "Lead Architect"
+        }
+    ],
+    "require": {
+        "php": ">=8.1.0",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-openssl": "*",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-fileinfo": "*",
+        "ext-gd": "*"
+    },
+    "suggest": {
+        "ext-redis": "Provides sub-millisecond in-memory caching and queue support",
+        "phpmailer/phpmailer": "Provides advanced SMTP transport capabilities",
+        "resend/resend-php": "Official Resend transactional email SDK",
+        "cloudinary/cloudinary_php": "Official Cloudinary PHP SDK"
+    },
+    "autoload": {
+        "psr-4": {
+            "Groco\\": "src/",
+            "Groco\\Includes\\": "public/includes/"
+        }
+    },
+    "scripts": {
+        "test": [
+            "php tests/modernization_services_test.php",
+            "php tests/security_hardening_penetration_test.php",
+            "php tests/production_dual_auth_test.php",
+            "php tests/authentication_security_test.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    }
+}
