@@ -7,7 +7,7 @@
 
 -- 1. Index products by status, category, brand, and stock
 ALTER TABLE products 
-  ADD INDEX IF NOT EXISTS idx_products_catalog_perf (status, category_id, brand_id, stock_quantity);
+  ADD INDEX IF NOT EXISTS idx_products_catalog_perf (is_active, category_id, brand_id, stock);
 
 -- 2. Index orders by user_id and creation date for instant customer portal lookups
 ALTER TABLE orders 
@@ -17,10 +17,10 @@ ALTER TABLE orders
 ALTER TABLE order_items 
   ADD INDEX IF NOT EXISTS idx_order_items_order (order_id, product_id);
 
--- 4. Index reviews by product and approval status
-ALTER TABLE reviews 
-  ADD INDEX IF NOT EXISTS idx_reviews_product_status (product_id, status, rating);
+-- 4. Index product reviews by product, approval status, and rating
+ALTER TABLE product_reviews 
+  ADD INDEX IF NOT EXISTS idx_reviews_product_status (product_id, is_approved, rating);
 
 -- 5. Index customer addresses by user and default status
-ALTER TABLE customer_addresses 
-  ADD INDEX IF NOT EXISTS idx_addresses_customer (customer_id, is_default);
+ALTER TABLE addresses 
+  ADD INDEX IF NOT EXISTS idx_addresses_user (user_id, is_default);

@@ -372,6 +372,103 @@ try {
             }
             break;
 
+        // ----------------------------------------------------------------------
+        // REVIEWS: GET /api/v1/reviews?product_id={id} & POST /api/v1/reviews
+        // ----------------------------------------------------------------------
+        case 'reviews':
+            $reviewService = new ReviewService($pdo);
+            if ($method === 'GET') {
+                $pId = (int)($_GET['product_id'] ?? 0);
+                if ($pId <= 0) {
+                    ApiResponse::error('Valid product_id parameter required', 400);
+                }
+                $reviews = $reviewService->getProductReviews($pId, 25);
+                ApiResponse::success($reviews);
+            } elseif ($method === 'POST') {
+                if (!is_logged_in()) {
+                    ApiResponse::unauthorized('Customer login required to post a review');
+                }
+                $userId = (int)get_current_user_id();
+                $pId = (int)($input['product_id'] ?? 0);
+                $rating = (int)($input['rating'] ?? 5);
+                $comment = trim((string)($input['comment'] ?? ''));
+
+                if ($pId <= 0 || $comment === '') {
+                    ApiResponse::error('product_id and comment are required', 400);
+                }
+
+                $reviewId = $reviewService->addReview($pId, $userId, $rating, $comment);
+                ApiResponse::success(['message' => 'Review submitted successfully', 'review_id' => $reviewId], null, 201);
+            }
+            break;
+
+        // ----------------------------------------------------------------------
+        // ORDERS: GET /api/v1/orders & GET /api/v1/orders/{id}
+        // ----------------------------------------------------------------------
+        case 'orders':
+            if (!is_logged_in()) {
+                ApiResponse::unauthorized('Customer login required');
+            }
+            $userId = (int)get_current_user_id();
+            $orderService = new OrderService($pdo);
+
+            if ($method === 'GET') {
+                if ($subId && is_numeric($subId)) {
+                    $order = $orderService->getById((int)$subId, $userId);
+                    if (!$order) {
+                        ApiResponse::notFound('Order not found or access denied');
+                    }
+                    ApiResponse::success($order);
+                } else {
+                    $page = max(1, (int)($_GET['page'] ?? 1));
+                    $perPage = min(50, max(1, (int)($_GET['per_page'] ?? 10)));
+                    $ordersData = $orderService->getUserOrders($userId, $page, $perPage);
+                    ApiResponse::success($ordersData['items'], [
+                        'page'        => $ordersData['page'],
+                        'per_page'    => $ordersData['per_page'],
+                        'total'       => $ordersData['total'],
+                        'total_pages' => $ordersData['total_pages']
+                    ]);
+                }
+            }
+            break;
+
+        // ----------------------------------------------------------------------
+        // ADDRESSES: GET /api/v1/addresses & POST /api/v1/addresses
+        // ----------------------------------------------------------------------
+        case 'addresses':
+            if (!is_logged_in()) {
+                ApiResponse::unauthorized('Customer login required');
+            }
+            $userId = (int)get_current_user_id();
+            $custService = new CustomerService($pdo);
+
+            if ($method === 'GET') {
+                $addresses = $custService->getAddresses($userId);
+                ApiResponse::success($addresses);
+            } elseif ($method === 'POST') {
+                $addrId = $custService->addAddress($userId, $input);
+                ApiResponse::success(['message' => 'Address added successfully', 'address_id' => $addrId], null, 201);
+            }
+            break;
+
+        // ----------------------------------------------------------------------
+        // COUPONS: POST /api/v1/coupons/validate
+        // ----------------------------------------------------------------------
+        case 'coupons':
+            if ($subId === 'validate' && $method === 'POST') {
+                $couponService = new CouponService($pdo);
+                $code = (string)($input['code'] ?? '');
+                $subtotal = (float)($input['subtotal'] ?? 0.0);
+                $res = $couponService->validate($code, $subtotal);
+                if ($res['valid']) {
+                    ApiResponse::success($res);
+                } else {
+                    ApiResponse::error($res['message'], 400, 'INVALID_COUPON', $res);
+                }
+            }
+            break;
+
         default:
             ApiResponse::notFound("API endpoint [{$resource}] not found. Refer to /docs/API_ARCHITECTURE.md");
     }

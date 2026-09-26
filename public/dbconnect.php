@@ -187,12 +187,37 @@ if (!isset($_SESSION['_ua_hash'])) {
 }
 
 // --------------------------------------------------------------------------
-// Core dependencies every page needs (order matters: no circular requires)
+// Dual-Mode Autoloader & Core dependencies
 // --------------------------------------------------------------------------
+$composerAutoload = dirname(__DIR__) . '/vendor/autoload.php';
+if (file_exists($composerAutoload)) {
+    require_once $composerAutoload;
+}
+
+spl_autoload_register(function ($class) {
+    $prefix = 'Groco\\Includes\\';
+    $baseDir = __DIR__ . '/includes/';
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) === 0) {
+        $relativeClass = substr($class, $len);
+        $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
+    }
+    // Unprefixed class lookup in public/includes/
+    $simpleFile = $baseDir . str_replace('\\', '/', $class) . '.php';
+    if (file_exists($simpleFile)) {
+        require_once $simpleFile;
+    }
+});
+
 require_once PUBLIC_PATH . '/includes/logger.php';
 require_once PUBLIC_PATH . '/includes/error_handler.php';
 require_once PUBLIC_PATH . '/includes/security.php';
 require_once PUBLIC_PATH . '/includes/rate_limit.php';
+require_once PUBLIC_PATH . '/includes/RateLimiter.php';
 
 require_once PUBLIC_PATH . '/includes/functions.php';
 require_once PUBLIC_PATH . '/includes/helpers.php';
@@ -202,6 +227,18 @@ require_once PUBLIC_PATH . '/includes/image.php';
 require_once PUBLIC_PATH . '/includes/MediaService.php';
 require_once PUBLIC_PATH . '/includes/CacheService.php';
 require_once PUBLIC_PATH . '/includes/LoggerService.php';
+require_once PUBLIC_PATH . '/includes/EmailService.php';
+require_once PUBLIC_PATH . '/includes/QueueService.php';
+require_once PUBLIC_PATH . '/includes/SearchService.php';
+require_once PUBLIC_PATH . '/includes/ProductService.php';
+require_once PUBLIC_PATH . '/includes/CategoryService.php';
+require_once PUBLIC_PATH . '/includes/CartService.php';
+require_once PUBLIC_PATH . '/includes/OrderService.php';
+require_once PUBLIC_PATH . '/includes/InventoryService.php';
+require_once PUBLIC_PATH . '/includes/CustomerService.php';
+require_once PUBLIC_PATH . '/includes/ReviewService.php';
+require_once PUBLIC_PATH . '/includes/CouponService.php';
+require_once PUBLIC_PATH . '/includes/LicenseService.php';
 require_once PUBLIC_PATH . '/csrf.php';
 require_once PUBLIC_PATH . '/includes/mailer.php';
 require_once PUBLIC_PATH . '/includes/auth.php';

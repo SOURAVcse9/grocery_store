@@ -3,8 +3,8 @@
  * ==============================================================================
  * GroCo Modern Email Service & Notification Pipeline
  * ==============================================================================
- * Multi-provider transactional email service supporting SMTP, Resend/Brevo REST
- * APIs, and local testing logs with responsive HTML templates.
+ * Multi-provider transactional email service supporting SMTP, Resend, Brevo,
+ * Postmark REST APIs, and local testing logs with responsive HTML templates.
  * ==============================================================================
  */
 
@@ -27,10 +27,20 @@ class EmailService
         $fromEmail = getenv('MAIL_FROM_ADDRESS') ?: 'no-reply@groco.site.je';
         $fromName = getenv('MAIL_FROM_NAME') ?: 'GroCo Grocery Store';
 
-        // 1. Check for modern REST API providers (e.g. Resend)
+        // 1. Check for modern REST API providers
         $resendApiKey = getenv('RESEND_API_KEY');
-        if ($resendApiKey) {
-            return self::sendViaResend($resendApiKey, $fromEmail, $fromName, $to, $subject, $htmlContent, $textContent);
+        if ($resendApiKey || $provider === 'resend') {
+            return self::sendViaResend((string)$resendApiKey, $fromEmail, $fromName, $to, $subject, $htmlContent, $textContent);
+        }
+
+        $brevoApiKey = getenv('BREVO_API_KEY');
+        if ($brevoApiKey || $provider === 'brevo') {
+            return self::sendViaBrevo((string)$brevoApiKey, $fromEmail, $fromName, $to, $subject, $htmlContent);
+        }
+
+        $postmarkApiKey = getenv('POSTMARK_API_KEY');
+        if ($postmarkApiKey || $provider === 'postmark') {
+            return self::sendViaPostmark((string)$postmarkApiKey, $fromEmail, $to, $subject, $htmlContent, $textContent);
         }
 
         // 2. Default to existing SMTP / PHPMailer infrastructure
@@ -68,6 +78,8 @@ class EmailService
         string $html,
         ?string $text
     ): bool {
+        if (empty($apiKey)) return false;
+
         $ch = curl_init('https://api.resend.com/emails');
         $payload = [
             'from'    => "{$fromName} <{$fromEmail}>",
@@ -84,6 +96,79 @@ class EmailService
             CURLOPT_POSTFIELDS     => json_encode($payload),
             CURLOPT_HTTPHEADER     => [
                 'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json'
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15
+        ]);
+
+        $response = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return ($code >= 200 && $code < 300);
+    }
+
+    private static function sendViaBrevo(
+        string $apiKey,
+        string $fromEmail,
+        string $fromName,
+        string $to,
+        string $subject,
+        string $html
+    ): bool {
+        if (empty($apiKey)) return false;
+
+        $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+        $payload = [
+            'sender'      => ['name' => $fromName, 'email' => $fromEmail],
+            'to'          => [['email' => $to]],
+            'subject'     => $subject,
+            'htmlContent' => $html
+        ];
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_HTTPHEADER     => [
+                'api-key: ' . $apiKey,
+                'Content-Type: application/json'
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15
+        ]);
+
+        $response = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return ($code >= 200 && $code < 300);
+    }
+
+    private static function sendViaPostmark(
+        string $apiKey,
+        string $fromEmail,
+        string $to,
+        string $subject,
+        string $html,
+        ?string $text
+    ): bool {
+        if (empty($apiKey)) return false;
+
+        $ch = curl_init('https://api.postmarkapp.com/email');
+        $payload = [
+            'From'     => $fromEmail,
+            'To'       => $to,
+            'Subject'  => $subject,
+            'HtmlBody' => $html,
+            'TextBody' => $text ?: strip_tags($html)
+        ];
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_HTTPHEADER     => [
+                'X-Postmark-Server-Token: ' . $apiKey,
                 'Content-Type: application/json'
             ],
             CURLOPT_RETURNTRANSFER => true,

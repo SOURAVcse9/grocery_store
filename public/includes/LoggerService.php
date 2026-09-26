@@ -16,9 +16,8 @@ class LoggerService
     private static ?string $requestId = null;
     private static float $startTime = 0.0;
 
-    private const REDACTED_KEYS = [
-        'password', 'password_confirmation', 'secret', 'api_key',
-        'token', 'csrf_token', 'card_number', 'cvv', 'auth', 'cookie'
+    private const REDACTED_KEYWORDS = [
+        'password', 'secret', 'token', 'key', 'card', 'cvv', 'auth', 'cookie', 'session'
     ];
 
     public static function init(): void
@@ -66,7 +65,7 @@ class LoggerService
         ];
 
         $json = json_encode($record, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
-        $targetFile = self::$logDir . '/app_' . date('Y-m-d') . '.log';
+        $targetFile = self::$logDir . '/groco-' . date('Y-m-d') . '.json.log';
 
         @file_put_contents($targetFile, $json, FILE_APPEND | LOCK_EX);
 
@@ -82,15 +81,23 @@ class LoggerService
     public static function security(string $msg, array $ctx = []): void { self::log('SECURITY', $msg, $ctx); }
 
     /**
-     * Recursively mask sensitive fields
+     * Recursively mask sensitive fields matching security keywords
      */
     private static function redactSensitiveData(array $data): array
     {
         $sanitized = [];
         foreach ($data as $k => $v) {
             $lowerKey = strtolower((string)$k);
-            if (in_array($lowerKey, self::REDACTED_KEYS, true)) {
-                $sanitized[$k] = '******** [REDACTED]';
+            $shouldRedact = false;
+            foreach (self::REDACTED_KEYWORDS as $kw) {
+                if (str_contains($lowerKey, $kw)) {
+                    $shouldRedact = true;
+                    break;
+                }
+            }
+
+            if ($shouldRedact) {
+                $sanitized[$k] = '[REDACTED]';
             } elseif (is_array($v)) {
                 $sanitized[$k] = self::redactSensitiveData($v);
             } else {
