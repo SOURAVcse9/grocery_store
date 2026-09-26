@@ -38,14 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $res = activate_license_remote($licenseKey, $domain, $email);
         if ($res['success']) {
-            $success = $res['message'] . ' Redirecting to homepage...';
-            // Redirect after 2 seconds or if AJAX return JSON
             if (is_ajax_or_api_request()) {
                 header('Content-Type: application/json');
                 echo json_encode(['success' => true, 'redirect' => url_for('index.php')]);
                 exit;
             }
-            header('Refresh: 2; URL=' . url_for('index.php'));
+            header('Location: ' . url_for('index.php'));
+            exit;
         } else {
             $error = $res['message'] ?? 'Activation failed. Please check your key and domain.';
             if (is_ajax_or_api_request()) {
