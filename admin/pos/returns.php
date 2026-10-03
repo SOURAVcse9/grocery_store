@@ -27,9 +27,9 @@ if (!empty($searchOrder)) {
 
         if ($order) {
             $stmtItems = $pdo->prepare("
-                SELECT oi.*, p.name AS product_name, p.stock
+                SELECT oi.*, COALESCE(oi.product_name, p.name, 'Product') AS product_name, COALESCE(p.stock, 0) AS stock
                 FROM order_items oi
-                JOIN products p ON p.id = oi.product_id
+                LEFT JOIN products p ON p.id = oi.product_id
                 WHERE oi.order_id = ?
             ");
             $stmtItems->execute([$order['id']]);
@@ -232,4 +232,4 @@ if (method_is('post')) {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

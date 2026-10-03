@@ -389,4 +389,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Close layout wrapper
 require_once __DIR__ . '/layouts/footer.php';
 ?>
-</div>
+

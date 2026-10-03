@@ -11,7 +11,12 @@ require_once __DIR__ . '/../../../public/dbconnect.php';
 require_once __DIR__ . '/../../middleware/auth_middleware.php';
 
 require_admin_auth();
-require_admin_permission('pos.sale');
+if (!has_admin_permission('pos.sale') && !has_admin_permission('pos.access') && !has_admin_permission('pos.manage')) {
+    header('Content-Type: application/json');
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Forbidden: POS checkout permission required.']);
+    exit;
+}
 
 header('Content-Type: application/json');
 

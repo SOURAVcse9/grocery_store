@@ -122,8 +122,8 @@ try {
                 if ($productId > 0) {
                     $upd = $pdo->prepare("
                         UPDATE products SET 
-                            avg_rating = COALESCE((SELECT ROUND(AVG(rating), 2) FROM product_reviews WHERE product_id = :pid AND status = \'approved\'), 0.00),
-                            review_count = (SELECT COUNT(*) FROM product_reviews WHERE product_id = :pid2 AND status = \'approved\')
+                            avg_rating = COALESCE((SELECT ROUND(AVG(rating), 2) FROM product_reviews WHERE product_id = :pid AND status = 'approved'), 0.00),
+                            review_count = (SELECT COUNT(*) FROM product_reviews WHERE product_id = :pid2 AND status = 'approved')
                         WHERE id = :pid3
                     ");
                     $upd->execute([
@@ -754,4 +754,4 @@ function switchProfileTab(evt, tabId) {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

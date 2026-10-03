@@ -29,9 +29,9 @@ if ($orderId > 0) {
         }
 
         $stmtItems = $pdo->prepare("
-            SELECT oi.*, p.name AS product_name 
+            SELECT oi.*, COALESCE(oi.product_name, p.name, 'Product') AS product_name 
             FROM order_items oi
-            JOIN products p ON p.id = oi.product_id
+            LEFT JOIN products p ON p.id = oi.product_id
             WHERE oi.order_id = ?
         ");
         $stmtItems->execute([$orderId]);
@@ -184,4 +184,4 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

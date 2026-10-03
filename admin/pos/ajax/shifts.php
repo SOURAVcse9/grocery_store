@@ -20,9 +20,9 @@ if (!is_admin_logged_in()) {
     exit;
 }
 
-if (!has_admin_permission('pos.manage')) {
+if (!has_admin_permission('pos.manage') && !has_admin_permission('pos.access') && !has_admin_permission('pos.cash') && !has_admin_permission('pos.sale')) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Forbidden']);
+    echo json_encode(['success' => false, 'error' => 'Forbidden: POS terminal access required.']);
     exit;
 }
 

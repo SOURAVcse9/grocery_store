@@ -122,26 +122,49 @@ try {
 </div>
 
 <script>
-function resumeCartData(holdId, cartData, customerId) {
-    if (!window.opener) {
-        alert('Please resume held carts from the terminal screen window.');
+function resumeCartData(holdId, rawCartData, customerId) {
+    let cartData = rawCartData;
+    if (typeof cartData === 'string') {
+        try { cartData = JSON.parse(cartData); } catch (e) { cartData = {}; }
+    }
+    
+    // Check if opened as child popup with window.opener
+    if (window.opener && !window.opener.closed && typeof window.opener.renderTouchCart === 'function') {
+        window.opener.touchCart = Array.isArray(cartData) 
+            ? cartData.reduce((acc, item) => { acc[item.id] = item; return acc; }, {})
+            : (cartData || {});
+        
+        const custSelect = window.opener.document.getElementById('posCustomerSelect');
+        if (custSelect && customerId > 0) {
+            custSelect.value = customerId;
+            if (typeof window.opener.updateLoyaltyUI === 'function') {
+                window.opener.updateLoyaltyUI();
+            }
+        }
+        window.opener.renderTouchCart();
+        
+        fetch('hold-orders.php?action=delete&id=' + holdId)
+            .then(() => {
+                window.close();
+            });
         return;
     }
     
-    // Inject data into parent POS window
-    window.opener.cart = cartData;
-    window.opener.document.getElementById('posCustomerSelect').value = customerId;
-    window.opener.renderPOSCart();
+    // If running in main tab, store into sessionStorage and redirect to POS index
+    sessionStorage.setItem('groco_pos_resume_cart', JSON.stringify({
+        cartData: cartData,
+        customerId: customerId,
+        holdId: holdId
+    }));
     
-    // Auto cancel the hold on DB
     fetch('hold-orders.php?action=delete&id=' + holdId)
-    .then(() => {
-        window.close();
-    });
+        .finally(() => {
+            window.location.href = 'index.php';
+        });
 }
 </script>
 
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

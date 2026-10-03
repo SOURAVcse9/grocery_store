@@ -407,4 +407,4 @@ if ($reportAction === 'x_report' && $activeShift) {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

@@ -20,7 +20,7 @@ if (!is_admin_logged_in()) {
     exit;
 }
 
-if (!has_admin_permission('pos.sale')) {
+if (!has_admin_permission('pos.sale') && !has_admin_permission('pos.access') && !has_admin_permission('pos.manage')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Forbidden']);
     exit;
@@ -39,10 +39,11 @@ if ($query === '') {
 
 try {
     $pdo = db();
+    $numericId = ctype_digit($query) ? (int)$query : 0;
     
     // Select matching active/inactive and in/out of stock products (exclude deleted)
     $stmt = $pdo->prepare("
-        SELECT id, name, price, stock, sku, barcode, thumbnail, is_active, status 
+        SELECT id, name, price, discount_price, stock, sku, barcode, thumbnail, is_active, status 
         FROM products 
         WHERE (barcode = ? OR sku = ? OR id = ? OR name LIKE ? OR sku LIKE ? OR barcode LIKE ?)
           AND deleted_at IS NULL 
@@ -51,7 +52,7 @@ try {
     $stmt->execute([
         $query,
         $query,
-        $query,
+        $numericId,
         '%' . $query . '%',
         '%' . $query . '%',
         '%' . $query . '%'
@@ -60,10 +61,17 @@ try {
 
     $formattedProducts = [];
     foreach ($products as $p) {
+        $regularPrice = (float) $p['price'];
+        $effectivePrice = ($p['discount_price'] !== null && (float)$p['discount_price'] > 0 && (float)$p['discount_price'] < $regularPrice)
+            ? (float)$p['discount_price']
+            : $regularPrice;
+
         $formattedProducts[] = [
             'id' => (int) $p['id'],
             'name' => $p['name'],
-            'price' => (float) $p['price'],
+            'price' => $effectivePrice,
+            'regular_price' => $regularPrice,
+            'discount_price' => $p['discount_price'] !== null ? (float)$p['discount_price'] : null,
             'stock' => (int) $p['stock'],
             'image' => image_url($p['thumbnail'], 'products'),
             'barcode' => $p['barcode'],

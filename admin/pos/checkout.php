@@ -16,7 +16,7 @@ if (!is_admin_logged_in()) {
     exit;
 }
 
-if (!has_admin_permission('pos.sale')) {
+if (!has_admin_permission('pos.sale') && !has_admin_permission('pos.access') && !has_admin_permission('pos.manage')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Forbidden']);
     exit;

@@ -32,9 +32,9 @@ try {
     }
 
     $stmtItems = $pdo->prepare("
-        SELECT oi.*, p.name AS product_name 
+        SELECT oi.*, COALESCE(oi.product_name, p.name, 'Product') AS product_name 
         FROM order_items oi
-        JOIN products p ON p.id = oi.product_id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE oi.order_id = ?
     ");
     $stmtItems->execute([$orderId]);

@@ -474,6 +474,38 @@ window.updateTouchQty = updateTouchQty;
 window.renderTouchCart = renderTouchCart;
 window.suspendPOSCart = suspendPOSCart;
 window.updateLoyaltyUI = updateLoyaltyUI;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const resumeDataStr = sessionStorage.getItem('groco_pos_resume_cart');
+    if (resumeDataStr) {
+        try {
+            const data = JSON.parse(resumeDataStr);
+            sessionStorage.removeItem('groco_pos_resume_cart');
+            if (data && data.cartData) {
+                let items = data.cartData;
+                if (Array.isArray(items)) {
+                    touchCart = items.reduce((acc, item) => { acc[item.id] = item; return acc; }, {});
+                } else if (typeof items === 'object') {
+                    touchCart = items;
+                }
+                window.touchCart = touchCart;
+                
+                if (data.customerId > 0) {
+                    const custSelect = document.getElementById('posCustomerSelect');
+                    if (custSelect) {
+                        custSelect.value = data.customerId;
+                    }
+                }
+                renderTouchCart();
+                if (typeof updateLoyaltyUI === 'function') {
+                    updateLoyaltyUI();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to parse resumed cart', e);
+        }
+    }
+});
 </script>
 
 <!-- Checkout Split Payment Modal -->
@@ -682,4 +714,4 @@ window.updateLoyaltyUI = updateLoyaltyUI;
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+
