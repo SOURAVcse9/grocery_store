@@ -243,6 +243,7 @@ require_once PUBLIC_PATH . '/csrf.php';
 require_once PUBLIC_PATH . '/includes/mailer.php';
 require_once PUBLIC_PATH . '/includes/auth.php';
 require_once PUBLIC_PATH . '/includes/license.php';
+require_once PUBLIC_PATH . '/includes/pos_autoload.php';
 
 // Enforce mandatory software licensing & cryptographic activation across all environments
 enforce_license();

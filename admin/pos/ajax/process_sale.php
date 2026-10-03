@@ -24,9 +24,10 @@ $pdo = db();
 $adminId = current_admin_id();
 
 // Verify active shift exists
-$activeShift = $pdo->prepare("SELECT id FROM pos_shifts WHERE admin_id = ? AND status = 'open' LIMIT 1");
+$activeShift = $pdo->prepare("SELECT id, store_id, register_id, terminal_id FROM pos_shifts WHERE admin_id = ? AND status = 'open' LIMIT 1");
 $activeShift->execute([$adminId]);
-if (!$activeShift->fetch()) {
+$shift = $activeShift->fetch();
+if (!$shift) {
     echo json_encode(['success' => false, 'error' => 'No active cashier shift open.']);
     exit;
 }
@@ -41,187 +42,102 @@ if (!verify_csrf()) {
     exit;
 }
 
-$items = json_decode(input('items', '[]'), true);
+$rawItems = json_decode(input('items', '[]'), true);
 $discount = (float) input('discount', '0.00');
 $cashPaid = (float) input('cash', '0.00');
 $cardPaid = (float) input('card', '0.00');
 $bkashPaid = (float) input('bkash', '0.00');
 $walletPaid = (float) input('wallet', '0.00');
+$bankPaid = (float) input('bank_transfer', '0.00');
 $customerId = (int) input('customer_id', '0');
 $note = trim(input('note', 'POS Checkout'));
+$clientUuid = trim((string)input('client_uuid', ''));
 
-if (empty($items)) {
+if (empty($rawItems)) {
     echo json_encode(['success' => false, 'error' => 'Cart is empty.']);
     exit;
 }
 
+$items = [];
+foreach ($rawItems as $it) {
+    $items[] = [
+        'id'             => (int)($it['id'] ?? 0),
+        'quantity'       => (float)($it['qty'] ?? 1),
+        'price'          => (float)($it['price'] ?? 0),
+        'discount'       => (float)($it['discount'] ?? 0),
+        'price_override' => !empty($it['price_override']),
+        'override_reason'=> $it['override_reason'] ?? null
+    ];
+}
+
+$payments = [];
+if ($cashPaid > 0) $payments[] = ['method' => 'cash', 'amount' => $cashPaid];
+if ($cardPaid > 0) {
+    $payments[] = [
+        'method'         => 'card',
+        'amount'         => $cardPaid,
+        'card_type'      => input('card_type', 'Visa'),
+        'card_last_four' => input('card_last_four', input('card_no', '')),
+        'card_auth_code' => input('card_auth_code', input('card_ref', '')),
+        'card_bank'      => input('card_bank', '')
+    ];
+}
+if ($bkashPaid > 0) {
+    $payments[] = [
+        'method'                => 'bkash',
+        'amount'                => $bkashPaid,
+        'transaction_reference' => input('bkash_txn_id', input('mobile_txn_id', ''))
+    ];
+}
+if ($walletPaid > 0) $payments[] = ['method' => 'wallet', 'amount' => $walletPaid];
+if ($bankPaid > 0) {
+    $payments[] = [
+        'method'                => 'bank_transfer',
+        'amount'                => $bankPaid,
+        'bank_name'             => input('bank_name', ''),
+        'transaction_reference' => input('bank_ref', '')
+    ];
+}
+
+if (empty($payments)) {
+    $totalCalc = 0.0;
+    foreach ($items as $it) {
+        $totalCalc += ($it['price'] * $it['quantity']);
+    }
+    $totalCalc = max($totalCalc - $discount, 0.0);
+    $payments[] = ['method' => 'cash', 'amount' => $totalCalc];
+}
+
 try {
-    $pdo->beginTransaction();
-
-    // Verify or resolve customer_id to ensure it exists and is never NULL
-    $walkinId = 0;
-    $walkin = $pdo->query("SELECT id FROM users WHERE phone = '00000000000' LIMIT 1")->fetch();
-    if ($walkin) {
-        $walkinId = (int) $walkin['id'];
-    } else {
-        $password = password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT);
-        $insW = $pdo->prepare("
-            INSERT INTO users (role_id, full_name, email, phone, password, is_verified, is_active, created_at, updated_at) 
-            VALUES (2, 'Walk-in Customer', 'walkin@grocery.store', '00000000000', ?, 1, 1, NOW(), NOW())
-        ");
-        $insW->execute([$password]);
-        $walkinId = (int) $pdo->lastInsertId();
-    }
-
-    if ($customerId <= 0) {
-        $customerId = $walkinId;
-    } else {
-        $chkCust = $pdo->prepare("SELECT id FROM users WHERE id = ? LIMIT 1");
-        $chkCust->execute([$customerId]);
-        if (!$chkCust->fetch()) {
-            $customerId = $walkinId;
-        }
-    }
-
-    // 1. Verify customer wallet balance if wallet payment used
-    if ($customerId > 0 && $customerId !== $walkinId && $walletPaid > 0) {
-        $stmtCust = $pdo->prepare("SELECT wallet_balance FROM users WHERE id = ? FOR UPDATE");
-        $stmtCust->execute([$customerId]);
-        $walletBal = (float) $stmtCust->fetchColumn();
-
-        if ($walletBal < $walletPaid) {
-            throw new Exception("Insufficient customer wallet balance. Available: ৳{$walletBal}");
-        }
-    }
-
-    // 2. Validate stocks and prices
-    $stmtCheck = $pdo->prepare("SELECT stock, name, sku, price, discount_price FROM products WHERE id = ? FOR UPDATE");
-    $productDetails = [];
-    foreach ($items as $item) {
-        $stmtCheck->execute([(int)$item['id']]);
-        $prod = $stmtCheck->fetch();
-        if (!$prod || (int)$prod['stock'] < (int)$item['qty']) {
-            throw new Exception("Product '" . ($prod['name'] ?? 'Unknown') . "' has insufficient stock.");
-        }
-        
-        // Price tampering verification
-        $price = (float)$item['price'];
-        $resolvedPrice = (float)($prod['discount_price'] !== null ? $prod['discount_price'] : $prod['price']);
-        if (abs($price - $resolvedPrice) > 0.001 && !has_admin_permission('pos.override')) {
-            throw new Exception("Unauthorized price override for product '" . $prod['name'] . "'. Manager override permission required.");
-        }
-        
-        $productDetails[(int)$item['id']] = $prod;
-    }
-
-    // 3. Compute totals (No VAT)
-    $subtotal = 0.0;
-    foreach ($items as $item) {
-        $subtotal += ((float)$item['price'] * (int)$item['qty']);
-    }
-    $taxableAmount = max($subtotal - $discount, 0);
-    $vat = 0.0;
-    $totalAmount = $taxableAmount;
-
-    // 4. Update customer wallet and reward points (Only for registered customers, NOT Walk-in)
-    if ($customerId > 0 && $customerId !== $walkinId) {
-        if ($walletPaid > 0) {
-            $pdo->prepare("UPDATE users SET wallet_balance = wallet_balance - ? WHERE id = ?")->execute([$walletPaid, $customerId]);
-        }
-        // Reward points: 1 point per 100 BDT spent
-        $earnedPoints = (int) floor($totalAmount / 100);
-        if ($earnedPoints > 0) {
-            $pdo->prepare("UPDATE users SET reward_points = reward_points + ? WHERE id = ?")->execute([$earnedPoints, $customerId]);
-        }
-    }
-
-    // 5. Create POS Order (user_id is never NULL)
-    $paymentMethodEnum = 'cod';
-    $maxPaymentType = $cashPaid;
-    if ($cardPaid > $maxPaymentType) {
-        $paymentMethodEnum = 'card';
-        $maxPaymentType = $cardPaid;
-    }
-    if ($bkashPaid > $maxPaymentType) {
-        $paymentMethodEnum = 'mobile_banking';
-        $maxPaymentType = $bkashPaid;
-    }
-
-    $orderNumber = 'POS-' . date('Ymd') . '-' . rand(1000, 9999);
-    $stmtOrder = $pdo->prepare("
-        INSERT INTO orders (order_number, user_id, address_id, subtotal, discount_amount, total_amount, payment_method, payment_status, status, note, created_at)
-        VALUES (?, ?, NULL, ?, ?, ?, ?, 'paid', 'delivered', ?, NOW())
-    ");
-    $stmtOrder->execute([
-        $orderNumber,
-        $customerId,
-        $subtotal,
-        $discount,
-        $totalAmount,
-        $paymentMethodEnum,
-        $note
+    $posService = pos_service();
+    $result = $posService->transactions()->processSale([
+        'store_id'      => (int)($shift['store_id'] ?? 1),
+        'register_id'   => (int)($shift['register_id'] ?? 1),
+        'terminal_id'   => (int)($shift['terminal_id'] ?? 1),
+        'shift_id'      => (int)$shift['id'],
+        'cashier_id'    => $adminId,
+        'customer_id'   => $customerId > 0 ? $customerId : null,
+        'items'         => $items,
+        'cart_discount' => $discount,
+        'payments'      => $payments,
+        'client_uuid'   => $clientUuid !== '' ? $clientUuid : null,
+        'notes'         => $note,
+        'is_offline'    => false
     ]);
-    $orderId = (int)$pdo->lastInsertId();
 
-    // 6. Save items & adjust stock levels
-    $stmtOrderItem = $pdo->prepare("
-        INSERT INTO order_items (order_id, product_id, product_name, product_sku, price, quantity, line_total)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmtUpdateStock = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ?");
-    $stmtLog = $pdo->prepare("
-        INSERT INTO inventory_logs (product_id, admin_id, type, quantity, remaining_stock, note, created_at)
-        VALUES (:pid, :admin_id, 'stock_out', :qty, :rem, :note, NOW())
-    ");
-    
-    $stmtGetStock = $pdo->prepare("SELECT stock FROM products WHERE id = ?");
-
-    foreach ($items as $item) {
-        $pid = (int)$item['id'];
-        $qty = (int)$item['qty'];
-        $price = (float)$item['price'];
-        $prodInfo = $productDetails[$pid];
-        $lineTotal = $price * $qty;
-
-        $stmtOrderItem->execute([
-            $orderId, 
-            $pid, 
-            $prodInfo['name'], 
-            $prodInfo['sku'] ?? 'N/A', 
-            $price, 
-            $qty, 
-            $lineTotal
-        ]);
-        $stmtUpdateStock->execute([$qty, $pid]);
-
-        // Get remaining stock
-        $stmtGetStock->execute([$pid]);
-        $remStock = (int)$stmtGetStock->fetchColumn();
-
-        $stmtLog->execute([
-            'pid'      => $pid,
-            'admin_id' => $adminId,
-            'qty'      => -$qty,
-            'rem'      => $remStock,
-            'note'     => "POS Counter sales checkout transaction Order #{$orderNumber}"
-        ]);
-    }
-
-    // 7. Post ledger income
-    $stmtLedger = $pdo->prepare("
-        INSERT INTO transactions (type, category_id, amount, reference, payment_method, reconciled, created_at)
-        VALUES ('income', NULL, ?, ?, 'pos_split', 1, NOW())
-    ");
-    $stmtLedger->execute([$totalAmount, "POS Counter checkout sales: {$orderNumber}"]);
-
-    $pdo->commit();
-    log_admin_activity('pos.checkout', "Completed POS checkout transaction for order '{$orderNumber}' value ৳{$totalAmount}");
-    echo json_encode(['success' => true, 'order_id' => $orderId]);
-
+    echo json_encode([
+        'success'            => true,
+        'order_id'           => $result['order_id'],
+        'transaction_id'     => $result['transaction_id'],
+        'transaction_number' => $result['transaction_number'],
+        'total_amount'       => $result['total_amount'],
+        'paid_amount'        => $result['paid_amount'],
+        'change_amount'      => $result['change_amount']
+    ]);
 } catch (Exception $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    error_log('[admin/pos/ajax/process_sale] POS checkout failed: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log('[admin/pos/ajax/process_sale] Sale failed: ' . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'error'   => $e->getMessage()
+    ]);
 }
