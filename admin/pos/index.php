@@ -42,7 +42,9 @@ try {
     
     // Load products with active stock
     $products = $pdo->query("
-        SELECT p.id, p.name, p.price, p.discount_price, p.stock, p.sku, p.barcode, p.unit, p.is_weighted, p.thumbnail AS image, c.id AS category_id, b.id AS brand_id
+        SELECT p.id, p.name, p.price, p.discount_price, p.stock, p.sku, p.barcode, p.unit, 
+               (CASE WHEN p.unit IN ('kg', 'gm', 'liter', 'ml') THEN 1 ELSE 0 END) AS is_weighted, 
+               p.thumbnail AS image, c.id AS category_id, b.id AS brand_id
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
         LEFT JOIN brands b ON b.id = p.brand_id
