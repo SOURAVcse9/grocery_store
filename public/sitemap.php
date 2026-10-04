@@ -28,7 +28,7 @@ $baseUrl = get_canonical_base_url();
 $staticPages = [
     ''               => ['freq' => 'daily',   'prio' => '1.0'],
     'products.php'   => ['freq' => 'daily',   'prio' => '0.9'],
-    'categories.php' => ['freq' => 'daily',   'prio' => '0.8'],
+    'categories'     => ['freq' => 'daily',   'prio' => '0.8'],
     'offers.php'     => ['freq' => 'daily',   'prio' => '0.8'],
     'about.php'      => ['freq' => 'monthly', 'prio' => '0.6'],
     'contact.php'    => ['freq' => 'monthly', 'prio' => '0.6'],
@@ -38,7 +38,13 @@ $staticPages = [
 ];
 
 foreach ($staticPages as $page => $meta) {
-    $loc = empty($page) ? $baseUrl . '/' : $baseUrl . '/' . $page;
+    if (empty($page)) {
+        $loc = $baseUrl . '/';
+    } elseif ($page === 'categories') {
+        $loc = site_url('categories');
+    } else {
+        $loc = site_url($page);
+    }
     $pages[] = [
         'loc'        => $loc,
         'lastmod'    => date('Y-m-d'),
@@ -51,7 +57,7 @@ foreach ($staticPages as $page => $meta) {
 try {
     // 2. Fetch all active categories
     $catStmt = $pdo->query('
-        SELECT slug, name, image, updated_at, created_at 
+        SELECT slug, name, image, image_public_id, updated_at, created_at 
         FROM categories 
         WHERE is_active = 1 
         ORDER BY name ASC
@@ -60,14 +66,14 @@ try {
         $timestamp = !empty($c['updated_at']) ? $c['updated_at'] : ($c['created_at'] ?? 'now');
         $lastmod = date('Y-m-d', strtotime((string)$timestamp));
         $catImages = [];
-        if (!empty($c['image'])) {
+        if (!empty($c['image']) || !empty($c['image_public_id'])) {
             $catImages[] = [
-                'loc'   => image_url($c['image'], 'categories'),
+                'loc'   => image_url($c['image'] ?? '', 'categories', $c['image_public_id'] ?? null),
                 'title' => $c['name'] . ' Groceries'
             ];
         }
         $pages[] = [
-            'loc'        => $baseUrl . '/products.php?category=' . urlencode($c['slug']),
+            'loc'        => category_url($c['slug']),
             'lastmod'    => $lastmod,
             'changefreq' => 'daily',
             'priority'   => '0.8',
@@ -77,7 +83,7 @@ try {
 
     // 3. Fetch all active brands
     $brandStmt = $pdo->query('
-        SELECT slug, name, logo, updated_at, created_at 
+        SELECT slug, name, logo, image_public_id, updated_at, created_at 
         FROM brands 
         WHERE is_active = 1 
         ORDER BY name ASC
@@ -86,14 +92,14 @@ try {
         $timestamp = !empty($b['updated_at']) ? $b['updated_at'] : ($b['created_at'] ?? 'now');
         $lastmod = date('Y-m-d', strtotime((string)$timestamp));
         $brandImages = [];
-        if (!empty($b['logo'])) {
+        if (!empty($b['logo']) || !empty($b['image_public_id'])) {
             $brandImages[] = [
-                'loc'   => image_url($b['logo'], 'brands'),
+                'loc'   => image_url($b['logo'] ?? '', 'brands', $b['image_public_id'] ?? null),
                 'title' => $b['name'] . ' Brand Products'
             ];
         }
         $pages[] = [
-            'loc'        => $baseUrl . '/products.php?brand=' . urlencode($b['slug']),
+            'loc'        => brand_url($b['slug']),
             'lastmod'    => $lastmod,
             'changefreq' => 'weekly',
             'priority'   => '0.7',
@@ -103,7 +109,7 @@ try {
 
     // 4. Fetch all active, non-deleted products
     $prodStmt = $pdo->query('
-        SELECT p.id, p.slug, p.name, p.thumbnail, p.updated_at, p.created_at, p.stock
+        SELECT p.id, p.slug, p.name, p.thumbnail, p.image_public_id, p.updated_at, p.created_at, p.stock
         FROM products p 
         WHERE p.is_active = 1 AND p.deleted_at IS NULL
         ORDER BY p.id DESC
@@ -112,14 +118,14 @@ try {
         $timestamp = !empty($p['updated_at']) ? $p['updated_at'] : ($p['created_at'] ?? 'now');
         $lastmod = date('Y-m-d', strtotime((string)$timestamp));
         $prodImages = [];
-        if (!empty($p['thumbnail'])) {
+        if (!empty($p['thumbnail']) || !empty($p['image_public_id'])) {
             $prodImages[] = [
-                'loc'   => image_url($p['thumbnail'], 'products'),
+                'loc'   => image_url($p['thumbnail'] ?? '', 'products', $p['image_public_id'] ?? null),
                 'title' => $p['name']
             ];
         }
         $pages[] = [
-            'loc'        => $baseUrl . '/product.php?slug=' . urlencode($p['slug']),
+            'loc'        => product_url($p['slug']),
             'lastmod'    => $lastmod,
             'changefreq' => 'daily',
             'priority'   => '0.9',

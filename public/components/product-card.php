@@ -45,9 +45,11 @@ $inStock = $stock > 0;
 $stockClass = $inStock ? 'in-stock' : 'out-of-stock';
 $stockText = $inStock ? (t('in_stock') ?? 'In Stock') : (t('out_of_stock') ?? 'Out of Stock');
 
-// Thumbnail image url
-$imageUrl = image_url($thumbnail, 'products');
-$productUrl = url_for('product.php?slug=' . e($productSlug));
+// Thumbnail image url and clean SEO URL
+$imageUrl = CloudinaryService::url($thumbnail, ['w' => 300, 'h' => 300, 'c' => 'fill', 'f' => 'auto', 'q' => 'auto'], 'products');
+$imageSrcset = get_responsive_srcset($thumbnail, 'products');
+$productUrl = product_url($productSlug);
+$imageAlt = generate_image_alt($productName, $product['image_alt'] ?? null);
 ?>
 <div class="product-card" data-id="<?= $productId ?>" data-name="<?= e($productName) ?>">
     <!-- Badges Container -->
@@ -73,26 +75,36 @@ $productUrl = url_for('product.php?slug=' . e($productSlug));
         </button>
     </div>
 
-    <!-- Image Area -->
-    <a href="<?= $productUrl ?>" class="product-image-wrapper">
-        <img class="product-image" src="<?= e($imageUrl) ?>" alt="<?= e($productName) ?>" loading="lazy" decoding="async" width="280" height="280">
+    <!-- Image Area with Core Web Vitals CLS & Responsive srcset -->
+    <a href="<?= e($productUrl) ?>" class="product-image-wrapper">
+        <img class="product-image" 
+             src="<?= e($imageUrl) ?>" 
+             <?php if (!empty($imageSrcset)): ?>srcset="<?= e($imageSrcset) ?>" sizes="(max-width: 576px) 50vw, (max-width: 992px) 33vw, 280px"<?php endif; ?>
+             alt="<?= e($imageAlt) ?>" 
+             loading="lazy" decoding="async" 
+             width="280" height="280"
+             style="aspect-ratio: 1 / 1; object-fit: contain;">
     </a>
 
     <!-- Content Area -->
     <div class="product-content">
         <div class="product-metadata">
-            <?php if ($categoryName): ?>
-                <span class="product-category-label"><?= e($categoryName) ?></span>
+            <?php if ($categoryName): 
+                $catLink = !empty($product['category_slug']) ? category_url($product['category_slug']) : '#';
+            ?>
+                <a href="<?= e($catLink) ?>" class="product-category-label"><?= e($categoryName) ?></a>
             <?php endif; ?>
-            <?php if ($brandName): ?>
-                <span class="product-brand-label"><?= e($brandName) ?></span>
+            <?php if ($brandName): 
+                $brandLink = !empty($product['brand_slug']) ? brand_url($product['brand_slug']) : '#';
+            ?>
+                <a href="<?= e($brandLink) ?>" class="product-brand-label"><?= e($brandName) ?></a>
             <?php endif; ?>
         </div>
 
         <span class="product-stock-status status-<?= $stockClass ?>"><?= e($stockText) ?></span>
         
         <h3 class="product-title">
-            <a href="<?= $productUrl ?>"><?= e($productName) ?></a>
+            <a href="<?= e($productUrl) ?>"><?= e($productName) ?></a>
         </h3>
 
         <!-- Rating -->

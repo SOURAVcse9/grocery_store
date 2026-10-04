@@ -41,30 +41,62 @@ function build_canonical_url(?string $path = null, array $params = []): string
 
     if ($path === null) {
         $script = basename($_SERVER['SCRIPT_NAME'] ?? 'index.php');
-        $cleanPath = ($script === 'index.php' || $script === '') ? '' : $script;
+        $params = !empty($params) ? $params : $_GET;
     } else {
         $cleanPath = ltrim($path, '/');
-        // Normalize public/ prefix if present
-        $cleanPath = preg_replace('#^public/#i', '', $cleanPath);
-        if ($cleanPath === 'index.php') {
-            $cleanPath = '';
-        }
+        $cleanPath = (string)preg_replace('#^public/#i', '', $cleanPath);
+        $script = basename($cleanPath);
     }
 
-    $url = empty($cleanPath) ? $baseUrl . '/' : $baseUrl . '/' . $cleanPath;
+    // Clean canonical product URL
+    if (($script === 'product.php' || $script === 'product') && !empty($params['slug'])) {
+        return product_url((string)$params['slug']);
+    }
 
-    if (!empty($params)) {
-        $allowed = [];
-        // Only keep valid indexing query parameters (e.g. slug, category, brand, id)
-        foreach (['slug', 'category', 'brand', 'id'] as $k) {
-            if (isset($params[$k]) && $params[$k] !== '') {
-                $allowed[$k] = $params[$k];
+    // Clean canonical category/brand/catalog URLs
+    if ($script === 'products.php' || $script === 'products') {
+        if (!empty($params['category'])) {
+            $url = category_url((string)$params['category']);
+            if (isset($params['page']) && (int)$params['page'] > 1) {
+                $url .= '?page=' . (int)$params['page'];
             }
+            return $url;
         }
-        if (!empty($allowed)) {
-            $url .= '?' . http_build_query($allowed);
+        if (!empty($params['brand'])) {
+            $url = brand_url((string)$params['brand']);
+            if (isset($params['page']) && (int)$params['page'] > 1) {
+                $url .= '?page=' . (int)$params['page'];
+            }
+            return $url;
         }
+        $url = site_url('products.php');
+        if (isset($params['page']) && (int)$params['page'] > 1) {
+            $url .= '?page=' . (int)$params['page'];
+        }
+        return $url;
     }
+
+    // Clean canonical search URL
+    if ($script === 'search.php' || $script === 'search') {
+        $url = site_url('search');
+        if (!empty($params['q'])) {
+            $url .= '?q=' . urlencode((string)$params['q']);
+        }
+        return $url;
+    }
+
+    // Categories overview page
+    if ($script === 'categories.php' || $script === 'categories') {
+        return site_url('categories');
+    }
+
+    // Homepage
+    if ($script === 'index.php' || $script === '') {
+        return $baseUrl . '/';
+    }
+
+    $cleanPath = ($script === 'index.php') ? '' : $script;
+    $url = empty($cleanPath) ? $baseUrl . '/' : $baseUrl . '/' . $cleanPath;
 
     return $url;
 }
@@ -232,7 +264,7 @@ function get_json_ld_schema(string $type, array $data = []): string
                 '@type' => 'SearchAction',
                 'target' => [
                     '@type' => 'EntryPoint',
-                    'urlTemplate' => $baseUrl . '/products.php?q={search_term_string}'
+                    'urlTemplate' => site_url('search') . '?q={search_term_string}'
                 ],
                 'query-input' => 'required name=search_term_string'
             ]

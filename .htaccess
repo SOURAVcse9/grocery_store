@@ -41,12 +41,15 @@ Options -Indexes
     RewriteRule ^cart/?$ public/cart.php [L,QSA]
     RewriteRule ^checkout/?$ public/checkout.php [L,QSA]
     RewriteRule ^account/?$ public/account.php [L,QSA]
-    RewriteRule ^sitemap\.xml$ public/sitemap.xml [L]
-    RewriteRule ^robots\.txt$ public/robots.txt [L]
+    RewriteRule ^sitemap\.xml$ public/sitemap.php [L]
+    RewriteRule ^robots\.txt$ public/robots.php [L]
+    RewriteRule ^search/?$ public/search.php [L,QSA]
+    RewriteRule ^categories/?$ public/categories.php [L,QSA]
 
-    # Clean SEO Product and Category URLs
+    # Clean SEO Product, Category, and Brand URLs
     RewriteRule ^product/([a-zA-Z0-9_-]+)/?$ public/product.php?slug=$1 [L,QSA]
     RewriteRule ^category/([a-zA-Z0-9_-]+)/?$ public/products.php?category=$1 [L,QSA]
+    RewriteRule ^brand/([a-zA-Z0-9_-]+)/?$ public/products.php?brand=$1 [L,QSA]
 
     # If already targeting an existing file or directory, serve directly
     RewriteCond %{REQUEST_FILENAME} -f [OR]

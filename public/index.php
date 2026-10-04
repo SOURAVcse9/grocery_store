@@ -65,69 +65,52 @@ try {
         LIMIT 8
     ')->fetchAll();
 
-    // 3. Fetch Featured Products (is_featured = 1, with average rating and review counts)
+    // 3. Fetch Featured Products (is_featured = 1)
     $featuredProducts = $pdo->query('
-        SELECT p.*, 
-               COALESCE(AVG(pr.rating), 0) AS avg_rating,
-               COUNT(pr.id) AS review_count
+        SELECT p.* 
         FROM products p
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = \'approved\'
         WHERE p.is_active = 1 AND p.deleted_at IS NULL AND p.is_featured = 1
-        GROUP BY p.id
         ORDER BY p.id DESC
         LIMIT 8
     ')->fetchAll();
 
     // 4. Fetch Today\'s Deals (products with discount_price, limited to 4 for clean layout next to countdown)
     $todaysDeals = $pdo->query('
-        SELECT p.*, 
-               COALESCE(AVG(pr.rating), 0) AS avg_rating,
-               COUNT(pr.id) AS review_count
+        SELECT p.* 
         FROM products p
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = \'approved\'
         WHERE p.is_active = 1 AND p.deleted_at IS NULL AND p.discount_price IS NOT NULL AND p.discount_price < p.price
-        GROUP BY p.id
         ORDER BY p.id DESC
         LIMIT 4
     ')->fetchAll();
 
-    // 5. Fetch Best Sellers (ordered by sales count, fallback to id DESC)
+    // 5. Fetch Best Sellers (aggregated order items subquery)
     $bestSellers = $pdo->query('
-        SELECT p.*, 
-               COUNT(oi.id) AS sales_count,
-               COALESCE(AVG(pr.rating), 0) AS avg_rating,
-               COUNT(pr.id) AS review_count
+        SELECT p.*, COALESCE(s.sales_count, 0) AS sales_count
         FROM products p
-        LEFT JOIN order_items oi ON oi.product_id = p.id
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = \'approved\'
+        LEFT JOIN (
+            SELECT product_id, COUNT(*) AS sales_count
+            FROM order_items
+            GROUP BY product_id
+        ) s ON s.product_id = p.id
         WHERE p.is_active = 1 AND p.deleted_at IS NULL
-        GROUP BY p.id
         ORDER BY sales_count DESC, p.id DESC
         LIMIT 8
     ')->fetchAll();
 
     // 6. Fetch Popular Products (ordered by high ratings and reviews)
     $popularProducts = $pdo->query('
-        SELECT p.*, 
-               COALESCE(AVG(pr.rating), 0) AS avg_rating,
-               COUNT(pr.id) AS review_count
+        SELECT p.* 
         FROM products p
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = \'approved\'
         WHERE p.is_active = 1 AND p.deleted_at IS NULL
-        GROUP BY p.id
-        ORDER BY avg_rating DESC, review_count DESC, p.id DESC
+        ORDER BY p.avg_rating DESC, p.review_count DESC, p.id DESC
         LIMIT 8
     ')->fetchAll();
 
     // 7. Fetch New Arrivals
     $newArrivals = $pdo->query('
-        SELECT p.*, 
-               COALESCE(AVG(pr.rating), 0) AS avg_rating,
-               COUNT(pr.id) AS review_count
+        SELECT p.* 
         FROM products p
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = \'approved\'
         WHERE p.is_active = 1 AND p.deleted_at IS NULL
-        GROUP BY p.id
         ORDER BY p.created_at DESC, p.id DESC
         LIMIT 8
     ')->fetchAll();
@@ -135,13 +118,9 @@ try {
     // 8. Fetch Flash Sales (products with highest discount percentages)
     $flashSales = $pdo->query('
         SELECT p.*, 
-               COALESCE(AVG(pr.rating), 0) AS avg_rating,
-               COUNT(pr.id) AS review_count,
                ROUND(((p.price - p.discount_price) / p.price) * 100) AS discount_percentage
         FROM products p
-        LEFT JOIN product_reviews pr ON pr.product_id = p.id AND pr.status = \'approved\'
         WHERE p.is_active = 1 AND p.deleted_at IS NULL AND p.discount_price IS NOT NULL AND p.discount_price < p.price
-        GROUP BY p.id
         ORDER BY discount_percentage DESC, p.id DESC
         LIMIT 8
     ')->fetchAll();
@@ -202,8 +181,11 @@ require_once __DIR__ . '/header.php';
                 </a>
             </div>
             <div class="products-grid">
-                <?php foreach ($featuredProducts as $product): ?>
-                    <?php include PUBLIC_PATH . '/components/product-card.php'; ?>
+                <?php foreach ($featuredProducts as $index => $product): ?>
+                    <?php 
+                        $loading = ($index < 4) ? 'eager' : 'lazy';
+                        include PUBLIC_PATH . '/components/product-card.php'; 
+                    ?>
                 <?php endforeach; ?>
             </div>
         </section>

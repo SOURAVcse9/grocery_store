@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../../public/includes/cloudinary.php';
 require_once __DIR__ . '/../middleware/auth_middleware.php';
 
 require_admin_auth();
@@ -29,7 +30,7 @@ if (empty($token) || !hash_equals(csrf_token(), $token)) {
 if ($productId > 0) {
     try {
         // Fetch product info first
-        $stmt = $pdo->prepare('SELECT name, thumbnail FROM products WHERE id = :id LIMIT 1');
+        $stmt = $pdo->prepare('SELECT name, thumbnail, image_public_id FROM products WHERE id = :id LIMIT 1');
         $stmt->execute(['id' => $productId]);
         $product = $stmt->fetch();
 
@@ -45,7 +46,10 @@ if ($productId > 0) {
                 log_admin_activity('products.restore', "Restored product: '{$product['name']}'");
                 flash('products_msg', "Product '{$product['name']}' restored successfully.", 'success');
             } elseif ($action === 'permanent') {
-                // 1. Delete main thumbnail from disk
+                // 1. Delete main thumbnail from Cloudinary & local disk
+                if (!empty($product['image_public_id'])) {
+                    CloudinaryService::delete($product['image_public_id']);
+                }
                 if (!empty($product['thumbnail'])) {
                     $safeThumb = basename($product['thumbnail']);
                     $thumbPath = __DIR__ . '/../../public/uploads/products/' . $safeThumb;
@@ -54,12 +58,15 @@ if ($productId > 0) {
                     }
                 }
 
-                // 2. Fetch gallery images and delete
-                $galStmt = $pdo->prepare('SELECT image_url AS image_path FROM product_images WHERE product_id = :pid');
+                // 2. Fetch gallery images and delete from Cloudinary & local disk
+                $galStmt = $pdo->prepare('SELECT image_url AS image_path, image_public_id FROM product_images WHERE product_id = :pid');
                 $galStmt->execute(['pid' => $productId]);
                 $galImages = $galStmt->fetchAll();
                 
                 foreach ($galImages as $img) {
+                    if (!empty($img['image_public_id'])) {
+                        CloudinaryService::delete($img['image_public_id']);
+                    }
                     if (!empty($img['image_path'])) {
                         $safeImg = basename($img['image_path']);
                         $imgPath = __DIR__ . '/../../public/uploads/products/' . $safeImg;
@@ -69,7 +76,7 @@ if ($productId > 0) {
                     }
                 }
 
-                // 3. Delete from DB (foreign keys handle cascading product_images if RESTRICT is not set, but let's clear it explicitly)
+                // 3. Delete from DB
                 $pdo->prepare('DELETE FROM product_images WHERE product_id = :pid')->execute(['pid' => $productId]);
                 $pdo->prepare('DELETE FROM products WHERE id = :id')->execute(['id' => $productId]);
 

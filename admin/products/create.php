@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../../public/includes/cloudinary.php';
 require_once __DIR__ . '/../middleware/auth_middleware.php';
 
 require_admin_auth();
@@ -48,8 +49,13 @@ if (method_is('post')) {
         
         $metaTitle = trim(input('meta_title', ''));
         $metaDesc = trim(input('meta_description', ''));
+        $seoTitle = trim(input('seo_title', $metaTitle));
+        $seoDesc = trim(input('seo_description', $metaDesc));
+        $imageAlt = trim(input('image_alt', $name));
+        $ogTitle = trim(input('og_title', ''));
+        $ogDesc = trim(input('og_description', ''));
 
-        // Valdations
+        // Validations
         if (empty($name) || empty($slug) || $price <= 0) {
             $error = 'Product Name, URL Slug, and a valid Price are required fields.';
         } elseif ($discountPrice < 0) {
@@ -65,21 +71,20 @@ if (method_is('post')) {
                     $error = 'This URL slug is already taken. Please choose another unique slug.';
                 } else {
                     $thumbnailName = null;
+                    $imagePublicId = null;
+                    $imageWidth = null;
+                    $imageHeight = null;
                     
-                    // Handle Main Thumbnail Upload
+                    // Handle Main Thumbnail Upload via Cloudinary Service
                     if (!empty($_FILES['thumbnail']['name'])) {
-                        $file = $_FILES['thumbnail'];
-                        if (!validate_uploaded_image($file, 3 * 1024 * 1024)) {
-                            $error = 'Invalid thumbnail file. Must be JPG, JPEG, PNG, or WebP under 3MB.';
-                        } else {
-                            $uploadDir = __DIR__ . '/../../public/uploads/products';
-                            if (!is_dir($uploadDir)) {
-                                mkdir($uploadDir, 0775, true);
-                            }
-                            
-                            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                            $thumbnailName = 'prod_' . uniqid('', true) . '.' . $ext;
-                            move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $thumbnailName);
+                        try {
+                            $uploadResult = CloudinaryService::upload($_FILES['thumbnail'], 'products', $slug);
+                            $thumbnailName = $uploadResult['url'] ?? $uploadResult['filename'] ?? null;
+                            $imagePublicId = $uploadResult['public_id'] ?? null;
+                            $imageWidth    = $uploadResult['width'] ?? null;
+                            $imageHeight   = $uploadResult['height'] ?? null;
+                        } catch (Exception $ex) {
+                            $error = 'Thumbnail upload failed: ' . $ex->getMessage();
                         }
                     }
 
@@ -91,40 +96,52 @@ if (method_is('post')) {
                             INSERT INTO products (
                                 category_id, brand_id, name, slug, description, short_description, 
                                 sku, barcode, price, cost_price, discount_price, stock, min_stock, 
-                                weight, unit, thumbnail, is_featured, is_trending, is_flash_sale, 
-                                is_active, status, meta_title, meta_description, created_at, updated_at
+                                weight, unit, thumbnail, image_public_id, image_alt, image_width, image_height,
+                                is_featured, is_trending, is_flash_sale, is_active, status, 
+                                meta_title, meta_description, seo_title, seo_description, og_title, og_description,
+                                created_at, updated_at
                             ) VALUES (
                                 :category_id, :brand_id, :name, :slug, :description, :short_description, 
                                 :sku, :barcode, :price, :cost_price, :discount_price, :stock, :min_stock, 
-                                :weight, :unit, :thumbnail, :is_featured, :is_trending, :is_flash_sale, 
-                                :is_active, :status, :meta_title, :meta_description, NOW(), NOW()
+                                :weight, :unit, :thumbnail, :image_public_id, :image_alt, :image_width, :image_height,
+                                :is_featured, :is_trending, :is_flash_sale, :is_active, :status, 
+                                :meta_title, :meta_description, :seo_title, :seo_description, :og_title, :og_description,
+                                NOW(), NOW()
                             )
                         ");
 
                         $stmt->execute([
                             'category_id'       => $categoryId > 0 ? $categoryId : null,
-                            'brand_id'           => $brandId > 0 ? $brandId : null,
-                            'name'               => $name,
-                            'slug'               => $slug,
-                            'description'        => $longDesc,
-                            'short_description'  => $shortDesc,
-                            'sku'                => $sku,
-                            'barcode'            => $barcode,
-                            'price'              => $price,
-                            'cost_price'         => $costPrice > 0 ? $costPrice : null,
-                            'discount_price'     => $discountPrice > 0 ? $discountPrice : null,
-                            'stock'              => $stock,
-                            'min_stock'          => $minStock,
-                            'weight'             => $weight > 0 ? $weight : null,
-                            'unit'               => $unit,
-                            'thumbnail'          => $thumbnailName,
-                            'is_featured'        => $isFeatured,
-                            'is_trending'        => $isTrending,
-                            'is_flash_sale'      => $isFlashSale,
-                            'is_active'          => $is_active,
-                            'status'             => $status,
-                            'meta_title'         => $metaTitle,
-                            'meta_description'   => $metaDesc
+                            'brand_id'          => $brandId > 0 ? $brandId : null,
+                            'name'              => $name,
+                            'slug'              => $slug,
+                            'description'       => $longDesc,
+                            'short_description' => $shortDesc,
+                            'sku'               => $sku,
+                            'barcode'           => $barcode,
+                            'price'             => $price,
+                            'cost_price'        => $costPrice > 0 ? $costPrice : null,
+                            'discount_price'    => $discountPrice > 0 ? $discountPrice : null,
+                            'stock'             => $stock,
+                            'min_stock'         => $minStock,
+                            'weight'            => $weight > 0 ? $weight : null,
+                            'unit'              => $unit,
+                            'thumbnail'         => $thumbnailName,
+                            'image_public_id'   => $imagePublicId,
+                            'image_alt'         => $imageAlt ?: $name,
+                            'image_width'       => $imageWidth,
+                            'image_height'      => $imageHeight,
+                            'is_featured'       => $isFeatured,
+                            'is_trending'       => $isTrending,
+                            'is_flash_sale'     => $isFlashSale,
+                            'is_active'         => $is_active,
+                            'status'            => $status,
+                            'meta_title'        => $metaTitle ?: $name,
+                            'meta_description'  => $metaDesc ?: $shortDesc,
+                            'seo_title'         => $seoTitle ?: $name,
+                            'seo_description'   => $seoDesc ?: $shortDesc,
+                            'og_title'          => $ogTitle ?: null,
+                            'og_description'    => $ogDesc ?: null
                         ]);
 
                         $newProductId = (int) $pdo->lastInsertId();
@@ -144,25 +161,33 @@ if (method_is('post')) {
                         // Handle Multiple Gallery Images
                         if (!empty($_FILES['gallery']['name'][0])) {
                             $files = $_FILES['gallery'];
-                            $uploadDir = __DIR__ . '/../../public/uploads/products';
                             
                             $insGal = $pdo->prepare("
-                                INSERT INTO product_images (product_id, image_url, sort_order, created_at)
-                                VALUES (:pid, :path, :sort, NOW())
+                                INSERT INTO product_images (product_id, image_url, image_public_id, image_width, image_height, sort_order, created_at)
+                                VALUES (:pid, :path, :pub_id, :w, :h, :sort, NOW())
                             ");
 
                             for ($i = 0; $i < count($files['name']); $i++) {
                                 if ($files['error'][$i] === UPLOAD_ERR_OK) {
-                                    $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
-                                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true) && $files['size'][$i] <= 3 * 1024 * 1024 && @getimagesize($files['tmp_name'][$i])) {
-                                        $galName = 'gal_' . uniqid('', true) . '.' . $ext;
-                                        if (move_uploaded_file($files['tmp_name'][$i], $uploadDir . '/' . $galName)) {
-                                            $insGal->execute([
-                                                'pid'  => $newProductId,
-                                                'path' => $galName,
-                                                'sort' => $i
-                                            ]);
-                                        }
+                                    $singleFile = [
+                                        'name'     => $files['name'][$i],
+                                        'type'     => $files['type'][$i],
+                                        'tmp_name' => $files['tmp_name'][$i],
+                                        'error'    => $files['error'][$i],
+                                        'size'     => $files['size'][$i],
+                                    ];
+                                    try {
+                                        $galUpload = CloudinaryService::upload($singleFile, 'products', $slug . '-gal-' . ($i + 1));
+                                        $insGal->execute([
+                                            'pid'    => $newProductId,
+                                            'path'   => $galUpload['url'] ?? $galUpload['filename'],
+                                            'pub_id' => $galUpload['public_id'] ?? null,
+                                            'w'      => $galUpload['width'] ?? null,
+                                            'h'      => $galUpload['height'] ?? null,
+                                            'sort'   => $i
+                                        ]);
+                                    } catch (Exception $gEx) {
+                                        error_log('[admin/products/create] Gallery upload fail: ' . $gEx->getMessage());
                                     }
                                 }
                             }
@@ -304,12 +329,18 @@ try {
 
         <!-- Product Image files uploads -->
         <div class="dashboard-card" style="margin-bottom:0; padding:var(--space-6);">
-            <h2 style="font-size:14px; font-weight:800; color:var(--color-text); margin-bottom:var(--space-4); border-bottom:1px solid var(--color-border); padding-bottom:8px;">Images Upload</h2>
+            <h2 style="font-size:14px; font-weight:800; color:var(--color-text); margin-bottom:var(--space-4); border-bottom:1px solid var(--color-border); padding-bottom:8px;">Images Upload & Media CDN</h2>
             
             <div class="form-field-group">
                 <label for="prodThumb" style="font-weight:700;">Main Listing Thumbnail *</label>
                 <input type="file" id="prodThumb" name="thumbnail" accept="image/*" style="font-size:12px; display:block; margin-top:6px;">
-                <span class="field-help-text">Thumbnail displays in search catalog listings. JPG, WebP, PNG (max 3MB).</span>
+                <span class="field-help-text">Thumbnail displays in search catalog listings. JPG, WebP, PNG (max 5MB). Processed & served via Cloudinary CDN.</span>
+            </div>
+
+            <div class="form-field-group">
+                <label for="imageAlt" style="font-weight:700;">Image Alt Text (SEO & Accessibility)</label>
+                <input type="text" id="imageAlt" name="image_alt" placeholder="e.g. Fresh Organic Bananas 1 Dozen" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                <span class="field-help-text">Descriptive alt text for Google Image Search ranking and screen readers.</span>
             </div>
 
             <div class="form-field-group">
@@ -321,16 +352,29 @@ try {
 
         <!-- SEO meta tags -->
         <div class="dashboard-card" style="margin-bottom:0; padding:var(--space-6);">
-            <h2 style="font-size:14px; font-weight:800; color:var(--color-text); margin-bottom:var(--space-4); border-bottom:1px solid var(--color-border); padding-bottom:8px;">Search Engine Optimization (SEO)</h2>
+            <h2 style="font-size:14px; font-weight:800; color:var(--color-text); margin-bottom:var(--space-4); border-bottom:1px solid var(--color-border); padding-bottom:8px;">Search Engine Optimization (SEO) & Open Graph</h2>
             
             <div class="form-field-group">
                 <label for="seoTitle" style="font-weight:700;">SEO Meta Title</label>
                 <input type="text" id="seoTitle" name="meta_title" placeholder="Descriptive title for Google search results" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                <span class="field-help-text">Overrides the default page title in Google Search SERPs.</span>
             </div>
 
             <div class="form-field-group">
                 <label for="seoDesc" style="font-weight:700;">SEO Meta Description</label>
                 <textarea id="seoDesc" name="meta_description" rows="3" placeholder="Compelling summary snippet showing under the URL link" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; font-family:inherit; resize:vertical;"></textarea>
+                <span class="field-help-text">Optimal length: 120-160 characters.</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" class="grid-2">
+                <div class="form-field-group">
+                    <label for="ogTitle" style="font-weight:700;">Social (OG) Title (Optional)</label>
+                    <input type="text" id="ogTitle" name="og_title" placeholder="Title for Facebook / WhatsApp / Twitter cards" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                </div>
+                <div class="form-field-group">
+                    <label for="ogDesc" style="font-weight:700;">Social (OG) Description (Optional)</label>
+                    <input type="text" id="ogDesc" name="og_description" placeholder="Description for social link shares" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                </div>
             </div>
         </div>
 

@@ -204,14 +204,15 @@ $breadcrumbs = [
                         $price = (float) $item['price'];
                         $qty = (int) $item['quantity'];
                         $stock = (int) $item['stock'];
-                        $imageUrl = image_url($item['thumbnail'], 'products');
-                        $productUrl = url_for('product.php?slug=' . e($item['slug']));
+                        $imageUrl = CloudinaryService::url($item['thumbnail'], ['w' => 120, 'h' => 120, 'c' => 'fill', 'f' => 'auto', 'q' => 'auto'], 'products');
+                        $productUrl = product_url($item['slug']);
+                        $itemAlt = generate_image_alt($item['name']);
                     ?>
                         <div class="cart-item-row" data-price="<?= $price ?>" data-product-id="<?= $item['product_id'] ?>">
                             <!-- Image -->
                             <div class="cart-item-img">
-                                <a href="<?= $productUrl ?>">
-                                    <img src="<?= e($imageUrl) ?>" alt="<?= e($item['name']) ?>">
+                                <a href="<?= e($productUrl) ?>">
+                                    <img src="<?= e($imageUrl) ?>" alt="<?= e($itemAlt) ?>" width="80" height="80" loading="lazy" decoding="async" style="aspect-ratio: 1 / 1; object-fit: contain;">
                                 </a>
                             </div>
 

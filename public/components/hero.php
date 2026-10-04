@@ -26,6 +26,9 @@ if (empty($banners)) {
                 $btnText = $banner['button_text'] ?? 'Shop Now';
                 $btnLink = $banner['button_link'] ?? 'products.php';
             ?>
+                <?php if ($index === 0): ?>
+                    <link rel="preload" as="image" href="<?= e($imageUrl) ?>" fetchpriority="high">
+                <?php endif; ?>
                 <div class="hero-slide <?= $index === 0 ? 'active' : '' ?>" style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.3)), url('<?= e($imageUrl) ?>');">
                     <div class="container hero-slide-content">
                         <div class="hero-text-card">

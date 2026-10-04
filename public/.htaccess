@@ -10,6 +10,16 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Clean SEO Product, Category, Brand, Search Rewrites
+    RewriteRule ^product/([a-zA-Z0-9_-]+)/?$ product.php?slug=$1 [L,QSA]
+    RewriteRule ^category/([a-zA-Z0-9_-]+)/?$ products.php?category=$1 [L,QSA]
+    RewriteRule ^brand/([a-zA-Z0-9_-]+)/?$ products.php?brand=$1 [L,QSA]
+    RewriteRule ^search/?$ search.php [L,QSA]
+    RewriteRule ^categories/?$ categories.php [L,QSA]
+    RewriteRule ^sitemap\.xml$ sitemap.php [L]
+    RewriteRule ^robots\.txt$ robots.php [L]
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^api/v1/(.*)$ api/v1/index.php [QSA,L]
