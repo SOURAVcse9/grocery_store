@@ -159,6 +159,27 @@
   }
 
   // ---------------------------------------------------------------------
+  // URL Resolver for relative API and AJAX endpoints on clean SEO routes
+  // ---------------------------------------------------------------------
+  window.resolveApiUrl = function(endpoint) {
+    if (typeof endpoint !== 'string') return endpoint;
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://') || endpoint.startsWith('/') || endpoint.startsWith('data:') || endpoint.startsWith('blob:')) {
+      return endpoint;
+    }
+    const base = (window.GROCO?.baseUrl || '').replace(/\/+$/, '');
+    return base + '/' + endpoint.replace(/^\/+/, '');
+  };
+
+  // Intercept fetch to automatically resolve relative ajax/api endpoints on clean SEO routes
+  const _originalFetch = window.fetch;
+  window.fetch = function(resource, init) {
+    if (typeof resource === 'string') {
+      resource = window.resolveApiUrl(resource);
+    }
+    return _originalFetch.call(this, resource, init);
+  };
+
+  // ---------------------------------------------------------------------
   // Shared fetch helper for feature JS files (cart.js, wishlist.js, ...)
   // Centralizes CSRF header + JSON parsing + error toast so every feature
   // module stays short and consistent.
@@ -166,9 +187,10 @@
   window.apiPost = async function apiPost(url, payload = {}) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const body = new URLSearchParams({ ...payload, csrf_token: csrfToken });
+    const targetUrl = window.resolveApiUrl(url);
 
     try {
-      const res = await fetch(url, {
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

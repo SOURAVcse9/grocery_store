@@ -106,12 +106,18 @@ function image_url(?string $path, string $placeholderCategory = 'ui'): string
         }
     }
 
-    // Default Fallback Placeholder
-    $fallbackPath = 'assets/images/' . $placeholderCategory . '/placeholder.png';
-    $filePath = PUBLIC_PATH . '/' . $fallbackPath;
-    if (!file_exists($filePath)) {
-        $fallbackPath = 'assets/images/ui/placeholder.png';
+    // Default Fallback Placeholder (prefer crisp transparent SVG, fall back to PNG)
+    $fallbackSvg = 'assets/images/' . $placeholderCategory . '/placeholder.svg';
+    if (file_exists(PUBLIC_PATH . '/' . $fallbackSvg)) {
+        $fallbackPath = $fallbackSvg;
         $filePath = PUBLIC_PATH . '/' . $fallbackPath;
+    } else {
+        $fallbackPath = 'assets/images/' . $placeholderCategory . '/placeholder.png';
+        $filePath = PUBLIC_PATH . '/' . $fallbackPath;
+        if (!file_exists($filePath)) {
+            $fallbackPath = 'assets/images/ui/placeholder.png';
+            $filePath = PUBLIC_PATH . '/' . $fallbackPath;
+        }
     }
     $mtime = file_exists($filePath) ? filemtime($filePath) : time();
     return BASE_URL . '/' . $fallbackPath . '?v=' . $mtime;

@@ -325,6 +325,7 @@ require_once __DIR__ . '/header.php';
                      alt="<?= e($imgAltText) ?>" 
                      width="600" height="600" 
                      loading="eager" fetchpriority="high" decoding="async"
+                     onerror="this.onerror=null;this.removeAttribute('srcset');this.src='<?= e(image_url(null, 'products')) ?>';"
                      style="aspect-ratio: 1 / 1; object-fit: contain;">
             </div>
             
