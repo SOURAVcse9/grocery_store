@@ -54,6 +54,18 @@ $isShopPage = ($scriptName === 'products.php');
 <link rel="dns-prefetch" href="https://fonts.googleapis.com">
 <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 
+<!-- Favicon & Apple Touch Icons -->
+<link rel="icon" type="image/png" href="<?= asset('images/ui/logo.png') ?>">
+<link rel="apple-touch-icon" href="<?= asset('images/ui/logo.png') ?>">
+
+<?php 
+// Google Search Console Webmaster Verification
+$gscToken = getenv('GSC_VERIFICATION_TOKEN') ?: (function_exists('get_setting') ? get_setting('gsc_verification_token') : null);
+if (!empty($gscToken)): 
+?>
+<meta name="google-site-verification" content="<?= e((string)$gscToken) ?>">
+<?php endif; ?>
+
 <!-- Robots & Indexing Directives -->
 <meta name="robots" content="<?= e($robotsDirective) ?>">
 <meta name="googlebot" content="<?= e($robotsDirective) ?>">
@@ -126,3 +138,43 @@ if (!empty($breadcrumbs) && is_array($breadcrumbs)) {
     echo get_json_ld_schema('breadcrumbs', ['breadcrumbs' => $breadcrumbs]);
 }
 ?>
+
+<?php 
+// Google Analytics 4 (GA4) Global Site Tag
+$gaMeasurementId = getenv('GA_MEASUREMENT_ID') ?: (function_exists('get_setting') ? (get_setting('google_analytics') ?: get_setting('ga_measurement_id')) : null);
+if (!empty($gaMeasurementId)): 
+?>
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=<?= e((string)$gaMeasurementId) ?>"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', <?= json_encode((string)$gaMeasurementId) ?>);
+</script>
+<?php endif; ?>
+
+<?php if ($isProductPage && isset($product) && is_array($product)): 
+    $dlPrice = (float)($product['discount_price'] ?? $product['price'] ?? 0);
+?>
+<!-- eCommerce GA4 view_item Event -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  dataLayer.push({ ecommerce: null }); // Clear previous ecommerce object
+  dataLayer.push({
+    event: 'view_item',
+    ecommerce: {
+      currency: 'BDT',
+      value: <?= number_format($dlPrice, 2, '.', '') ?>,
+      items: [{
+        item_id: <?= json_encode((string)($product['id'] ?? '')) ?>,
+        item_name: <?= json_encode((string)($product['name'] ?? '')) ?>,
+        item_category: <?= json_encode((string)($product['category_name'] ?? '')) ?>,
+        item_brand: <?= json_encode((string)($product['brand_name'] ?? '')) ?>,
+        price: <?= number_format($dlPrice, 2, '.', '') ?>
+      }]
+    }
+  });
+</script>
+<?php endif; ?>
+

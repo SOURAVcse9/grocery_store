@@ -147,3 +147,63 @@ function render_optimized_product_image(
         $aspectRatio
     );
 }
+
+/**
+ * getProductImageUrl()
+ *
+ * Primary image URL resolver supporting custom dimensions with automatic
+ * format, quality compression, and resilient placeholder fallback.
+ */
+function getProductImageUrl(?string $identifier, int $width = 500, int $height = 500): string
+{
+    if (empty($identifier)) {
+        return function_exists('asset') ? asset('images/ui/placeholder.png') : '/assets/images/ui/placeholder.png';
+    }
+    return CloudinaryService::url($identifier, [
+        'w' => $width,
+        'h' => $height,
+        'c' => 'fill',
+        'f' => 'auto',
+        'q' => 'auto'
+    ], 'products');
+}
+
+/**
+ * getThumbnailUrl()
+ *
+ * Fast 300x300 card & cart thumbnail URL resolver.
+ */
+function getThumbnailUrl(?string $identifier): string
+{
+    return getProductImageUrl($identifier, 300, 300);
+}
+
+/**
+ * getProductDetailImageUrl()
+ *
+ * High-definition 800x800 product gallery hero resolver.
+ */
+function getProductDetailImageUrl(?string $identifier): string
+{
+    return getProductImageUrl($identifier, 800, 800);
+}
+
+/**
+ * getOgImageUrl()
+ *
+ * Social media Open Graph (1200x630) social share card image resolver.
+ */
+function getOgImageUrl(?string $identifier): string
+{
+    if (empty($identifier)) {
+        return function_exists('asset') ? asset('images/ui/logo.png') : '/assets/images/ui/logo.png';
+    }
+    return CloudinaryService::url($identifier, [
+        'w' => 1200,
+        'h' => 630,
+        'c' => 'fill',
+        'f' => 'auto',
+        'q' => 'auto'
+    ], 'products');
+}
+

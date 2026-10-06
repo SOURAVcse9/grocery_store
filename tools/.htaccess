@@ -1,7 +1,7 @@
 # ==============================================================================
-# tests/.htaccess — Deny All Public Web Access
+# tools/.htaccess — Deny All Public Web Access
 # ==============================================================================
-# Automated test suites and regression scripts must not be invoked publicly.
+# CLI maintenance tools and migration scripts must only run from command line.
 # ==============================================================================
 Require all denied
 <IfModule !mod_authz_core.c>

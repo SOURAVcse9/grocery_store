@@ -165,16 +165,55 @@ function db(): PDO
 // Secure session bootstrap (must happen before ANY output)
 // --------------------------------------------------------------------------
 if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'domain'   => '',
-        'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-    session_start();
+    // Dynamic session cookie configuration via .env
+    $sessionSecureEnv = getenv('SESSION_SECURE') ?: getenv('SESSION_SECURE_COOKIE');
+    if ($sessionSecureEnv !== false && $sessionSecureEnv !== '') {
+        $sessionSecure = filter_var($sessionSecureEnv, FILTER_VALIDATE_BOOLEAN);
+    } else {
+        $sessionSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    }
+
+    $sessionHttpOnlyEnv = getenv('SESSION_HTTPONLY');
+    $sessionHttpOnly = ($sessionHttpOnlyEnv !== false && $sessionHttpOnlyEnv !== '')
+        ? filter_var($sessionHttpOnlyEnv, FILTER_VALIDATE_BOOLEAN)
+        : true;
+
+    $sessionSameSite = getenv('SESSION_SAMESITE') ?: 'Lax';
+    if (!in_array($sessionSameSite, ['Lax', 'Strict', 'None'], true)) {
+        $sessionSameSite = 'Lax';
+    }
+
+    $sessionLifetime = (int)(getenv('SESSION_LIFETIME') ?: 0);
+
+    if (!headers_sent()) {
+        session_set_cookie_params([
+            'lifetime' => $sessionLifetime,
+            'path'     => '/',
+            'domain'   => '',
+            'secure'   => $sessionSecure,
+            'httponly' => $sessionHttpOnly,
+            'samesite' => $sessionSameSite,
+        ]);
+        session_start();
+    } elseif (PHP_SAPI === 'cli') {
+        @session_start();
+    }
 }
+
+// Inactivity session timeout protection
+$sessionTimeout = (int)(getenv('SESSION_TIMEOUT') ?: 7200);
+if ($sessionTimeout > 0 && isset($_SESSION['_last_activity'])) {
+    if ((time() - (int)$_SESSION['_last_activity']) > $sessionTimeout) {
+        $_SESSION = [];
+        if (ini_get('session.use_cookies') && !headers_sent()) {
+            $params = session_get_cookie_params();
+            @setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+        }
+        @session_destroy();
+        session_start();
+    }
+}
+$_SESSION['_last_activity'] = time();
 
 // Basic session-hijacking mitigation: bind session to the browser's UA hash.
 if (!isset($_SESSION['_ua_hash'])) {

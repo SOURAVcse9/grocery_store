@@ -5,9 +5,19 @@
 # and outputs secure HTTP headers.
 # ==========================================================================
 
-# 1. Disable Directory Listing & Enable Rewrites
+# 1. Disable Directory Listing & Server Information
 Options -Indexes
+ServerSignature Off
 
+# 2. Block direct access to hidden/sensitive files within public directory
+<FilesMatch "(?i)^(\.env.*|\.git.*|\.gitignore|composer\.(json|lock)|tree\.txt|.*\.sql|.*\.log|.*\.bak|.*\.sh|.*\.key|.*\.pem|.*\.conf|.*\.ini|.*\.md)$">
+    Require all denied
+    <IfModule !mod_authz_core.c>
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 3. URL Rewriting & Clean Routing
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
@@ -25,10 +35,18 @@ Options -Indexes
     RewriteRule ^api/v1/(.*)$ api/v1/index.php [QSA,L]
 </IfModule>
 
-# 2. Limit File Upload payloads to 5MB (5242880 bytes)
+# 4. Limit File Upload payloads to 5MB (5242880 bytes)
 LimitRequestBody 5242880
 
-# 3. Enable Browser caching via Expires Headers
+# 5. Gzip / Deflate Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+    AddOutputFilterByType DEFLATE application/xml application/xhtml+xml application/rss+xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# 6. Enable Browser caching via Expires Headers
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresDefault "access plus 1 month"
@@ -48,11 +66,13 @@ LimitRequestBody 5242880
     ExpiresByType font/woff2 "access plus 1 year"
 </IfModule>
 
-# 4. Inject HTTP Security Headers
+# 7. Inject HTTP Security Headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
-    Header set Content-Security-Policy "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;"
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
+    Header set Content-Security-Policy "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https: https://res.cloudinary.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://res.cloudinary.com https://api.cloudinary.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-src 'self' https://www.google.com;"
 </IfModule>
