@@ -4,6 +4,7 @@
  * public/components/category-card.php
  * ==========================================================================
  * Reusable category card component with clean SEO URLs and optimized images.
+ * Uses dedicated circular clipping container with perfect 1:1 aspect ratio.
  * ==========================================================================
  */
 
@@ -19,20 +20,24 @@ $catSlug = $category['slug'] ?? '';
 $catImage = $category['image'] ?? null;
 $productCount = (int) ($category['product_count'] ?? 0);
 
-$imageUrl = CloudinaryService::url($catImage, ['w' => 200, 'h' => 200, 'c' => 'fill', 'f' => 'auto', 'q' => 'auto'], 'categories');
+$fallbackImageUrl = image_url(null, 'categories');
+$imageUrl = !empty($catImage)
+    ? CloudinaryService::url($catImage, ['w' => 200, 'h' => 200, 'c' => 'limit', 'f' => 'auto', 'q' => 'auto'], 'categories')
+    : $fallbackImageUrl;
 $imageSrcset = get_responsive_srcset($catImage, 'categories');
 $categoryUrl = category_url($catSlug);
 $imageAlt = generate_image_alt($catName, $category['image_alt'] ?? null);
+$isFallback = empty($catImage);
 ?>
 <a href="<?= e($categoryUrl) ?>" class="category-card">
-    <div class="category-card-image-wrapper">
+    <div class="category-image category-card-image-wrapper<?= $isFallback ? ' category-image--fallback' : '' ?>">
         <img class="category-card-image" 
              src="<?= e($imageUrl) ?>" 
-             <?php if (!empty($imageSrcset)): ?>srcset="<?= e($imageSrcset) ?>" sizes="(max-width: 576px) 120px, 160px"<?php endif; ?>
+             <?php if (!empty($imageSrcset)): ?>srcset="<?= e($imageSrcset) ?>" sizes="(max-width: 576px) 80px, 100px"<?php endif; ?>
              alt="<?= e($imageAlt) ?>" 
              loading="lazy" decoding="async" 
-             width="160" height="160"
-             style="aspect-ratio: 1 / 1; object-fit: contain;">
+             width="100" height="100"
+             onerror="this.onerror=null;this.removeAttribute('srcset');this.src='<?= e($fallbackImageUrl) ?>';">
     </div>
     <div class="category-card-content">
         <h3 class="category-card-title"><?= e($catName) ?></h3>

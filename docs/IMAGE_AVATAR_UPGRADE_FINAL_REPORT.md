@@ -47,3 +47,9 @@ The storefront now avoids broken image icons, protects the card layout from blan
 - `docs/IMAGE_RENDERING_AUDIT.md`
 - `docs/PROFILE_AVATAR_GOOGLE_OAUTH_AUDIT.md`
 - `docs/IMAGE_AVATAR_UPGRADE_FINAL_REPORT.md`
+
+## Category image circle follow-up
+
+Category images were being delivered using a Cloudinary square `fill` crop, which cropped source content before CSS `object-fit: contain` could render it. The category card now uses a width-limited transformation and a fixed square, circular wrapper with centered `object-fit: contain`; broken and missing images use the category fallback in the same circle.
+
+Files changed: `public/components/category-card.php` and `public/assets/css/home.css`. PHP syntax and whitespace checks passed. Browser QA was unavailable because the local server refused the Categories page connection.

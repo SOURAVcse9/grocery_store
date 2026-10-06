@@ -99,3 +99,16 @@ No schema change was required for this issue. The project already had the requir
 ## Validation
 
 The full Next.js production build is currently blocked by unrelated missing imports in the frontend (`@/lib/api/addresses`), which are not caused by the image fix. The image-related changes were targeted and consistent with the project’s existing architecture.
+
+## Category circle rendering follow-up
+
+The category-card image URL was being generated with Cloudinary `w_200,h_200,c_fill`. That transformation crops the source to a square before the browser applies CSS, so `object-fit: contain` cannot recover the cropped content. The category image also relied on fixed dimensions without an explicit aspect ratio.
+
+The category renderer now requests images bounded to 200×200 with Cloudinary `c_limit`, preserving their original aspect ratio, and uses a fixed 80px square flex item with a 1:1 ratio, circular clipping, and centered `object-fit: contain`. Missing and failed images fall back to the category placeholder within the same wrapper. These styles are scoped to category cards and do not change product, avatar, banner, or logo image behavior.
+
+Files changed for this follow-up:
+
+- `public/components/category-card.php`
+- `public/assets/css/home.css`
+
+PHP syntax and whitespace checks passed. Browser verification could not be performed because the local Categories page was unavailable at `http://localhost/grocery-store/public/categories.php` (connection refused).
