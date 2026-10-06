@@ -30,7 +30,7 @@ $imageAlt = generate_image_alt($catName, $category['image_alt'] ?? null);
 $isFallback = empty($catImage);
 ?>
 <a href="<?= e($categoryUrl) ?>" class="category-card">
-    <div class="category-image category-card-image-wrapper<?= $isFallback ? ' category-image--fallback' : '' ?>">
+    <div class="category-image-wrapper category-image category-card-image-wrapper<?= $isFallback ? ' category-image--fallback' : '' ?>">
         <img class="category-card-image" 
              src="<?= e($imageUrl) ?>" 
              <?php if (!empty($imageSrcset)): ?>srcset="<?= e($imageSrcset) ?>" sizes="(max-width: 576px) 80px, 100px"<?php endif; ?>

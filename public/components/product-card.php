@@ -46,7 +46,8 @@ $stockClass = $inStock ? 'in-stock' : 'out-of-stock';
 $stockText = $inStock ? (t('in_stock') ?? 'In Stock') : (t('out_of_stock') ?? 'Out of Stock');
 
 // Thumbnail image url and clean SEO URL
-$imageUrl = CloudinaryService::url($thumbnail, ['w' => 300, 'h' => 300, 'c' => 'fill', 'f' => 'auto', 'q' => 'auto'], 'products');
+$fallbackProductUrl = image_url(null, 'products');
+$imageUrl = CloudinaryService::url($thumbnail, ['w' => 300, 'h' => 300, 'c' => 'limit', 'f' => 'auto', 'q' => 'auto'], 'products');
 $imageSrcset = get_responsive_srcset($thumbnail, 'products');
 $productUrl = product_url($productSlug);
 $imageAlt = generate_image_alt($productName, $product['image_alt'] ?? null);
@@ -76,14 +77,14 @@ $imageAlt = generate_image_alt($productName, $product['image_alt'] ?? null);
     </div>
 
     <!-- Image Area with Core Web Vitals CLS & Responsive srcset -->
-    <a href="<?= e($productUrl) ?>" class="product-image-wrapper">
-        <img class="product-image" 
+    <a href="<?= e($productUrl) ?>" class="product-image-wrapper product-card-image">
+        <img class="product-image product-card-img" 
              src="<?= e($imageUrl) ?>" 
              <?php if (!empty($imageSrcset)): ?>srcset="<?= e($imageSrcset) ?>" sizes="(max-width: 576px) 50vw, (max-width: 992px) 33vw, 280px"<?php endif; ?>
              alt="<?= e($imageAlt) ?>" 
              loading="lazy" decoding="async" 
              width="280" height="280"
-             style="aspect-ratio: 1 / 1; object-fit: contain;">
+             onerror="this.onerror=null;this.removeAttribute('srcset');this.src='<?= e($fallbackProductUrl) ?>';">
     </a>
 
     <!-- Content Area -->
