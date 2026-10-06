@@ -22,7 +22,7 @@ $productCount = (int) ($category['product_count'] ?? 0);
 
 $fallbackImageUrl = image_url(null, 'categories');
 $imageUrl = !empty($catImage)
-    ? CloudinaryService::url($catImage, ['w' => 200, 'h' => 200, 'c' => 'limit', 'f' => 'auto', 'q' => 'auto'], 'categories')
+    ? CloudinaryService::url($catImage, ['w' => 200, 'h' => 200, 'c' => 'fill', 'g' => 'auto', 'f' => 'auto', 'q' => 'auto'], 'categories')
     : $fallbackImageUrl;
 $imageSrcset = get_responsive_srcset($catImage, 'categories');
 $categoryUrl = category_url($catSlug);

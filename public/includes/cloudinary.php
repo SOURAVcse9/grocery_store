@@ -411,13 +411,19 @@ final class CloudinaryService
 
         $parts = [];
         foreach ($widths as $w) {
-            $url = self::url($identifier, [
+            $transforms = [
                 'w'   => $w,
                 'c'   => 'limit',
                 'f'   => 'auto',
                 'q'   => 'auto',
                 'dpr' => 'auto'
-            ], $category);
+            ];
+            if ($category === 'categories') {
+                $transforms['h'] = $w;
+                $transforms['c'] = 'fill';
+                $transforms['g'] = 'auto';
+            }
+            $url = self::url($identifier, $transforms, $category);
             $parts[] = "{$url} {$w}w";
         }
 
@@ -452,6 +458,16 @@ final class CloudinaryService
         if ($c !== null) {
             $crop = preg_replace('/[^a-z_]/', '', (string)$c);
             $segments[] = "c_{$crop}";
+        }
+        $g = $t['g'] ?? ($t['gravity'] ?? null);
+        if ($g !== null) {
+            $gravity = preg_replace('/[^a-z0-9_]/', '', (string)$g);
+            $segments[] = "g_{$gravity}";
+        }
+        $r = $t['r'] ?? ($t['radius'] ?? null);
+        if ($r !== null) {
+            $radius = preg_replace('/[^a-z0-9_]/', '', (string)$r);
+            $segments[] = "r_{$radius}";
         }
 
         return implode(',', $segments) . '/';

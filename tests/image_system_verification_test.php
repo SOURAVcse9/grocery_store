@@ -53,8 +53,8 @@ it('category-card.php includes category-card-image image class',
 it('category-card.php includes onerror fallback handler',
     strpos($categoryCardFile, 'onerror="this.onerror=null;') !== false);
 
-it('category-card.php uses limit crop mode for Cloudinary',
-    strpos($categoryCardFile, "'c' => 'limit'") !== false);
+it('category-card.php uses fill crop with auto gravity for circular design in Cloudinary',
+    strpos($categoryCardFile, "'c' => 'fill'") !== false && strpos($categoryCardFile, "'g' => 'auto'") !== false);
 
 it('home.css category image wrapper enforces border-radius: 50%',
     preg_match('/\.category-image-wrapper[^{]*\{[^}]*border-radius:\s*50%/s', $homeCss) === 1);
@@ -66,8 +66,8 @@ it('home.css category image wrapper uses theme background var(--color-bg) (not w
     preg_match('/\.category-image-wrapper[^{]*\{[^}]*background:\s*var\(--color-bg\)/s', $homeCss) === 1 &&
     preg_match('/\.category-image-wrapper[^{]*\{[^}]*background:\s*(#ffffff|white);/s', $homeCss) === 0);
 
-it('home.css category image itself enforces object-fit: contain',
-    preg_match('/\.category-card-image[^{]*\{[^}]*object-fit:\s*contain/s', $homeCss) === 1);
+it('home.css category image itself enforces object-fit: cover to fill circle and avoid elongated shapes',
+    preg_match('/\.category-card-image[^{]*\{[^}]*object-fit:\s*cover/s', $homeCss) === 1);
 
 it('home.css category image itself enforces border-radius: 50% and clip-path',
     preg_match('/\.category-card-image[^{]*\{[^}]*border-radius:\s*50%/s', $homeCss) === 1 &&

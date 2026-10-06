@@ -42,9 +42,9 @@ The two image subsystems operate with strict architectural independence:
 | **Shape** | Square (1:1 aspect ratio) | Perfect Circle (50% radius + clip-path) |
 | **Clipping Method** | `overflow: hidden; border-radius: var(--radius-sm)` | `border-radius: 50%; clip-path: circle(50% at 50% 50%)` |
 | **Background** | `var(--color-bg)` (dark theme surface) | `var(--color-bg)` (dark theme surface) |
-| **Object Fit** | `contain` (centered, full packaging visible) | `contain` (centered, full category icon visible) |
-| **Cloudinary Mode** | `c: 'limit'` (no cropping) | `c: 'limit'` (no cropping) |
-| **Padding** | `var(--space-2)` (8px internal buffer) | Auto centered flexbox; 16-18px for SVG fallbacks |
+| **Object Fit** | `contain` (centered, full packaging visible) | `cover` (fills the circle, no tall/elongated pillars) |
+| **Cloudinary Mode** | `c: 'limit'` (no packaging cropped) | `c: 'fill', g: 'auto'` (AI smart crop centered on items) |
+| **Padding** | `var(--space-2)` (8px internal buffer) | Auto centered flexbox; 18px for SVG fallbacks |
 
 ---
 
