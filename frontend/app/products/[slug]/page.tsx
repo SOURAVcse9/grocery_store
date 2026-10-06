@@ -5,6 +5,7 @@ import { getProductReviews } from '@/lib/api/reviews';
 import { formatPrice, calculateDiscountPercent } from '@/lib/utils';
 import { JsonLd } from '@/components/JsonLd';
 import { ProductCard } from '@/components/ProductCard';
+import { resolveProductImage, getProductImageFallback } from '@/lib/image';
 import { Star, ShieldCheck, Truck, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export const revalidate = 60;
@@ -48,12 +49,13 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const discountPercent = calculateDiscountPercent(product.price, product.discount_price);
   const effectivePrice = product.discount_price ? Number(product.discount_price) : Number(product.price);
   const isOutOfStock = product.stock <= 0;
+  const mainImage = resolveProductImage(product.image_url);
 
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    image: product.image_url,
+    image: mainImage,
     description: product.description || product.short_description || product.name,
     sku: product.sku || `GROCO-${product.id}`,
     brand: {
@@ -89,9 +91,19 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         {/* Product Image */}
         <div className="relative aspect-square w-full bg-neutral-100 rounded-2xl overflow-hidden border border-neutral-100 flex items-center justify-center">
           <img
-            src={product.image_url}
+            src={mainImage}
             alt={product.name}
+            width={900}
+            height={900}
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-contain p-4"
+            onError={(event) => {
+              const target = event.currentTarget;
+              if (target.dataset.fallbackApplied === 'true') return;
+              target.dataset.fallbackApplied = 'true';
+              target.src = getProductImageFallback();
+            }}
           />
           {discountPercent > 0 && (
             <span className="absolute top-4 left-4 bg-red-500 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow">
