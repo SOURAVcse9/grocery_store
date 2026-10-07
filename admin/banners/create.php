@@ -7,8 +7,10 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Add Banner — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
+require_admin_auth();
 require_admin_permission('banners.manage');
 
 $pdo = db();
@@ -46,7 +48,7 @@ if (method_is('post')) {
                         mkdir($uploadDir, 0775, true);
                     }
 
-                    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
                     $fileName = 'banner_' . uniqid('', true) . '.' . $ext;
                     $destPath = $uploadDir . '/' . $fileName;
 
@@ -71,10 +73,13 @@ if (method_is('post')) {
                             'active'   => $isActive
                         ]);
 
+                        if (class_exists('CacheService')) {
+                            CacheService::invalidateBanners();
+                        }
+
                         log_admin_activity('banners.create', "Uploaded new store banner: '{$title}'");
                         flash('banner_msg', 'Banner uploaded and scheduled successfully!', 'success');
-                        header('Location: index.php');
-                        exit;
+                        redirect('index.php');
                     } else {
                         $error = 'Failed to save the uploaded image file to the destination directory.';
                     }
@@ -86,6 +91,9 @@ if (method_is('post')) {
         }
     }
 }
+
+$pageTitle = 'Add Banner — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 ?>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5);">

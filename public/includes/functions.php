@@ -184,10 +184,63 @@ function redirect(string $url): never
 }
 
 /**
- * flash() — one-shot session flash messages (success/error/info) rendered
- * by components/toast.php on the next page load.
+ * FlashMessage class
+ *
+ * Implements \ArrayAccess, \Stringable, and \JsonSerializable so that flash messages
+ * can be treated seamlessly as strings (<?= flash('key') ?>), associative arrays
+ * ($flash['type'], $flash['message']), or serialized to JSON without fatal Array-to-string conversion errors.
  */
-function flash(string $key, ?string $message = null, string $type = 'success'): ?array
+class FlashMessage implements \ArrayAccess, \Stringable, \JsonSerializable
+{
+    public function __construct(
+        public string $message = '',
+        public string $type = 'success'
+    ) {}
+
+    public function __toString(): string
+    {
+        return $this->message;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return [
+            'message' => $this->message,
+            'type'    => $this->type,
+        ];
+    }
+
+    public function offsetExists(mixed $offset): bool
+    {
+        return in_array($offset, ['message', 'type', 0, 1], true);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return match ($offset) {
+            'message', 0 => $this->message,
+            'type', 1 => $this->type,
+            default => null,
+        };
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        if ($offset === 'message' || $offset === 0) {
+            $this->message = (string)$value;
+        } elseif ($offset === 'type' || $offset === 1) {
+            $this->type = (string)$value;
+        }
+    }
+
+    public function offsetUnset(mixed $offset): void {}
+}
+
+/**
+ * flash() — one-shot session flash messages (success/error/info) rendered
+ * by components/toast.php on the next page load or directly in admin views.
+ */
+function flash(string $key, ?string $message = null, string $type = 'success'): ?FlashMessage
 {
     if ($message !== null) {
         $_SESSION['_flash'][$key] = ['message' => $message, 'type' => $type];
@@ -197,7 +250,7 @@ function flash(string $key, ?string $message = null, string $type = 'success'): 
     if (!empty($_SESSION['_flash'][$key])) {
         $data = $_SESSION['_flash'][$key];
         unset($_SESSION['_flash'][$key]);
-        return $data;
+        return new FlashMessage((string)($data['message'] ?? ''), (string)($data['type'] ?? 'success'));
     }
 
     return null;
@@ -230,7 +283,7 @@ function display_flash_alerts(string $key): void
         }
         echo '">';
         echo '  <i class="fas ' . $icon . '"></i>';
-        echo '  <span>' . htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') . '</span>';
+        echo '  <span>' . htmlspecialchars((string)$flash, ENT_QUOTES, 'UTF-8') . '</span>';
         echo '</div>';
     }
 }

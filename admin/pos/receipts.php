@@ -74,9 +74,12 @@ if ($orderId > 0) {
         $w = '80';
     }
     $store = [
-        'name'  => pos_setting($pdo, 'site_name', site_name()),
-        'addr'  => pos_setting($pdo, 'site_address', ''),
-        'phone' => pos_setting($pdo, 'site_phone', ''),
+        'name'    => pos_setting($pdo, 'pos_store_name', pos_setting($pdo, 'site_name', 'GroCo Supermarket & Department Store')),
+        'tagline' => pos_setting($pdo, 'pos_store_tagline', 'Fresh Supermarket • Apparel & Fashion • Daily Essentials'),
+        'addr'    => pos_setting($pdo, 'site_address', 'Flat 4A, House 12, Road 4, Banani, Dhaka, Bangladesh'),
+        'phone'   => pos_setting($pdo, 'site_phone', '+880 1712 345678'),
+        'vat_bin' => pos_setting($pdo, 'pos_vat_bin', '004189214-0101'),
+        'policy'  => pos_setting($pdo, 'pos_receipt_footer', 'Exchange within 7 days for Clothing & Dry goods with receipt and tag intact. Fresh produce, fish and dairy are non-exchangeable.'),
     ];
     $cur = pos_setting($pdo, 'site_currency_symbol', '৳');
     $money = static fn($v) => $cur . number_format((float) $v, 2);
@@ -99,7 +102,77 @@ if ($orderId > 0) {
     $paidTotal = array_sum($pays) + $change;
     $isVoid = ($order['status'] === 'cancelled');
     $bodyWidth = $w === 'a4' ? '190mm' : ($w === '58' ? '48mm' : '72mm');
-    $font = $w === 'a4' ? '13px' : ($w === '58' ? '10px' : '12px');
+    $font = $w === 'a4' ? '13px' : ($w === '58' ? '10px' : '11px');
+
+    $itemCount = count($items);
+    $totalQty = 0.0;
+    foreach ($items as $it) {
+        $totalQty += (float) $it['quantity'];
+    }
+
+    // Customer loyalty & member info
+    $isMember = false;
+    $memberPointsEarned = 0;
+    $memberPointsBalance = 0;
+    $walkinId = pos_walkin_customer_id($pdo);
+    if ((int)$order['user_id'] > 0 && (int)$order['user_id'] !== $walkinId) {
+        $isMember = true;
+        $memberPointsEarned = (int) floor($total / 100);
+        try {
+            $userSt = $pdo->prepare('SELECT reward_points FROM users WHERE id = ? LIMIT 1');
+            $userSt->execute([(int)$order['user_id']]);
+            $memberPointsBalance = (int) $userSt->fetchColumn();
+        } catch (Throwable $e) {
+            $memberPointsBalance = 0;
+        }
+    }
+
+    if (!function_exists('pos_barcode_128_svg')) {
+        function pos_barcode_128_svg(string $code, int $height = 36): string {
+            static $patterns = [
+                '212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312', '132212', '221213',
+                '221312', '231212', '112232', '122132', '122231', '113222', '123122', '123221', '223211', '221132',
+                '221231', '213212', '223112', '312131', '311222', '321122', '321221', '312212', '322112', '322211',
+                '212123', '212321', '232121', '111323', '131123', '131321', '112313', '132113', '132311', '211313',
+                '231113', '231311', '112133', '112331', '132131', '113123', '113321', '133121', '313121', '211331',
+                '231131', '213113', '213311', '213131', '311123', '311321', '331121', '312113', '312311', '332111',
+                '314111', '221411', '431111', '111224', '111422', '121124', '121421', '141122', '141221', '112214',
+                '112412', '122114', '122411', '142112', '142211', '241211', '221114', '413111', '241112', '134111',
+                '111242', '121142', '121241', '114212', '124112', '124211', '411212', '421112', '421211', '212141',
+                '214121', '412121', '111143', '111341', '131141', '114113', '114311', '411113', '411311', '113141',
+                '114131', '311141', '411131', '211412', '211214', '211232', '2331112'
+            ];
+            $code = trim($code);
+            if ($code === '') return '';
+            $values = [104];
+            $checkSum = 104;
+            for ($i = 0, $len = strlen($code); $i < $len; $i++) {
+                $val = ord($code[$i]) - 32;
+                if ($val < 0 || $val > 95) $val = 0;
+                $values[] = $val;
+                $checkSum += $val * ($i + 1);
+            }
+            $values[] = $checkSum % 103;
+            $values[] = 106;
+            $bars = '';
+            foreach ($values as $val) {
+                $pat = $patterns[$val] ?? '';
+                for ($j = 0, $plen = strlen($pat); $j < $plen; $j++) {
+                    $bars .= str_repeat(($j % 2 === 0) ? '1' : '0', (int)$pat[$j]);
+                }
+            }
+            $totalWidth = strlen($bars);
+            $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' . $totalWidth . ' ' . $height . '" preserveAspectRatio="none" style="width:100%; height:' . $height . 'px; display:block;">';
+            for ($x = 0; $x < $totalWidth; $x++) {
+                if ($bars[$x] === '1') {
+                    $svg .= '<rect x="' . $x . '" y="0" width="1" height="' . $height . '" fill="#000000" />';
+                }
+            }
+            $svg .= '</svg>';
+            return $svg;
+        }
+    }
+
     header('Cache-Control: no-store');
     ?>
 <!DOCTYPE html>
@@ -109,17 +182,20 @@ if ($orderId > 0) {
     <title>Receipt <?= e($order['order_number']) ?></title>
     <style>
         @page { margin: <?= $w === 'a4' ? '12mm' : '2mm' ?>; }
-        body { font-family: <?= $w === 'a4' ? "Arial, Helvetica, sans-serif" : "'Courier New', Courier, monospace" ?>; font-size: <?= $font ?>; color:#000; margin:0 auto; padding:6px; width:<?= $bodyWidth ?>; background:#fff; }
+        body { font-family: <?= $w === 'a4' ? "Arial, Helvetica, sans-serif" : "'Courier New', Courier, monospace" ?>; font-size: <?= $font ?>; color:#000; margin:0 auto; padding:6px; width:<?= $bodyWidth ?>; background:#fff; line-height:1.25; }
         .c { text-align:center; } .r { text-align:right; }
-        h1 { font-size: <?= $w === 'a4' ? '22px' : '14px' ?>; margin:0 0 2px; }
+        h1 { font-size: <?= $w === 'a4' ? '22px' : '15px' ?>; margin:0 0 2px; text-transform:uppercase; letter-spacing:0.5px; }
         p { margin:2px 0; }
-        .line { border-top:1px dashed #000; margin:6px 0; }
+        .tagline { font-size: <?= $w === '58' ? '8px' : '10px' ?>; font-style:italic; margin-bottom:3px; }
+        .line { border-top:1px dashed #000; margin:5px 0; }
+        .double-line { border-top:1px double #000; border-bottom:1px solid #000; height:2px; margin:5px 0; }
         table { width:100%; border-collapse:collapse; }
-        th { text-align:left; border-bottom:1px solid #000; font-size:<?= $font ?>; }
+        th { text-align:left; border-bottom:1px solid #000; font-size:<?= $font ?>; padding:2px 0; }
         td { vertical-align:top; padding:2px 0; }
-        .row { display:flex; justify-content:space-between; }
+        .row { display:flex; justify-content:space-between; margin:1px 0; }
         .strong { font-weight:700; }
         .stamp { border:2px solid #000; display:inline-block; padding:2px 8px; margin:4px 0; font-weight:700; letter-spacing:1px; }
+        .barcode-box { max-width: <?= $w === 'a4' ? '260px' : ($w === '58' ? '150px' : '190px') ?>; margin:4px auto; text-align:center; }
         @media screen { .noprint { margin-bottom:8px; } }
         @media print { .noprint { display:none; } }
     </style>
@@ -135,21 +211,23 @@ if ($orderId > 0) {
 
     <div class="c">
         <h1><?= e($store['name']) ?></h1>
-        <?php if ($store['addr'] !== ''): ?><p><?= e($store['addr']) ?></p><?php endif; ?>
-        <?php if ($store['phone'] !== ''): ?><p>Phone: <?= e($store['phone']) ?></p><?php endif; ?>
+        <?php if ($store['tagline'] !== ''): ?><p class="tagline"><?= e($store['tagline']) ?></p><?php endif; ?>
+        <?php if ($store['addr'] !== ''): ?><p style="font-size:<?= $w === '58' ? '8px' : '10px' ?>;"><?= e($store['addr']) ?></p><?php endif; ?>
+        <?php if ($store['phone'] !== ''): ?><p style="font-size:<?= $w === '58' ? '8px' : '10px' ?>;">Helpline: <?= e($store['phone']) ?></p><?php endif; ?>
+        <?php if ($store['vat_bin'] !== ''): ?><p style="font-weight:700; font-size:<?= $w === '58' ? '9px' : '11px' ?>;">VAT Reg / BIN: <?= e($store['vat_bin']) ?> (Mushak-6.3)</p><?php endif; ?>
         <?php if ($isCopy): ?><div class="stamp">DUPLICATE COPY</div><?php endif; ?>
         <?php if ($isVoid): ?><div class="stamp">VOIDED SALE</div><?php endif; ?>
     </div>
     <div class="line"></div>
-    <p>Receipt: <strong><?= e($order['order_number']) ?></strong></p>
-    <p>Date: <?= e(date('Y-m-d H:i', strtotime((string) $order['created_at']))) ?></p>
-    <?php if ($cashierName !== ''): ?><p>Cashier: <?= e($cashierName) ?></p><?php endif; ?>
-    <?php if (!empty($mk['shift'])): ?><p>Register/Shift: #<?= (int) $mk['shift'] ?></p><?php endif; ?>
-    <p>Customer: <?= e($order['customer_name'] ?? 'Walk-in Customer') ?></p>
+    <div class="row"><span>Invoice #:</span><strong style="letter-spacing:0.5px;"><?= e($order['order_number']) ?></strong></div>
+    <div class="row"><span>Date &amp; Time:</span><span><?= e(date('d-M-Y h:i A', strtotime((string) $order['created_at']))) ?></span></div>
+    <?php if ($cashierName !== ''): ?><div class="row"><span>Cashier:</span><span><?= e($cashierName) ?></span></div><?php endif; ?>
+    <div class="row"><span>Counter / Station:</span><span><?= !empty($mk['shift']) ? 'Register 01 (Shift #' . (int)$mk['shift'] . ')' : 'Register 01' ?></span></div>
+    <div class="row"><span>Customer:</span><span><?= e($order['customer_name'] ?? 'Walk-in Customer') ?> <?= !empty($order['customer_phone']) && $order['customer_phone'] !== '00000000000' ? '(' . e($order['customer_phone']) . ')' : '' ?></span></div>
     <div class="line"></div>
 
     <table>
-        <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Total</th></tr></thead>
+        <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
         <tbody>
         <?php foreach ($items as $row): ?>
             <tr>
@@ -163,20 +241,38 @@ if ($orderId > 0) {
     </table>
     <div class="line"></div>
 
-    <div class="row"><span>Subtotal</span><span><?= e($money($gross)) ?></span></div>
-    <?php if ($discount > 0): ?><div class="row"><span>Discount</span><span>-<?= e($money($discount)) ?></span></div><?php endif; ?>
-    <?php if ($vat > 0): ?><div class="row"><span>VAT / Tax</span><span><?= e($money($vat)) ?></span></div><?php endif; ?>
-    <div class="row strong" style="font-size:<?= $w === 'a4' ? '16px' : '13px' ?>;"><span>TOTAL</span><span><?= e($money($total)) ?></span></div>
+    <div class="row" style="font-size:<?= $w === '58' ? '9px' : '10px' ?>;">
+        <span>Items: <strong><?= $itemCount ?></strong> | Total Qty: <strong><?= pos_fmt_qty($totalQty) ?></strong></span>
+        <span>Subtotal: <?= e($money($gross)) ?></span>
+    </div>
+    <?php if ($discount > 0): ?><div class="row"><span>Discount Applied:</span><span>-<?= e($money($discount)) ?></span></div><?php endif; ?>
+    <?php if ($vat > 0): ?><div class="row"><span>VAT / Tax (Included):</span><span><?= e($money($vat)) ?></span></div><?php endif; ?>
+    <div class="line"></div>
+    <div class="row strong" style="font-size:<?= $w === 'a4' ? '16px' : ($w === '58' ? '12px' : '14px') ?>;">
+        <span>NET PAYABLE</span><span><?= e($money($total)) ?></span>
+    </div>
     <div class="line"></div>
     <?php foreach ($pays as $label => $amt): ?>
-        <div class="row"><span><?= e($label) ?></span><span><?= e($money($amt)) ?></span></div>
+        <div class="row"><span><?= e($label) ?>:</span><span><?= e($money($amt)) ?></span></div>
     <?php endforeach; ?>
-    <div class="row"><span>Paid</span><span><?= e($money($paidTotal)) ?></span></div>
-    <div class="row"><span>Change</span><span><?= e($money($change)) ?></span></div>
+    <div class="row"><span>Tender Received:</span><span><?= e($money($paidTotal)) ?></span></div>
+    <div class="row strong"><span>Change Returned:</span><span><?= e($money($change)) ?></span></div>
+
+    <?php if ($isMember): ?>
+        <div class="line"></div>
+        <div class="row" style="font-size:<?= $w === '58' ? '9px' : '10px' ?>;"><span>Points Earned Today:</span><span>+<?= $memberPointsEarned ?> pts</span></div>
+        <div class="row" style="font-size:<?= $w === '58' ? '9px' : '10px' ?>;"><span>Loyalty Points Balance:</span><strong><?= $memberPointsBalance ?> pts</strong></div>
+    <?php endif; ?>
 
     <div class="line"></div>
-    <div class="c" style="font-size:<?= $w === '58' ? '9px' : '11px' ?>;">
-        <p>Thank you for shopping with <?= e($store['name']) ?>!</p>
+    <div class="barcode-box">
+        <?= pos_barcode_128_svg($order['order_number'], 32) ?>
+        <div style="font-size:9px; letter-spacing:1px; margin-top:2px; font-weight:700;"><?= e($order['order_number']) ?></div>
+    </div>
+
+    <div class="c" style="font-size:<?= $w === '58' ? '8px' : '9.5px' ?>; margin-top:4px; line-height:1.3; color:#222;">
+        <p><?= e($store['policy']) ?></p>
+        <p style="font-weight:700; margin-top:4px;">Thank you for shopping at <?= e($store['name']) ?>!</p>
     </div>
 </body>
 </html>

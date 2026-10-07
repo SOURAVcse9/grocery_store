@@ -30,11 +30,7 @@ try {
 </div>
 
 <!-- Alert notifications -->
-<?php if (has_flash('banner_msg')): ?>
-    <div style="background:#e6fcf5; border:1px solid #c3fae8; color:#0ca678; padding:12px; border-radius:var(--radius-sm); font-size:var(--fs-sm); font-weight:600; margin-bottom:var(--space-4);">
-        <?= flash('banner_msg') ?>
-    </div>
-<?php endif; ?>
+<?php display_flash_alerts('banner_msg'); ?>
 
 <div class="dashboard-card" style="padding:0; overflow:hidden;">
     <div class="admin-table-wrapper" style="border:none;">
