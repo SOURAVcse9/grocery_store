@@ -7,16 +7,17 @@
 
 declare(strict_types=1);
 
-$pageTitle = 'Edit Banner — GroCo Admin';
-require_once __DIR__ . '/../layouts/dashboard_layout.php';
+require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
+
+require_admin_auth();
 require_admin_permission('banners.manage');
 
 $pdo = db();
 $bannerId = (int) input('id', '0', 'get');
 
 if ($bannerId <= 0) {
-    header('Location: index.php');
-    exit;
+    redirect('index.php');
 }
 
 $error = null;
@@ -28,13 +29,11 @@ try {
 
     if (!$b) {
         flash('banner_msg', 'Banner details not found.', 'error');
-        header('Location: index.php');
-        exit;
+        redirect('index.php');
     }
 } catch (PDOException $e) {
     error_log('[admin/banners/edit] load failed: ' . $e->getMessage());
-    header('Location: index.php');
-    exit;
+    redirect('index.php');
 }
 
 if (method_is('post')) {
@@ -68,15 +67,17 @@ if (method_is('post')) {
                     mkdir($uploadDir, 0775, true);
                 }
 
-                $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
                 $newFileName = 'banner_' . uniqid('', true) . '.' . $ext;
                 $destPath = $uploadDir . '/' . $newFileName;
 
                 if (move_uploaded_file($file['tmp_name'], $destPath)) {
                     // Safe delete old image from disk
-                    $oldFilePath = $uploadDir . '/' . $b['image_path'];
-                    if (file_exists($oldFilePath) && is_file($oldFilePath)) {
-                        unlink($oldFilePath);
+                    if (!empty($b['image_path'])) {
+                        $oldFilePath = $uploadDir . '/' . basename($b['image_path']);
+                        if (file_exists($oldFilePath) && is_file($oldFilePath)) {
+                            @unlink($oldFilePath);
+                        }
                     }
                     $fileName = $newFileName;
                 } else {
@@ -109,10 +110,13 @@ if (method_is('post')) {
                     'id'       => $bannerId
                 ]);
 
-                log_admin_activity('banners.edit', "Updated store banner: '{$title}'");
+                if (class_exists('CacheService')) {
+                    CacheService::invalidateBanners();
+                }
+
+                log_admin_activity('banners.edit', "Updated store banner #{$bannerId}: '{$title}'");
                 flash('banner_msg', 'Banner updated and saved successfully!', 'success');
-                header('Location: index.php');
-                exit;
+                redirect('index.php');
             } catch (PDOException $e) {
                 error_log('[admin/banners/edit] Save failed: ' . $e->getMessage());
                 $error = 'Failed to update banner record due to database error.';
@@ -120,6 +124,9 @@ if (method_is('post')) {
         }
     }
 }
+
+$pageTitle = 'Edit Banner — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 ?>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5);">

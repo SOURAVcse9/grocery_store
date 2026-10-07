@@ -41,6 +41,10 @@ if ($bannerId > 0) {
                 @unlink($filePath);
             }
 
+            if (class_exists('CacheService')) {
+                CacheService::invalidateBanners();
+            }
+
             log_admin_activity('banners.delete', "Deleted banner: '{$b['title']}'");
             flash('banner_msg', 'Banner deleted successfully.', 'success');
         }
@@ -50,5 +54,4 @@ if ($bannerId > 0) {
     }
 }
 
-header('Location: index.php');
-exit;
+redirect('index.php');
