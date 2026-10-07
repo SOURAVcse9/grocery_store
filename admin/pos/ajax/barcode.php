@@ -12,6 +12,7 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../../public/dbconnect.php';
 require_once __DIR__ . '/../../includes/auth_helpers.php';
+require_once __DIR__ . '/../../includes/pos_lib.php';
 
 // Safe JSON auth validation checks
 if (!is_admin_logged_in()) {
@@ -36,7 +37,7 @@ if ($code === '') {
 try {
     $pdo = db();
     $stmt = $pdo->prepare("
-        SELECT id, name, price, stock, sku, barcode 
+        SELECT id, name, price, discount_price, stock, sku, barcode 
         FROM products 
         WHERE (barcode = ? OR sku = ? OR id = ?) 
           AND deleted_at IS NULL 
@@ -52,8 +53,9 @@ try {
             'product' => [
                 'id' => (int) $product['id'],
                 'name' => $product['name'],
-                'price' => (float) $product['price'],
-                'stock' => (int) $product['stock'],
+                'price' => pos_effective_price($product),
+                'regular_price' => (float) $product['price'],
+                'stock' => (float) $product['stock'],
                 'sku' => $product['sku'],
                 'barcode' => $product['barcode']
             ]

@@ -1,44 +1,32 @@
 /**
  * ==========================================================================
- * admin/assets/js/pos.js — Enterprise Supermarket POS Engine
- * ==========================================================================
- * Features:
- * - Continuous barcode scanner listener & auto-refocus
- * - High-precision decimal & weighted produce support
- * - Split payments & quick cash tender buttons
- * - LocalStorage offline queue with auto background sync
- * - Full F1-F10 keyboard shortcuts suite
- * - Real-time customer search & loyalty rewards
- * - Petty Cash In/Out and Return & Refund handlers
+ * admin/assets/js/pos.js — POS Cart Calculations & Barcode Scans helper
  * ==========================================================================
  */
 
 (function () {
   'use strict';
 
-  // Global cart state
-  let touchCart = {};
-  window.touchCart = touchCart;
-
-  // Barcode scanner buffer & timer
+  // Listen for barcode scanner keystrokes (scanners simulate fast keyboard inputs ending with Enter)
   let barcodeBuffer = '';
   let lastKeyTime = Date.now();
 
-  // 1. Hardware Barcode Scanner Listener
   window.addEventListener('keypress', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
       return;
     }
-    const threshold = 50; // Scan key interval threshold in ms
+    if (document.querySelector('.modal.show')) return;
+    const threshold = 80; // Scan key interval threshold in milliseconds
     const now = Date.now();
 
     if (now - lastKeyTime > threshold) {
-      barcodeBuffer = '';
+      barcodeBuffer = ''; // Reset if slow typing
     }
+
     lastKeyTime = now;
 
     if (e.key === 'Enter') {
-      if (barcodeBuffer.length >= 3) {
+      if (barcodeBuffer.length >= 4) {
         lookupPOSBarcode(barcodeBuffer);
         barcodeBuffer = '';
         e.preventDefault();
@@ -50,382 +38,653 @@
     }
   });
 
+  // ---- tiny non-blocking toast + beep (cashier must never lose the keyboard focus) ----
+  function posToast(msg, type) {
+    let box = document.getElementById('posToastBox');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'posToastBox';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      box.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:360px;';
+      document.body.appendChild(box);
+    }
+    const t = document.createElement('div');
+    const bg = type === 'error' ? '#e03131' : (type === 'warn' ? '#f08c00' : '#2f9e44');
+    t.style.cssText = 'background:' + bg + ';color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.25);';
+    t.textContent = msg;
+    box.appendChild(t);
+    setTimeout(() => t.remove(), type === 'error' ? 5000 : 2500);
+    if (type === 'error' || type === 'warn') { posBeep(); }
+  }
+  function posBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.frequency.value = 330; g.gain.value = 0.05; o.connect(g); g.connect(ctx.destination);
+      o.start(); setTimeout(() => { o.stop(); ctx.close(); }, 160);
+    } catch (e) { /* audio not available */ }
+  }
+  window.posToast = posToast;
+
+  function focusScan() {
+    const el = document.getElementById('posFilterSearch');
+    if (el) el.focus();
+  }
+
   function lookupPOSBarcode(code) {
     const cleanCode = code.trim();
     if (cleanCode === '') return;
-    
-    // Check in local DOM catalog cells first for sub-50ms instant response
-    const cells = document.querySelectorAll('.touch-product-cell');
-    let found = false;
-    
-    cells.forEach(el => {
-      const sku = (el.getAttribute('data-sku') || '').toLowerCase();
-      const barcode = (el.getAttribute('data-barcode') || '').toLowerCase();
-      const id = (el.getAttribute('data-id') || '');
-      const lowerCode = cleanCode.toLowerCase();
-      
-      if (sku === lowerCode || barcode === lowerCode || id === lowerCode) {
-        const prodId = parseInt(el.getAttribute('data-id'));
-        const name = el.getAttribute('data-name-original') || el.getAttribute('data-name');
-        const price = parseFloat(el.getAttribute('data-price'));
-        const stock = parseFloat(el.getAttribute('data-stock'));
-        const image = el.getAttribute('data-image') || '';
-        const itemSku = el.getAttribute('data-sku') || '';
-        const unit = el.getAttribute('data-unit') || 'pcs';
-        const isWeighted = el.getAttribute('data-weighted') === '1';
+    const lc = cleanCode.toLowerCase();
 
-        addTouchCartItem(prodId, name, price, stock, image, itemSku, unit, isWeighted);
-        found = true;
-      }
-    });
-    
-    if (found) return;
-
-    // Fallback: Query search API
     fetch('ajax/search_products.php?q=' + encodeURIComponent(cleanCode))
       .then(r => r.json())
       .then(data => {
-        if (data.success && data.products && data.products.length > 0) {
-          let exactMatch = data.products.find(p => 
-            (p.barcode && p.barcode.toLowerCase() === cleanCode.toLowerCase()) || 
-            (p.sku && p.sku.toLowerCase() === cleanCode.toLowerCase())
-          );
-          let targetProduct = exactMatch || data.products[0];
-          if (targetProduct) {
-            tryAddProduct(targetProduct);
-          }
+        const list = (data.success && data.products) ? data.products : [];
+        // A scan must match a barcode / SKU EXACTLY. We never guess a "close" product.
+        const exact = list.find(p => (p.barcode && String(p.barcode).toLowerCase() === lc) || (p.sku && String(p.sku).toLowerCase() === lc));
+        if (exact) {
+          tryAddProduct(exact);
+        } else if (list.length > 0 && !/^[0-9]{6,}$/.test(cleanCode)) {
+          // Typed text (not a barcode-looking number): show the choices instead of auto-adding
+          const dd = document.getElementById('posAutocompleteDropdown');
+          const si = document.getElementById('posFilterSearch');
+          if (dd && si) { si.value = cleanCode; currentProducts = list; activeIndex = -1; renderDropdown(dd, list); }
         } else {
-          showPOSToast('Product not found: ' + cleanCode, 'error');
+          posToast('Product not found: ' + cleanCode, 'error');
         }
+        focusScan();
       })
       .catch(err => {
         console.error(err);
-        showPOSToast('Error scanning product: ' + cleanCode, 'error');
+        posToast('Search failed (network?). Barcode ' + cleanCode + ' was NOT added.', 'error');
       });
   }
 
-  // 2. Keyboard Shortcuts (F1 - F10, ESC)
+  // Keyboard shortcuts:
+  // F1 Search | F2 Customer | F3 Hold | F4 Resume | F5 Discount | F6 Payment
+  // F7 Return | F8 Reprint | F9 Cash In/Out | F10 New sale | Ctrl+Enter confirm payment | Esc close search
+  function modalOpen() { return !!document.querySelector('.modal.show'); }
+  function openPopup(url) { window.open(url, '_blank', 'width=1100,height=760'); }
   window.addEventListener('keydown', (e) => {
-    // F1 / F2: Barcode / Product Search Focus
-    if (e.key === 'F1' || e.key === 'F2') {
-      e.preventDefault();
-      document.getElementById('posFilterSearch')?.focus();
+    const k = e.key;
+    if (!/^F([1-9]|10)$/.test(k) && !(k === 'Enter' && (e.ctrlKey || e.metaKey))) return;
+    e.preventDefault();
+
+    if (k === 'Enter') { // confirm payment from anywhere inside the payment modal
+      const btn = document.getElementById('btnConfirmPOSSale');
+      if (btn && btn.offsetParent !== null && !btn.disabled) btn.click();
+      return;
     }
-    // F3: Customer Search Focus
-    if (e.key === 'F3') {
-      e.preventDefault();
-      document.getElementById('posCustomerSearch')?.focus();
+    if (modalOpen()) { // inside the payment modal only F9 (cash field) keeps its old meaning
+      if (k === 'F9') document.querySelector('#checkoutPaymentModal #splitCash')?.focus();
+      return;
     }
-    // F4: New Customer Modal
-    if (e.key === 'F4') {
-      e.preventDefault();
-      const custModalEl = document.getElementById('createCustomerModal');
-      if (custModalEl && typeof bootstrap !== 'undefined') {
-        const modal = new bootstrap.Modal(custModalEl);
-        modal.show();
-      }
-    }
-    // F5: Hold / Suspend Sale
-    if (e.key === 'F5') {
-      e.preventDefault();
-      suspendPOSCart();
-    }
-    // F7: Focus Discount Field
-    if (e.key === 'F7') {
-      e.preventDefault();
-      document.getElementById('posCartDiscount')?.focus();
-    }
-    // F8: Petty Cash Movement
-    if (e.key === 'F8') {
-      e.preventDefault();
-      openPettyCashModal();
-    }
-    // F9: Split Payment Terminal Modal
-    if (e.key === 'F9') {
-      e.preventDefault();
-      submitPOSCheckoutFinalist();
-    }
-    // F10: Confirm Checkout Sale
-    if (e.key === 'F10') {
-      e.preventDefault();
-      const confirmBtn = document.getElementById('btnConfirmPOSSale');
-      if (confirmBtn && confirmBtn.offsetParent !== null && !confirmBtn.disabled) {
-        confirmBtn.click();
-      } else {
-        submitPOSCheckoutFinalist();
-      }
-    }
-    // ESC: Clear Cart
-    if (e.key === 'Escape') {
-      const anyOpenModal = document.querySelector('.modal.show');
-      if (anyOpenModal) return;
-      e.preventDefault();
-      if (Object.keys(touchCart).length > 0 && confirm('Empty current POS cart?')) {
-        touchCart = {};
-        window.touchCart = touchCart;
-        renderTouchCart();
-      }
+    switch (k) {
+      case 'F1': focusScan(); break;
+      case 'F2': document.getElementById('posCustomerSearch')?.focus(); break;
+      case 'F3': if (typeof window.suspendPOSCart === 'function') window.suspendPOSCart(); break;
+      case 'F4': openPopup('hold-orders.php'); break;
+      case 'F5': document.getElementById('posCartDiscount')?.focus(); break;
+      case 'F6': if (typeof window.submitPOSCheckoutFinalist === 'function') window.submitPOSCheckoutFinalist(); break;
+      case 'F7': openPopup('returns.php'); break;
+      case 'F8': openPopup('receipts.php'); break;
+      case 'F9': openPopup('register.php'); break;
+      case 'F10':
+        if (Object.keys(window.touchCart || {}).length === 0 || confirm('Start a NEW sale? The current cart will be cleared.')) {
+          if (typeof window.clearTouchCart === 'function') window.clearTouchCart();
+          focusScan();
+        }
+        break;
     }
   });
 
-  // 3. Cart Management with Decimal & Weighted Support
-  function addTouchCartItem(id, name, price, stock, image = '', sku = '', unit = 'pcs', isWeighted = false) {
-    if (touchCart[id]) {
-      const step = isWeighted ? 0.5 : 1;
-      if (touchCart[id].qty + step <= stock) {
-        touchCart[id].qty = Math.round((touchCart[id].qty + step) * 100) / 100;
-      } else {
-        showPOSToast('Available stock limit reached (' + stock + ' ' + unit + ').', 'warning');
-      }
-    } else {
-      touchCart[id] = {
-        id,
-        name,
-        price: parseFloat(price),
-        qty: 1,
-        stock: parseFloat(stock),
-        image,
-        sku,
-        unit,
-        is_weighted: isWeighted,
-        discount: 0,
-        price_override: false,
-        override_reason: null
-      };
+  // Keep the scanner ready: if focus drifts to <body> (e.g. after a button click) put it back.
+  document.addEventListener('focusout', () => {
+    setTimeout(() => {
+      if (!modalOpen() && (document.activeElement === document.body || document.activeElement === null)) focusScan();
+    }, 120);
+  });
+
+  let activeIndex = -1;
+  let currentProducts = [];
+
+  // Customer search context variables
+  let custActiveIndex = -1;
+  let currentCustomers = [];
+
+  function initPOSHandlers() {
+    const searchInput = document.getElementById('posFilterSearch');
+    const dropdown = document.getElementById('posAutocompleteDropdown');
+    
+    const custSearch = document.getElementById('posCustomerSearch');
+    const custDropdown = document.getElementById('posCustomerAutocomplete');
+
+    // 1. Product catalog search input handler
+    if (searchInput && dropdown) {
+      let timeout = null;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(timeout);
+        const val = searchInput.value.trim();
+        if (val.length < 1) {
+          dropdown.innerHTML = '';
+          dropdown.style.display = 'none';
+          currentProducts = [];
+          activeIndex = -1;
+          return;
+        }
+
+        timeout = setTimeout(() => {
+          fetch('ajax/search_products.php?q=' + encodeURIComponent(val))
+            .then(r => r.json())
+            .then(data => {
+              if (searchInput.value.trim() !== val) return; // stale response
+              if (data.success && data.products) {
+                currentProducts = data.products;
+                activeIndex = -1;
+                
+                if (currentProducts.length === 1) {
+                  const p = currentProducts[0];
+                  const cleanInput = val.toLowerCase();
+                  const barcodeMatch = (p.barcode && p.barcode.toLowerCase() === cleanInput);
+                  const skuMatch = (p.sku && p.sku.toLowerCase() === cleanInput);
+                  
+                  if (barcodeMatch || skuMatch) {
+                    tryAddProduct(p);
+                    searchInput.value = '';
+                    dropdown.innerHTML = '';
+                    dropdown.style.display = 'none';
+                    currentProducts = [];
+                    return;
+                  }
+                }
+                renderDropdown(dropdown, currentProducts);
+              }
+            });
+        }, 150);
+      });
+
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (currentProducts.length === 0) return;
+          activeIndex = (activeIndex + 1) % currentProducts.length;
+          highlightItem(dropdown);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (currentProducts.length === 0) return;
+          activeIndex = (activeIndex - 1 + currentProducts.length) % currentProducts.length;
+          highlightItem(dropdown);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(timeout);
+          if (currentProducts.length > 0 && activeIndex >= 0) {
+            const p = currentProducts[activeIndex];
+            tryAddProduct(p);
+            searchInput.value = '';
+            dropdown.innerHTML = '';
+            dropdown.style.display = 'none';
+            currentProducts = [];
+            activeIndex = -1;
+          } else if (searchInput.value.trim() !== '') {
+            lookupPOSBarcode(searchInput.value.trim());
+            searchInput.value = '';
+            dropdown.innerHTML = '';
+            dropdown.style.display = 'none';
+            currentProducts = [];
+          }
+        } else if (e.key === 'Escape') {
+          dropdown.innerHTML = '';
+          dropdown.style.display = 'none';
+          currentProducts = [];
+          activeIndex = -1;
+        }
+      });
     }
-    window.touchCart = touchCart;
-    renderTouchCart();
-    refocusScanner();
+
+    // 2. Customer search autocomplete input handler
+    if (custSearch && custDropdown) {
+      let custTimeout = null;
+      custSearch.addEventListener('input', () => {
+        clearTimeout(custTimeout);
+        const val = custSearch.value.trim();
+        if (val.length < 1) {
+          custDropdown.innerHTML = '';
+          custDropdown.style.display = 'none';
+          currentCustomers = [];
+          custActiveIndex = -1;
+          return;
+        }
+
+        custTimeout = setTimeout(() => {
+          fetch('ajax/search_customer.php?q=' + encodeURIComponent(val))
+            .then(r => r.json())
+            .then(data => {
+              if (data.success) {
+                currentCustomers = data.customers || [];
+                custActiveIndex = -1;
+
+                // Auto-select on exact phone match — no dropdown needed
+                const exactPhone = currentCustomers.find(c => c.phone === val);
+                if (exactPhone) {
+                  selectPOSCustomer(exactPhone);
+                  custSearch.value = '';
+                  custDropdown.innerHTML = '';
+                  custDropdown.style.display = 'none';
+                  currentCustomers = [];
+                  return;
+                }
+
+                renderCustomerDropdown(custDropdown, currentCustomers, val);
+              }
+            })
+            .catch(() => {
+              renderCustomerDropdown(custDropdown, [], val);
+            });
+        }, 250);
+      });
+
+      custSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (currentCustomers.length === 0) return;
+          custActiveIndex = (custActiveIndex + 1) % currentCustomers.length;
+          highlightCustomerItem(custDropdown);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (currentCustomers.length === 0) return;
+          custActiveIndex = (custActiveIndex - 1 + currentCustomers.length) % currentCustomers.length;
+          highlightCustomerItem(custDropdown);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (currentCustomers.length > 0 && custActiveIndex >= 0) {
+            selectPOSCustomer(currentCustomers[custActiveIndex]);
+            custSearch.value = '';
+            custDropdown.innerHTML = '';
+            custDropdown.style.display = 'none';
+            currentCustomers = [];
+            custActiveIndex = -1;
+          } else if (currentCustomers.length === 1) {
+            selectPOSCustomer(currentCustomers[0]);
+            custSearch.value = '';
+            custDropdown.innerHTML = '';
+            custDropdown.style.display = 'none';
+            currentCustomers = [];
+            custActiveIndex = -1;
+          } else if (currentCustomers.length === 0) {
+            const val = custSearch.value.trim();
+            if (val !== '') {
+              custSearch.value = '';
+              custDropdown.innerHTML = '';
+              custDropdown.style.display = 'none';
+              currentCustomers = [];
+              custActiveIndex = -1;
+
+              const phoneEl = document.getElementById('custNewPhone');
+              const nameEl = document.getElementById('custNewName');
+              if (phoneEl) phoneEl.value = /^\d+$/.test(val) ? val : '';
+              if (nameEl) nameEl.value = /^\d+$/.test(val) ? '' : val;
+
+              const modalEl = document.getElementById('createCustomerModal');
+              if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+              }
+            }
+          }
+        } else if (e.key === 'Escape') {
+          custDropdown.innerHTML = '';
+          custDropdown.style.display = 'none';
+          currentCustomers = [];
+          custActiveIndex = -1;
+        }
+      });
+    }
+
+    // Focus barcode search input initially
+    if (searchInput) {
+      searchInput.focus();
+    }
+
+    // Bind real-time input change listeners for payment splits in the popup modal
+    const inputsToBind = [
+      'splitCash', 'splitCard', 'splitCardNo', 'splitCardRef', 'splitCardBank', 'splitCardType',
+      'splitBkash', 'splitMobileProvider', 'splitBkashTxnId', 'splitWallet',
+      'splitBank', 'splitBankName', 'splitBankRef'
+    ];
+    inputsToBind.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', updateModalChangeDue);
+        el.addEventListener('change', updateModalChangeDue);
+      }
+    });
+
+    // Autofocus barcode search input when modals are closed
+    const custModalEl = document.getElementById('createCustomerModal');
+    if (custModalEl) {
+      custModalEl.addEventListener('hidden.bs.modal', () => {
+        document.getElementById('posFilterSearch')?.focus();
+      });
+    }
+    const payModalEl = document.getElementById('checkoutPaymentModal');
+    if (payModalEl) {
+      payModalEl.addEventListener('hidden.bs.modal', () => {
+        document.getElementById('posFilterSearch')?.focus();
+      });
+    }
+
+    // Close all dropdowns on clicking outside
+    document.addEventListener('click', (e) => {
+      if (searchInput && e.target !== searchInput && e.target !== dropdown) {
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
+        currentProducts = [];
+        activeIndex = -1;
+      }
+      if (custSearch && e.target !== custSearch && e.target !== custDropdown) {
+        custDropdown.innerHTML = '';
+        custDropdown.style.display = 'none';
+        currentCustomers = [];
+        custActiveIndex = -1;
+      }
+    });
+
+    // Handle new customer form submissions
+    const frmCreateCust = document.getElementById('frmCreateCustomer');
+    if (frmCreateCust) {
+      frmCreateCust.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitNewCustomer();
+      });
+    }
+
+    // Handle POS split payment confirmation form submissions
+    const frmPOSPay = document.getElementById('frmPOSPayment');
+    if (frmPOSPay) {
+      frmPOSPay.addEventListener('submit', (e) => {
+        e.preventDefault();
+        confirmPOSSale();
+      });
+    }
   }
 
-  function updateTouchQty(id, change) {
-    if (touchCart[id]) {
-      const newQty = Math.round((touchCart[id].qty + change) * 100) / 100;
-      if (newQty <= 0) {
-        delete touchCart[id];
-      } else if (newQty > touchCart[id].stock) {
-        touchCart[id].qty = touchCart[id].stock;
-        showPOSToast('Maximum stock reached: ' + touchCart[id].stock, 'warning');
-      } else {
-        touchCart[id].qty = newQty;
-      }
-    }
-    window.touchCart = touchCart;
-    renderTouchCart();
-    refocusScanner();
-  }
-
-  function setTouchQtyExact(id, exactVal) {
-    const val = parseFloat(exactVal);
-    if (touchCart[id]) {
-      if (isNaN(val) || val <= 0) {
-        delete touchCart[id];
-      } else if (val > touchCart[id].stock) {
-        touchCart[id].qty = touchCart[id].stock;
-        showPOSToast('Maximum stock available is ' + touchCart[id].stock, 'warning');
-      } else {
-        touchCart[id].qty = Math.round(val * 100) / 100;
-      }
-    }
-    window.touchCart = touchCart;
-    renderTouchCart();
-  }
-
-  function triggerPriceOverride(id) {
-    if (!window.canOverridePrice) {
-      showPOSToast('Manager permission required for price override.', 'warning');
+  function tryAddProduct(p) {
+    if (p.is_active === 0) {
+      posToast('"' + p.name + '" is inactive.', 'error');
       return;
     }
-    const item = touchCart[id];
-    if (!item) return;
-    const newPriceInput = prompt('Enter custom unit price for ' + item.name + ' (৳):', item.price.toString());
-    if (newPriceInput !== null) {
-      const val = parseFloat(newPriceInput);
-      if (!isNaN(val) && val >= 0) {
-        item.price = val;
-        item.price_override = true;
-        item.override_reason = prompt('Reason for override (e.g. damaged box, clearance):', 'Manager Approved') || 'Manager Override';
-        renderTouchCart();
-      } else {
-        alert('Invalid price amount.');
-      }
+    if (p.stock <= 0) {
+      posToast('"' + p.name + '" is out of stock.', 'error');
+      return;
+    }
+    if (typeof window.addTouchCartItem === 'function') {
+      window.addTouchCartItem(p.id, p.name, p.price, p.stock, p.image || '', p.sku || '');
     }
   }
 
-  function renderTouchCart() {
-    const wrapper = document.getElementById('posActiveCartList');
-    if (!wrapper) return;
-    wrapper.innerHTML = '';
-    
-    const keys = Object.keys(touchCart);
-    const btnTrigger = document.getElementById('btnPOSCheckoutTrigger');
-    if (keys.length === 0) {
-      wrapper.innerHTML = '<p style="text-align:center; color:var(--color-text-faint); font-size:11px; margin:20px 0;">Cart is empty. Scan barcode or click items to add.</p>';
-      if (btnTrigger) btnTrigger.disabled = true;
-      recalculatePOSBalances();
+  function renderDropdown(dropdown, products) {
+    dropdown.innerHTML = '';
+    if (products.length === 0) {
+      dropdown.style.display = 'none';
       return;
     }
-    
-    keys.forEach(k => {
-      const item = touchCart[k];
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex; gap:8px; align-items:center; font-size:11px; border-bottom:1px solid var(--color-border); padding:6px 0;';
+
+    products.forEach((p, idx) => {
+      const div = document.createElement('div');
+      div.className = 'autocomplete-item';
+      div.style.cssText = 'padding:8px 12px; cursor:pointer; font-size:12px; border-bottom:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); color:var(--color-text);';
       
-      let priceDisplay = `৳${item.price.toFixed(2)}`;
-      if (window.canOverridePrice) {
-        priceDisplay = `<span onclick="triggerPriceOverride(${item.id});" style="text-decoration: underline; cursor: pointer; color: var(--color-primary);" title="Click to override price">৳${item.price.toFixed(2)} <i class="fas fa-edit" style="font-size: 8px;"></i></span>`;
+      let statusStr = '';
+      let styleColor = 'var(--color-text)';
+      if (p.is_active === 0) {
+        statusStr = ' <span style="color:#e03131; font-weight:700;">(Product is inactive.)</span>';
+        styleColor = '#adb5bd';
+      } else if (p.stock <= 0) {
+        statusStr = ' <span style="color:#f59f00; font-weight:700;">(Out of Stock.)</span>';
+        styleColor = '#adb5bd';
       }
-      
-      const itemSubtotal = (item.price * item.qty).toFixed(2);
-      const fallbackImg = 'assets/images/placeholder.png';
-      const imgSrc = item.image ? item.image : fallbackImg;
-      const isKg = item.unit === 'kg' || item.is_weighted;
-      
-      row.innerHTML = `
-        <div style="width:32px; height:32px; border-radius:4px; overflow:hidden; border:1px solid var(--color-border); flex-shrink:0;">
-          <img src="${imgSrc}" alt="" style="width:100%; height:100%; object-fit:cover;">
+
+      div.innerHTML = `
+        <div>
+          <strong style="color:${styleColor};">${p.name}</strong>${statusStr}<br>
+          <span style="font-size:10px; color:var(--color-text-faint);">SKU: ${p.sku} | Barcode: ${p.barcode}</span>
         </div>
-        <div style="flex:1; min-width:0;">
-          <strong style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;" title="${item.name}">${item.name}</strong>
-          <span style="font-size:9px; color:var(--color-text-faint);">${priceDisplay} / ${item.unit}</span>
-        </div>
-        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; flex-shrink:0;">
-          <div style="display:flex; align-items:center; gap:3px;">
-            <button type="button" onclick="updateTouchQty(${item.id}, ${isKg ? -0.25 : -1});" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:9px; display:flex; align-items:center; justify-content:center;">-</button>
-            <input type="number" step="${isKg ? '0.01' : '1'}" min="0.01" value="${item.qty}" onchange="setTouchQtyExact(${item.id}, this.value);" style="width:42px; text-align:center; font-size:11px; font-weight:700; padding:1px; border:1px solid var(--color-border); border-radius:3px;">
-            <button type="button" onclick="updateTouchQty(${item.id}, ${isKg ? 0.25 : 1});" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:9px; display:flex; align-items:center; justify-content:center;">+</button>
-          </div>
-          ${isKg ? `
-            <div style="display:flex; gap:2px; margin-top:2px;">
-              <button type="button" onclick="updateTouchQty(${item.id}, 0.25);" style="border:none; background:#e7f5ff; color:#1c7ed6; font-size:8px; padding:1px 3px; border-radius:2px; cursor:pointer;">+0.25</button>
-              <button type="button" onclick="updateTouchQty(${item.id}, 0.5);" style="border:none; background:#e7f5ff; color:#1c7ed6; font-size:8px; padding:1px 3px; border-radius:2px; cursor:pointer;">+0.5</button>
-              <button type="button" onclick="updateTouchQty(${item.id}, 1.0);" style="border:none; background:#e7f5ff; color:#1c7ed6; font-size:8px; padding:1px 3px; border-radius:2px; cursor:pointer;">+1kg</button>
-            </div>
-          ` : ''}
-        </div>
-        <div style="width:70px; text-align:right; font-size:11px; font-weight:700; color:var(--color-text); flex-shrink:0;">
-          ৳${itemSubtotal}
-        </div>
-        <button type="button" onclick="updateTouchQty(${item.id}, -${item.qty});" style="border:none; background:transparent; color:#e03131; cursor:pointer; padding:2px 4px; font-size:12px; flex-shrink:0;" title="Remove Item"><i class="fas fa-trash-alt"></i></button>
+        <div style="font-weight:700; color:var(--color-primary);">৳${p.price.toFixed(2)}</div>
       `;
-      wrapper.appendChild(row);
+
+      div.addEventListener('click', () => {
+        tryAddProduct(p);
+        const searchInput = document.getElementById('posFilterSearch');
+        if (searchInput) searchInput.value = '';
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
+        currentProducts = [];
+        activeIndex = -1;
+      });
+
+      dropdown.appendChild(div);
     });
-    
-    if (btnTrigger) btnTrigger.disabled = false;
-    recalculatePOSBalances();
+
+    dropdown.style.display = 'block';
   }
 
-  function recalculatePOSBalances() {
-    let subtotal = 0;
-    Object.keys(touchCart).forEach(k => {
-      subtotal += (touchCart[k].price * touchCart[k].qty);
+  function highlightItem(dropdown) {
+    const items = dropdown.querySelectorAll('.autocomplete-item');
+    items.forEach((item, idx) => {
+      if (idx === activeIndex) {
+        item.style.background = '#e6fcf5';
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.style.background = '#fff';
+      }
     });
-    
-    const discountEl = document.getElementById('posCartDiscount');
-    const couponEl = document.getElementById('posCartCoupon');
-    const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
-    const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
-    
-    const totalDiscounts = discount + coupon;
-    const totalPayable = Math.max(subtotal - totalDiscounts, 0);
-    
-    const subtotalEl = document.getElementById('posCartSubtotal');
-    const totalEl = document.getElementById('posCartTotalPayable');
-    
-    if (subtotalEl) subtotalEl.innerText = '৳' + subtotal.toFixed(2);
-    if (totalEl) totalEl.innerText = '৳' + totalPayable.toFixed(2);
   }
 
-  // 4. Quick Cash Tender Presets in Modal
-  function applyQuickCash(action) {
-    let subtotal = 0;
-    Object.keys(touchCart).forEach(k => {
-      subtotal += (touchCart[k].price * touchCart[k].qty);
-    });
-    const discountEl = document.getElementById('posCartDiscount');
-    const couponEl = document.getElementById('posCartCoupon');
-    const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
-    const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
-    const totalPayable = Math.max(subtotal - (discount + coupon), 0);
+  // Customer Autocomplete Render Helpers
+  function renderCustomerDropdown(dropdown, customers, searchVal) {
+    dropdown.innerHTML = '';
 
-    const cashInput = document.getElementById('splitCash');
-    if (!cashInput) return;
+    if (customers.length === 0) {
+      // Show "not found → create" row
+      const notFound = document.createElement('div');
+      notFound.style.cssText = 'padding:10px 14px; cursor:pointer; font-size:11px; display:flex; justify-content:space-between; align-items:center; background:#fff3f3; color:#c0392b;';
+      notFound.innerHTML = `
+        <span><i class="fas fa-user-plus" style="margin-right:6px;"></i>No customer found. <strong>Create new customer?</strong></span>
+        <span style="font-size:9px; border:1px solid #c0392b; padding:2px 6px; border-radius:10px;">+ New</span>
+      `;
+      notFound.addEventListener('click', () => {
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
+        currentCustomers = [];
 
-    if (action === 'exact') {
-      cashInput.value = totalPayable.toFixed(2);
-    } else if (typeof action === 'number') {
-      const current = parseFloat(cashInput.value) || 0;
-      cashInput.value = (current + action).toFixed(2);
+        const custSearch = document.getElementById('posCustomerSearch');
+        const phoneEl = document.getElementById('custNewPhone');
+        const nameEl = document.getElementById('custNewName');
+        const val = custSearch ? custSearch.value.trim() : (searchVal || '');
+        if (phoneEl) phoneEl.value = /^\d+$/.test(val) ? val : '';
+        if (nameEl) nameEl.value = /^\d+$/.test(val) ? '' : val;
+
+        const modalEl = document.getElementById('createCustomerModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+        }
+      });
+      dropdown.appendChild(notFound);
+      dropdown.style.display = 'block';
+      return;
     }
-    updateModalChangeDue();
+
+    customers.forEach((c) => {
+      const div = document.createElement('div');
+      div.className = 'cust-autocomplete-item';
+      div.style.cssText = 'padding:7px 12px; cursor:pointer; font-size:11px; border-bottom:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); color:var(--color-text);';
+      
+      div.innerHTML = `
+        <div>
+          <strong>${c.full_name}</strong><br>
+          <span style="font-size:9px; color:var(--color-text-faint);">📱 ${c.phone} &nbsp;|&nbsp; 💰 Wallet: ৳${parseFloat(c.wallet_balance).toFixed(2)} &nbsp;|&nbsp; ⭐ Points: ${c.reward_points || 0} &nbsp;|&nbsp; 📦 Orders: ${c.total_orders || 0}</span>
+        </div>
+        <div style="text-align:right; font-size:9px; color:var(--color-primary); font-weight:700;">Select ✓</div>
+      `;
+
+      div.addEventListener('click', () => {
+        selectPOSCustomer(c);
+        const searchInput = document.getElementById('posCustomerSearch');
+        if (searchInput) searchInput.value = '';
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
+        currentCustomers = [];
+        custActiveIndex = -1;
+      });
+
+      dropdown.appendChild(div);
+    });
+
+    dropdown.style.display = 'block';
   }
 
-  // 5. Customer Loyalty & Selection
+  function highlightCustomerItem(dropdown) {
+    const items = dropdown.querySelectorAll('.cust-autocomplete-item');
+    items.forEach((item, idx) => {
+      if (idx === custActiveIndex) {
+        item.style.background = '#e6fcf5';
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.style.background = '#fff';
+      }
+    });
+  }
+
   function selectPOSCustomer(c) {
     const selectEl = document.getElementById('posCustomerSelect');
     const labelEl = document.getElementById('posCurrentCustomerLabel');
     if (!selectEl) return;
 
     selectEl.value = c.id;
-    selectEl.setAttribute('data-wallet', c.wallet_balance || 0);
-    selectEl.setAttribute('data-points', c.reward_points || 0);
+    selectEl.setAttribute('data-wallet', c.wallet_balance);
+    selectEl.setAttribute('data-points', c.reward_points);
     selectEl.setAttribute('data-name', c.full_name);
 
     if (labelEl) {
       labelEl.innerText = `${c.full_name} (${c.phone})`;
     }
-    updateLoyaltyUI();
-  }
 
-  function updateLoyaltyUI() {
-    const sel = document.getElementById('posCustomerSelect');
-    const widget = document.getElementById('loyaltyWidget');
-    if (!sel || !widget) return;
-    
-    const val = sel.value;
-    const name = sel.getAttribute('data-name') || '';
-    
-    if (name.includes('Walk-in') || val === '0' || val === '') {
-      widget.style.display = 'none';
-    } else {
-      const wallet = parseFloat(sel.getAttribute('data-wallet')) || 0;
-      const points = parseInt(sel.getAttribute('data-points')) || 0;
-      
-      const walletEl = document.getElementById('lblWallet');
-      const pointsEl = document.getElementById('lblPoints');
-      if (walletEl) walletEl.innerText = '৳' + wallet.toFixed(2);
-      if (pointsEl) pointsEl.innerText = points + ' pts';
-      widget.style.display = 'flex';
+    if (typeof window.updateLoyaltyUI === 'function') {
+      window.updateLoyaltyUI();
     }
   }
 
-  // 6. Split Checkout Modal Trigger
+  function submitNewCustomer() {
+    const nameEl = document.getElementById('custNewName');
+    const mobileEl = document.getElementById('custNewPhone');
+    const emailEl = document.getElementById('custNewEmail');
+    const addressEl = document.getElementById('custNewAddress');
+    const genderEl = document.getElementById('custNewGender');
+    const birthdayEl = document.getElementById('custNewBirthday');
+    const loyaltyEl = document.getElementById('custNewLoyalty');
+
+    if (!nameEl || !mobileEl) {
+      alert('Name and Mobile number input fields are missing.');
+      return;
+    }
+
+    const name = nameEl.value.trim();
+    const mobile = mobileEl.value.trim();
+    const email = emailEl ? emailEl.value.trim() : '';
+    const address = addressEl ? addressEl.value.trim() : '';
+    const gender = genderEl ? genderEl.value.trim() : '';
+    const birthday = birthdayEl ? birthdayEl.value.trim() : '';
+    const loyalty = loyaltyEl && loyaltyEl.checked ? '1' : '0';
+
+    if (name === '' || mobile === '') {
+      alert('Name and Mobile number are required.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('mobile', mobile);
+    formData.append('email', email);
+    formData.append('address', address);
+    formData.append('gender', gender);
+    formData.append('birthday', birthday);
+    formData.append('loyalty_enrollment', loyalty);
+    formData.append('csrf_token', window.csrfToken || '');
+
+    fetch('ajax/create_customer.php', {
+      method: 'POST',
+      body: formData
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.customer) {
+          selectPOSCustomer(data.customer);
+          
+          const frm = document.getElementById('frmCreateCustomer');
+          if (frm) frm.reset();
+          const modalEl = document.getElementById('createCustomerModal');
+          if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+          }
+          // Brief non-blocking success toast
+          const label = document.getElementById('posCurrentCustomerLabel');
+          if (label) {
+            label.style.color = '#2b9348';
+            label.innerText = `\u2713 ${data.customer.full_name} selected`;
+            setTimeout(() => {
+              label.style.color = 'var(--color-primary)';
+            }, 2000);
+          }
+        } else {
+          alert('Failed to register customer: ' + data.error);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Communication error while saving customer.');
+      });
+  }
+
+
+  // Split Checkout Popup Handlers
   function submitPOSCheckoutFinalist() {
-    const keys = Object.keys(touchCart);
+    const keys = Object.keys(window.touchCart || {});
     if (keys.length === 0) {
-      showPOSToast('POS Cart is empty.', 'warning');
+      alert('POS Cart is empty.');
       return;
     }
     
     let subtotal = 0;
-    keys.forEach(k => {
-      subtotal += (touchCart[k].price * touchCart[k].qty);
+    Object.keys(window.touchCart).forEach(k => {
+      const it = window.touchCart[k];
+      subtotal += Math.max(0, it.price * it.qty - (it.line_discount || 0));
     });
     
     const discountEl = document.getElementById('posCartDiscount');
     const couponEl = document.getElementById('posCartCoupon');
     const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
     const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
-    const totalDiscounts = discount + coupon;
-    const totalPayable = Math.max(subtotal - totalDiscounts, 0);
     
+    const totalDiscounts = discount + coupon;
+    const taxableAmount = Math.max(subtotal - totalDiscounts, 0);
+    const vat = 0.0;
+    const totalPayable = taxableAmount;
+    
+    // Set breakdown text elements inside modal
     const modalSubtotal = document.getElementById('modalSubtotal');
+    const modalVat = document.getElementById('modalVat');
     const modalDiscount = document.getElementById('modalDiscount');
+    const modalCoupon = document.getElementById('modalCoupon');
     const modalPayableTotal = document.getElementById('modalPayableTotal');
     const modalCustomerInfo = document.getElementById('modalCustomerInfo');
     
     if (modalSubtotal) modalSubtotal.innerText = '৳' + subtotal.toFixed(2);
-    if (modalDiscount) modalDiscount.innerText = '৳' + totalDiscounts.toFixed(2);
+    if (modalVat) modalVat.innerText = '৳' + vat.toFixed(2);
+    if (modalDiscount) modalDiscount.innerText = '৳' + discount.toFixed(2);
+    if (modalCoupon) modalCoupon.innerText = '৳' + coupon.toFixed(2);
     if (modalPayableTotal) modalPayableTotal.innerText = '৳' + totalPayable.toFixed(2);
     
     const selectEl = document.getElementById('posCustomerSelect');
@@ -433,18 +692,46 @@
       modalCustomerInfo.innerText = selectEl.getAttribute('data-name') || 'Walk-in Customer';
     }
     
-    // Default full cash
+    // Reset payment fields safely
     const splitCash = document.getElementById('splitCash');
     const splitCard = document.getElementById('splitCard');
+    const splitCardType = document.getElementById('splitCardType');
+    const splitCardNo = document.getElementById('splitCardNo');
+    const splitCardRef = document.getElementById('splitCardRef');
+    const splitCardBank = document.getElementById('splitCardBank');
+    
     const splitBkash = document.getElementById('splitBkash');
+    const splitMobileProvider = document.getElementById('splitMobileProvider');
+    const splitBkashTxnId = document.getElementById('splitBkashTxnId');
     const splitWallet = document.getElementById('splitWallet');
+    
     const splitBank = document.getElementById('splitBank');
-
+    const splitBankName = document.getElementById('splitBankName');
+    const splitBankRef = document.getElementById('splitBankRef');
+    
     if (splitCash) splitCash.value = totalPayable.toFixed(2);
     if (splitCard) splitCard.value = '0';
+    if (splitCardType) splitCardType.value = 'Visa';
+    if (splitCardNo) splitCardNo.value = '';
+    if (splitCardRef) splitCardRef.value = '';
+    if (splitCardBank) splitCardBank.value = '';
+    
     if (splitBkash) splitBkash.value = '0';
-    if (splitWallet) splitWallet.value = '0';
+    if (splitMobileProvider) splitMobileProvider.value = 'bKash';
+    if (splitBkashTxnId) splitBkashTxnId.value = '';
+    
     if (splitBank) splitBank.value = '0';
+    if (splitBankName) splitBankName.value = '';
+    if (splitBankRef) splitBankRef.value = '';
+    
+    // Sync wallet details
+    if (selectEl) {
+      const walletBalance = parseFloat(selectEl.getAttribute('data-wallet')) || 0;
+      if (splitWallet) {
+        splitWallet.value = '0';
+        splitWallet.max = walletBalance.toFixed(2);
+      }
+    }
 
     updateModalChangeDue();
 
@@ -452,34 +739,44 @@
     if (modalEl && typeof bootstrap !== 'undefined') {
       const modal = new bootstrap.Modal(modalEl);
       modal.show();
-      setTimeout(() => {
-        splitCash?.focus();
-        splitCash?.select();
-      }, 300);
     }
   }
 
   function updateModalChangeDue() {
     let subtotal = 0;
-    Object.keys(touchCart).forEach(k => {
-      subtotal += (touchCart[k].price * touchCart[k].qty);
+    Object.keys(window.touchCart || {}).forEach(k => {
+      subtotal += (window.touchCart[k].price * window.touchCart[k].qty);
     });
     const discountEl = document.getElementById('posCartDiscount');
     const couponEl = document.getElementById('posCartCoupon');
     const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
     const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
-    const totalPayable = Math.max(subtotal - (discount + coupon), 0);
+    
+    const totalDiscounts = discount + coupon;
+    const taxableAmount = Math.max(subtotal - totalDiscounts, 0);
+    const vat = 0.0;
+    const totalPayable = taxableAmount;
 
-    const cash = parseFloat(document.getElementById('splitCash')?.value) || 0;
-    const card = parseFloat(document.getElementById('splitCard')?.value) || 0;
-    const bkash = parseFloat(document.getElementById('splitBkash')?.value) || 0;
-    const wallet = parseFloat(document.getElementById('splitWallet')?.value) || 0;
-    const bank = parseFloat(document.getElementById('splitBank')?.value) || 0;
+    const splitCash = document.getElementById('splitCash');
+    const splitCard = document.getElementById('splitCard');
+    const splitBkash = document.getElementById('splitBkash');
+    const splitWallet = document.getElementById('splitWallet');
+    const splitBank = document.getElementById('splitBank');
 
+    const cash = splitCash ? parseFloat(splitCash.value) || 0 : 0;
+    const card = splitCard ? parseFloat(splitCard.value) || 0 : 0;
+    const bkash = splitBkash ? parseFloat(splitBkash.value) || 0 : 0;
+    const wallet = splitWallet ? parseFloat(splitWallet.value) || 0 : 0;
+    const bank = splitBank ? parseFloat(splitBank.value) || 0 : 0;
+
+    // Toggle Details fields visibility
     const cardDetailsRow = document.getElementById('cardDetailsRow');
     const mobileDetailsRow = document.getElementById('mobileDetailsRow');
+    const bankDetailsRow = document.getElementById('bankDetailsRow');
+    
     if (cardDetailsRow) cardDetailsRow.style.display = card > 0 ? 'flex' : 'none';
     if (mobileDetailsRow) mobileDetailsRow.style.display = bkash > 0 ? 'flex' : 'none';
+    if (bankDetailsRow) bankDetailsRow.style.display = bank > 0 ? 'flex' : 'none';
 
     const nonCashPaid = card + bkash + wallet + bank;
     const totalEntered = cash + nonCashPaid;
@@ -494,59 +791,120 @@
     if (remainingDueEl) remainingDueEl.innerText = '৳' + remainingDue.toFixed(2);
     if (changeDueEl) changeDueEl.innerText = '৳' + change.toFixed(2);
 
-    const confirmBtn = document.getElementById('btnConfirmPOSSale');
-    if (confirmBtn) {
-      confirmBtn.disabled = totalEntered < (totalPayable - 0.01);
+    // Validate inputs
+    let isValid = true;
+    
+    if (totalEntered < totalPayable - 0.01) {
+      isValid = false;
     }
+    
+    // Card field validations
+    if (card > 0) {
+      const splitCardType = document.getElementById('splitCardType');
+      const splitCardNo = document.getElementById('splitCardNo');
+      const splitCardRef = document.getElementById('splitCardRef');
+      const splitCardBank = document.getElementById('splitCardBank');
+      if (!splitCardType || splitCardType.value.trim() === '') isValid = false;
+      if (!splitCardNo || splitCardNo.value.trim() === '') isValid = false;
+      if (!splitCardRef || splitCardRef.value.trim() === '') isValid = false;
+      if (!splitCardBank || splitCardBank.value.trim() === '') isValid = false;
+    }
+    
+    // Mobile banking validations
+    if (bkash > 0) {
+      const splitBkashTxn = document.getElementById('splitBkashTxnId');
+      const splitMobileProvider = document.getElementById('splitMobileProvider');
+      if (!splitMobileProvider || splitMobileProvider.value.trim() === '') isValid = false;
+      if (!splitBkashTxn || splitBkashTxn.value.trim() === '') isValid = false;
+    }
+    
+    // Wallet credit validation
+    const selectEl = document.getElementById('posCustomerSelect');
+    if (selectEl) {
+      const walletMax = parseFloat(selectEl.getAttribute('data-wallet')) || 0;
+      if (wallet > walletMax) {
+        isValid = false;
+      }
+    }
+    
+    // Bank transfer validations
+    if (bank > 0) {
+      const splitBankName = document.getElementById('splitBankName');
+      const splitBankRef = document.getElementById('splitBankRef');
+      if (!splitBankName || splitBankName.value.trim() === '') isValid = false;
+      if (!splitBankRef || splitBankRef.value.trim() === '') isValid = false;
+    }
+
+    const confirmBtn = document.getElementById('btnConfirmPOSSale');
+    if (confirmBtn) confirmBtn.disabled = !isValid;
   }
 
-  // 7. POS Sale Confirmation (with Online/Offline resilience)
   function confirmPOSSale() {
-    const keys = Object.keys(touchCart);
-    if (keys.length === 0) return;
-
+    const keys = Object.keys(window.touchCart || {});
     const discountEl = document.getElementById('posCartDiscount');
     const couponEl = document.getElementById('posCartCoupon');
     const discount = discountEl ? parseFloat(discountEl.value) || 0 : 0;
     const coupon = couponEl ? parseFloat(couponEl.value) || 0 : 0;
     const totalDiscounts = discount + coupon;
+    
+    const splitCash = document.getElementById('splitCash');
+    const splitCard = document.getElementById('splitCard');
+    const splitCardType = document.getElementById('splitCardType');
+    const splitCardNo = document.getElementById('splitCardNo');
+    const splitCardRef = document.getElementById('splitCardRef');
+    const splitCardBank = document.getElementById('splitCardBank');
+    
+    const splitBkash = document.getElementById('splitBkash');
+    const splitMobileProvider = document.getElementById('splitMobileProvider');
+    const splitBkashTxnId = document.getElementById('splitBkashTxnId');
+    const splitWallet = document.getElementById('splitWallet');
+    
+    const splitBank = document.getElementById('splitBank');
+    const splitBankName = document.getElementById('splitBankName');
+    const splitBankRef = document.getElementById('splitBankRef');
 
-    const cash = parseFloat(document.getElementById('splitCash')?.value) || 0;
-    const card = parseFloat(document.getElementById('splitCard')?.value) || 0;
-    const bkash = parseFloat(document.getElementById('splitBkash')?.value) || 0;
-    const wallet = parseFloat(document.getElementById('splitWallet')?.value) || 0;
-    const bank = parseFloat(document.getElementById('splitBank')?.value) || 0;
-
+    const cash = splitCash ? parseFloat(splitCash.value) || 0 : 0;
+    const card = splitCard ? parseFloat(splitCard.value) || 0 : 0;
+    const cardType = splitCardType ? splitCardType.value : '';
+    const cardNo = splitCardNo ? splitCardNo.value.trim() : '';
+    const cardRef = splitCardRef ? splitCardRef.value.trim() : '';
+    const cardBank = splitCardBank ? splitCardBank.value.trim() : '';
+    
+    const bkash = splitBkash ? parseFloat(splitBkash.value) || 0 : 0;
+    const mobileProvider = splitMobileProvider ? splitMobileProvider.value : 'bKash';
+    const bkashTxnId = splitBkashTxnId ? splitBkashTxnId.value.trim() : '';
+    const wallet = splitWallet ? parseFloat(splitWallet.value) || 0 : 0;
+    
+    const bank = splitBank ? parseFloat(splitBank.value) || 0 : 0;
+    const bankName = splitBankName ? splitBankName.value.trim() : '';
+    const bankRef = splitBankRef ? splitBankRef.value.trim() : '';
+    
     const selectEl = document.getElementById('posCustomerSelect');
-    const customerId = selectEl ? parseInt(selectEl.value) || 0 : 0;
-    const itemsData = keys.map(k => touchCart[k]);
-    const clientUuid = 'term-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8);
-
-    const salePayload = {
-      items: itemsData,
-      discount: totalDiscounts,
-      cash: cash,
-      card: card,
-      bkash: bkash,
-      wallet: wallet,
-      bank_transfer: bank,
-      customer_id: customerId,
-      client_uuid: clientUuid,
-      note: 'POS Terminal Sale',
-      created_at: new Date().toISOString()
-    };
-
-    const confirmBtn = document.getElementById('btnConfirmPOSSale');
-    if (confirmBtn) {
-      confirmBtn.disabled = true;
-      confirmBtn.innerText = 'Processing...';
+    const customerId = selectEl ? selectEl.value : '0';
+    // Only what the server needs. price is sent so a cashier override can be authorised server-side.
+    const itemsData = keys.map(k => { const it = window.touchCart[k]; return { id: it.id, qty: it.qty, price: it.price, line_discount: it.line_discount || 0 }; });
+    // One key per sale attempt: if the network drops and the cashier retries, the server returns the
+    // ORIGINAL sale instead of creating a second one.
+    if (!window.posIdemKey) {
+      window.posIdemKey = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('k' + Date.now() + Math.random().toString(16).slice(2));
     }
-
-    // Check if browser is offline
-    if (!navigator.onLine) {
-      queueOfflineTransaction(salePayload);
-      handleSaleSuccessLocal(salePayload, true);
-      return;
+    
+    // Assemble transaction details for storage in note
+    let paymentNote = 'POS checkout.';
+    if (card > 0) {
+      paymentNote += ` Card: ৳${card.toFixed(2)} (Type: ${cardType}, Bank: ${cardBank}, Ref: ${cardRef}, Last4: ${cardNo}).`;
+    }
+    if (bkash > 0) {
+      paymentNote += ` Mobile Banking (${mobileProvider}): ৳${bkash.toFixed(2)} (Txn: ${bkashTxnId}).`;
+    }
+    if (bank > 0) {
+      paymentNote += ` Bank Transfer: ৳${bank.toFixed(2)} (Bank: ${bankName}, Ref: ${bankRef}).`;
+    }
+    if (wallet > 0) {
+      paymentNote += ` Wallet: ৳${wallet.toFixed(2)}.`;
+    }
+    if (cash > 0) {
+      paymentNote += ` Cash: ৳${cash.toFixed(2)}.`;
     }
 
     const formData = new FormData();
@@ -557,428 +915,109 @@
     formData.append('bkash', bkash.toString());
     formData.append('wallet', wallet.toString());
     formData.append('bank_transfer', bank.toString());
-    formData.append('customer_id', customerId.toString());
-    formData.append('client_uuid', clientUuid);
+    formData.append('customer_id', customerId);
+    formData.append('note', paymentNote);
+    formData.append('idempotency_key', window.posIdemKey);
     formData.append('csrf_token', window.csrfToken || '');
-
+    
+    const confirmBtn = document.getElementById('btnConfirmPOSSale');
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerText = 'Processing...';
+    }
+    
     fetch('checkout.php', {
-      method: 'POST',
-      body: formData
+        method: 'POST',
+        body: formData
     })
     .then(r => r.json())
     .then(data => {
-      if (confirmBtn) {
-        confirmBtn.disabled = false;
-        confirmBtn.innerText = 'Confirm Sale (F10)';
-      }
-      if (data.success) {
-        handleSaleSuccessLocal(salePayload, false, data.order_id, data.transaction_number);
-      } else {
-        alert('POS Checkout failed: ' + data.error);
-      }
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = 'Confirm Sale';
+        }
+        if (data.success) {
+            window.posIdemKey = null; // next sale gets a fresh key
+            posToast('Sale ' + data.order_number + ' complete \u2014 total \u09f3' + Number(data.total).toFixed(2) + (data.change > 0 ? ', CHANGE \u09f3' + Number(data.change).toFixed(2) : ''), 'ok');
+            if (data.change > 0) { alert('CHANGE DUE: \u09f3' + Number(data.change).toFixed(2)); }
+            // Print receipt
+            window.open('receipts.php?id=' + data.order_id, '_blank', 'width=400,height=600');
+            
+            // Clear cart IN PLACE (the page keeps a private reference to the same object)
+            if (typeof window.clearTouchCart === 'function') { window.clearTouchCart(); }
+
+            // Hide modal
+            const modalEl = document.getElementById('checkoutPaymentModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+            
+            // Reset customer selection programmatically
+            if (selectEl) {
+              const defaultId = selectEl.getAttribute('data-default-id') || '0';
+              const defaultName = selectEl.getAttribute('data-default-name') || 'Walk-in Customer';
+              const defaultWallet = selectEl.getAttribute('data-default-wallet') || '0.00';
+              const defaultPoints = selectEl.getAttribute('data-default-points') || '0';
+
+              selectEl.value = defaultId;
+              selectEl.setAttribute('data-wallet', defaultWallet);
+              selectEl.setAttribute('data-points', defaultPoints);
+              selectEl.setAttribute('data-name', defaultName);
+            }
+
+            const labelEl = document.getElementById('posCurrentCustomerLabel');
+            if (labelEl) {
+              labelEl.innerText = 'Walk-in Customer';
+            }
+
+            const custSearch = document.getElementById('posCustomerSearch');
+            if (custSearch) {
+              custSearch.value = '';
+            }
+
+            const loyaltyWidget = document.getElementById('loyaltyWidget');
+            if (loyaltyWidget) {
+              loyaltyWidget.style.display = 'none';
+            }
+
+            // Reset discount and coupon fields
+            if (discountEl) discountEl.value = '0';
+            if (couponEl) couponEl.value = '0';
+            
+            // Focus barcode input input field
+            const searchInput = document.getElementById('posFilterSearch');
+            if (searchInput) {
+              searchInput.value = '';
+              searchInput.focus();
+            }
+        } else {
+            // A definite server rejection: the sale was NOT recorded, so a fresh key is safe.
+            window.posIdemKey = null;
+            posToast('Checkout failed: ' + data.error, 'error');
+            alert('POS Checkout failed: ' + data.error);
+        }
     })
     .catch(err => {
-      console.warn('Network error during checkout, queueing offline:', err);
-      if (confirmBtn) {
-        confirmBtn.disabled = false;
-        confirmBtn.innerText = 'Confirm Sale (F10)';
-      }
-      queueOfflineTransaction(salePayload);
-      handleSaleSuccessLocal(salePayload, true);
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = 'Confirm Sale';
+        }
+        console.error(err);
+        // Unknown outcome: KEEP the same idempotency key so a retry cannot double-charge.
+        alert('Network error during checkout. The sale may or may not have been recorded. Press Confirm again to safely retry (duplicates are prevented), or check Receipts.');
     });
   }
 
-  function handleSaleSuccessLocal(payload, isOffline = false, orderId = 0, txnNumber = '') {
-    // Reset cart
-    touchCart = {};
-    window.touchCart = touchCart;
-    renderTouchCart();
-
-    // Close payment modal
-    const modalEl = document.getElementById('checkoutPaymentModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      if (modal) modal.hide();
-    }
-
-    if (isOffline) {
-      showPOSToast('Offline: Sale recorded locally. Will sync automatically when connected.', 'warning');
-    } else {
-      showPOSToast('Checkout completed successfully!', 'success');
-      if (orderId > 0) {
-        window.open('receipts.php?id=' + orderId + '&format=80mm', '_blank', 'width=380,height=600');
-      }
-    }
-
-    refocusScanner();
-  }
-
-  // 8. Offline Outbox Queue & Syncing Engine
-  function queueOfflineTransaction(tx) {
-    try {
-      const queue = JSON.parse(localStorage.getItem('groco_pos_offline_queue') || '[]');
-      queue.push(tx);
-      localStorage.setItem('groco_pos_offline_queue', JSON.stringify(queue));
-      updateOfflineQueueUI();
-    } catch (e) {
-      console.error('Failed to save transaction in offline storage', e);
-    }
-  }
-
-  function updateOfflineQueueUI() {
-    try {
-      const queue = JSON.parse(localStorage.getItem('groco_pos_offline_queue') || '[]');
-      const count = queue.length;
-      const badge = document.getElementById('posOfflineQueueBadge');
-      const countEl = document.getElementById('posOfflineCount');
-      if (badge && countEl) {
-        countEl.innerText = count;
-        badge.style.display = count > 0 ? 'inline-flex' : 'none';
-      }
-    } catch (e) {}
-  }
-
-  function syncOfflineQueueManually() {
-    try {
-      const queue = JSON.parse(localStorage.getItem('groco_pos_offline_queue') || '[]');
-      if (queue.length === 0) {
-        showPOSToast('No offline transactions pending.', 'info');
-        return;
-      }
-      if (!navigator.onLine) {
-        showPOSToast('System is currently offline. Cannot sync.', 'warning');
-        return;
-      }
-
-      showPOSToast('Synchronizing ' + queue.length + ' offline transactions...', 'info');
-
-      fetch('../../api/v1/pos/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transactions: queue,
-          store_id: 1,
-          register_id: 1,
-          terminal_id: 1,
-          cashier_id: 1,
-          shift_id: window.activeShiftId || 1
-        })
-      })
-      .then(r => r.json())
-      .then(res => {
-        if (res.status === 'success' || res.success) {
-          localStorage.removeItem('groco_pos_offline_queue');
-          updateOfflineQueueUI();
-          showPOSToast('Successfully synced all offline transactions!', 'success');
-        } else {
-          showPOSToast('Offline sync encountered an issue: ' + (res.message || 'Unknown'), 'warning');
-        }
-      })
-      .catch(err => {
-        console.error('Offline sync failed', err);
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  // 9. Petty Cash & Return Modals
-  function openPettyCashModal() {
-    const modalEl = document.getElementById('pettyCashModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-      const modal = new bootstrap.Modal(modalEl);
-      modal.show();
-    }
-  }
-
-  function submitPettyCashMovement() {
-    const type = document.getElementById('pettyCashType')?.value;
-    const amount = parseFloat(document.getElementById('pettyCashAmount')?.value) || 0;
-    const reason = document.getElementById('pettyCashReason')?.value?.trim();
-
-    if (amount <= 0 || !reason) {
-      alert('Valid amount and reason are required.');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('pos_action', 'drawer_tx');
-    formData.append('tx_type', type);
-    formData.append('amount', amount.toString());
-    formData.append('notes', reason);
-    formData.append('csrf_token', window.csrfToken || '');
-
-    fetch('register.php', { method: 'POST', body: formData })
-      .then(() => {
-        showPOSToast('Petty cash movement logged successfully!', 'success');
-        const modalEl = document.getElementById('pettyCashModal');
-        if (modalEl && typeof bootstrap !== 'undefined') {
-          const modal = bootstrap.Modal.getInstance(modalEl);
-          if (modal) modal.hide();
-        }
-      })
-      .catch(() => showPOSToast('Error recording movement.', 'error'));
-  }
-
-  function openReturnModal() {
-    const modalEl = document.getElementById('posReturnModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-      const modal = new bootstrap.Modal(modalEl);
-      modal.show();
-    }
-  }
-
-  function lookupReturnOrder() {
-    const q = document.getElementById('returnTxnSearch')?.value?.trim();
-    const container = document.getElementById('returnOrderContainer');
-    if (!q || !container) return;
-
-    container.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Finding invoice...</div>';
-    container.style.display = 'block';
-
-    fetch('../../api/v1/pos/receipt?id=' + encodeURIComponent(q))
-      .then(r => r.json())
-      .then(res => {
-        if (res.status === 'success' && res.data) {
-          const d = res.data;
-          container.innerHTML = `
-            <div style="background:#f8f9fa; border:1px solid var(--color-border); border-radius:6px; padding:12px; margin-top:10px;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:700;">
-                <span>Invoice: ${d.transaction_number}</span>
-                <span>Total: ৳${parseFloat(d.grand_total).toFixed(2)}</span>
-              </div>
-              <div style="font-size:12px; color:var(--color-text-muted); margin-bottom:12px;">Customer: ${d.customer_name} | Date: ${d.date_time}</div>
-              <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:12px;">
-                <thead><tr style="border-bottom:1px solid #dee2e6;"><th style="text-align:left;">Item</th><th style="text-align:center;">Sold</th><th style="text-align:right;">Price</th></tr></thead>
-                <tbody>
-                  ${(d.items || []).map(it => `
-                    <tr style="border-bottom:1px dashed #eee;">
-                      <td style="padding:4px 0;">${it.product_name}</td>
-                      <td style="text-align:center;">${it.quantity}</td>
-                      <td style="text-align:right;">৳${parseFloat(it.unit_price).toFixed(2)}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-              <div style="text-align:right;">
-                <button type="button" onclick="executeQuickReturn('${d.transaction_number}');" class="btn btn-primary" style="padding:6px 14px; font-size:12px; font-weight:700; border-radius:4px;">Process Full Refund</button>
-              </div>
-            </div>
-          `;
-        } else {
-          container.innerHTML = '<div style="color:#e03131; padding:10px;">Invoice not found. Verify order or transaction number.</div>';
-        }
-      })
-      .catch(() => {
-        container.innerHTML = '<div style="color:#e03131; padding:10px;">Error communicating with return service.</div>';
-      });
-  }
-
-  function executeQuickReturn(ref) {
-    if (!confirm('Authorize return & refund for ' + ref + '?')) return;
-    showPOSToast('Refund processed successfully!', 'success');
-    const modalEl = document.getElementById('posReturnModal');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      if (modal) modal.hide();
-    }
-  }
-
-  // 10. Helper Utilities (Toast & Scanner Refocus)
-  function showPOSToast(msg, type = 'info') {
-    const div = document.createElement('div');
-    const bg = type === 'success' ? '#2b8a3e' : (type === 'warning' ? '#f08c00' : (type === 'error' ? '#c92a2a' : '#1c7ed6'));
-    div.style.cssText = `position:fixed; bottom:40px; right:20px; z-index:9999; background:${bg}; color:#fff; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.15); transition:opacity 0.3s;`;
-    div.innerText = msg;
-    document.body.appendChild(div);
-    setTimeout(() => {
-      div.style.opacity = '0';
-      setTimeout(() => div.remove(), 300);
-    }, 2500);
-  }
-
-  function refocusScanner() {
-    setTimeout(() => {
-      const anyModal = document.querySelector('.modal.show');
-      if (!anyModal) {
-        document.getElementById('posFilterSearch')?.focus();
-      }
-    }, 100);
-  }
-
-  function filterPOSCatalog() {
-    const searchEl = document.getElementById('posFilterSearch');
-    const catEl = document.getElementById('posFilterCat');
-    const brandEl = document.getElementById('posFilterBrand');
-    if (!searchEl || !catEl || !brandEl) return;
-    
-    const search = searchEl.value.toLowerCase();
-    const cat = catEl.value;
-    const brand = brandEl.value;
-    
-    const items = document.querySelectorAll('.touch-product-cell');
-    items.forEach(el => {
-      const name = el.getAttribute('data-name') || '';
-      const sku = el.getAttribute('data-sku') || '';
-      const barcode = el.getAttribute('data-barcode') || '';
-      const itemCat = el.getAttribute('data-cat') || '';
-      const itemBrand = el.getAttribute('data-brand') || '';
-      
-      let match = true;
-      if (search && !name.includes(search) && !sku.includes(search) && !barcode.includes(search)) match = false;
-      if (cat && itemCat !== cat) match = false;
-      if (brand && itemBrand !== brand) match = false;
-      
-      el.style.display = match ? 'block' : 'none';
-    });
-  }
-
-  function suspendPOSCart() {
-    const keys = Object.keys(touchCart);
-    if (keys.length === 0) {
-      showPOSToast('Active cart is empty.', 'warning');
-      return;
-    }
-    const notes = prompt('Enter suspension note details (e.g. customer name or token ID):');
-    if (notes === null) return;
-    
-    const customerId = document.getElementById('posCustomerSelect')?.value || '0';
-    const formData = new FormData();
-    formData.append('pos_action', 'hold');
-    formData.append('customer_id', customerId);
-    formData.append('cart_data', JSON.stringify(touchCart));
-    formData.append('hold_notes', notes);
-    formData.append('csrf_token', window.csrfToken || '');
-    
-    fetch('hold-orders.php', { method: 'POST', body: formData })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          showPOSToast('Cart suspended successfully!', 'success');
-          touchCart = {};
-          window.touchCart = touchCart;
-          renderTouchCart();
-        } else {
-          showPOSToast('Failed to suspend cart.', 'error');
-        }
-      });
-  }
-
-  function tryAddProduct(p) {
-    if (p.is_active === 0) {
-      showPOSToast('Product is inactive.', 'warning');
-      return;
-    }
-    if (p.stock <= 0) {
-      showPOSToast('Out of stock.', 'warning');
-      return;
-    }
-    addTouchCartItem(p.id, p.name, p.price, p.stock, p.image || '', p.sku || '', p.unit || 'pcs', p.is_weighted || false);
-  }
-
-  // 11. Initialization & Network Event Listeners
-  function initPOS() {
-    refocusScanner();
-    updateOfflineQueueUI();
-
-    // Online / Offline Listeners
-    window.addEventListener('online', () => {
-      const badge = document.getElementById('posNetworkBadge');
-      if (badge) {
-        badge.style.background = '#e6fcf5';
-        badge.style.color = '#0ca678';
-        badge.style.borderColor = '#c3fae8';
-        badge.innerHTML = '<span style="width:7px; height:7px; border-radius:50%; background:#0ca678; display:inline-block;"></span> Online';
-      }
-      syncOfflineQueueManually();
-    });
-
-    window.addEventListener('offline', () => {
-      const badge = document.getElementById('posNetworkBadge');
-      if (badge) {
-        badge.style.background = '#fff3bf';
-        badge.style.color = '#f08c00';
-        badge.style.borderColor = '#ffe066';
-        badge.innerHTML = '<span style="width:7px; height:7px; border-radius:50%; background:#f08c00; display:inline-block;"></span> Offline Mode';
-      }
-    });
-
-    // Background periodic sync check every 15s
-    setInterval(() => {
-      if (navigator.onLine) {
-        const queue = JSON.parse(localStorage.getItem('groco_pos_offline_queue') || '[]');
-        if (queue.length > 0) {
-          syncOfflineQueueManually();
-        }
-      }
-    }, 15000);
-
-    // Customer search autocomplete
-    const custSearch = document.getElementById('posCustomerSearch');
-    const custDropdown = document.getElementById('posCustomerAutocomplete');
-    if (custSearch && custDropdown) {
-      let custTimeout = null;
-      custSearch.addEventListener('input', () => {
-        clearTimeout(custTimeout);
-        const val = custSearch.value.trim();
-        if (val.length < 1) {
-          custDropdown.innerHTML = '';
-          custDropdown.style.display = 'none';
-          return;
-        }
-        custTimeout = setTimeout(() => {
-          fetch('ajax/search_customer.php?q=' + encodeURIComponent(val))
-            .then(r => r.json())
-            .then(data => {
-              if (data.success && data.customers && data.customers.length > 0) {
-                custDropdown.innerHTML = data.customers.map(c => `
-                  <div onclick='selectPOSCustomer(${JSON.stringify(c)}); document.getElementById("posCustomerAutocomplete").style.display="none";' style="padding:6px 10px; font-size:11px; cursor:pointer; border-bottom:1px solid var(--color-border);">
-                    <strong>${c.full_name}</strong> (${c.phone})
-                    <div style="font-size:9px; color:var(--color-text-faint);">Wallet: ৳${parseFloat(c.wallet_balance).toFixed(2)} | Pts: ${c.reward_points}</div>
-                  </div>
-                `).join('');
-                custDropdown.style.display = 'block';
-              }
-            });
-        }, 200);
-      });
-    }
-
-    // Bind real-time input change listeners for split payments
-    ['splitCash', 'splitCard', 'splitBkash', 'splitWallet', 'splitBank'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.addEventListener('input', updateModalChangeDue);
-        el.addEventListener('change', updateModalChangeDue);
-      }
-    });
-  }
-
-  // Export to window scope
-  window.addTouchCartItem = addTouchCartItem;
-  window.updateTouchQty = updateTouchQty;
-  window.setTouchQtyExact = setTouchQtyExact;
-  window.triggerPriceOverride = triggerPriceOverride;
-  window.renderTouchCart = renderTouchCart;
-  window.recalculatePOSBalances = recalculatePOSBalances;
-  window.filterPOSCatalog = filterPOSCatalog;
-  window.suspendPOSCart = suspendPOSCart;
-  window.selectPOSCustomer = selectPOSCustomer;
-  window.updateLoyaltyUI = updateLoyaltyUI;
-  window.applyQuickCash = applyQuickCash;
+  // Export handlers to global window scope
   window.submitPOSCheckoutFinalist = submitPOSCheckoutFinalist;
   window.checkoutProcess = submitPOSCheckoutFinalist;
   window.confirmPOSSale = confirmPOSSale;
-  window.syncOfflineQueueManually = syncOfflineQueueManually;
-  window.openPettyCashModal = openPettyCashModal;
-  window.submitPettyCashMovement = submitPettyCashMovement;
-  window.openReturnModal = openReturnModal;
-  window.lookupReturnOrder = lookupReturnOrder;
-  window.executeQuickReturn = executeQuickReturn;
+  window.updateModalChangeDue = updateModalChangeDue;
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPOS);
+    document.addEventListener('DOMContentLoaded', initPOSHandlers);
   } else {
-    initPOS();
+    initPOSHandlers();
   }
 })();

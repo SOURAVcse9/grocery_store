@@ -1,357 +1,243 @@
 <?php
 /**
  * ==========================================================================
- * admin/pos/receipts.php — Thermal Printer Printable POS Invoice & Directory
+ * admin/pos/receipts.php — POS receipt printing (58mm / 80mm / A4) + invoice directory
  * ==========================================================================
+ *  ?id=ORDER_ID[&w=58|80|a4]   print one receipt (reprinting NEVER creates a sale)
+ *  (no id)                     searchable invoice directory
+ *
+ *  - Store name / address / phone / currency come from the settings table (nothing hardcoded)
+ *  - First print is logged as pos.receipt_print; every later print is logged as pos.reprint
+ *    and the paper is stamped "DUPLICATE COPY"
+ *  - Only POS counter sales are printable here; cashiers may reprint their OWN sales,
+ *    managers (pos.manage / pos.override) may reprint any
  */
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../public/dbconnect.php';
 require_once __DIR__ . '/../middleware/auth_middleware.php';
+require_once __DIR__ . '/../includes/auth_helpers.php';
+require_once __DIR__ . '/../includes/pos_lib.php';
 
 require_admin_auth();
 require_admin_permission('pos.access');
 
 $pdo = db();
 $orderId = (int) input('id', '0', 'get');
-$format = trim((string) input('format', '80mm', 'get'));
-if (!in_array($format, ['80mm', '58mm', 'a4'], true)) {
-    $format = '80mm';
-}
 
 if ($orderId > 0) {
+    $adminId = (int) current_admin_id();
+    $isManager = has_admin_permission('pos.manage') || has_admin_permission('pos.override');
     try {
-        $posService = pos_service();
-        $receipt = $posService->receipts()->getReceiptData($orderId, false, current_admin_id());
-    } catch (Exception $e) {
-        // Fallback to basic query
-        $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT o.*, u.full_name AS customer_name, u.phone AS customer_phone FROM orders o LEFT JOIN users u ON u.id = o.user_id WHERE o.id = ? AND o.order_number LIKE 'POS-%' LIMIT 1");
         $stmt->execute([$orderId]);
         $order = $stmt->fetch();
         if (!$order) {
-            echo "Order details not found.";
+            http_response_code(404);
+            echo 'POS receipt not found.';
             exit;
         }
-        $stmtItems = $pdo->prepare("
-            SELECT oi.*, COALESCE(oi.product_name, p.name, 'Product') AS product_name 
-            FROM order_items oi
-            LEFT JOIN products p ON p.id = oi.product_id
-            WHERE oi.order_id = ?
-        ");
+        $mk = pos_parse_marker($order['note']) ?? [];
+        if (!$isManager && isset($mk['admin']) && (int) $mk['admin'] !== $adminId) {
+            log_admin_activity('permission_denied', "Attempted to print POS receipt {$order['order_number']} of another cashier");
+            http_response_code(403);
+            echo 'You can only print receipts for your own sales.';
+            exit;
+        }
+
+        $stmtItems = $pdo->prepare('SELECT oi.*, COALESCE(oi.product_name, p.name, \'Product\') AS product_name FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ? ORDER BY oi.id ASC');
         $stmtItems->execute([$orderId]);
-        $receipt = [
-            'store'              => ['name' => 'GroCo Superstore', 'address' => 'Road 4, Mid Badda, Dhaka', 'phone' => '+8801700000000', 'vat_reg_no' => 'BIN-192837465'],
-            'transaction_number' => $order['order_number'],
-            'order_number'       => $order['order_number'],
-            'date_time'          => $order['created_at'],
-            'cashier'            => 'Cashier',
-            'customer_name'      => 'Walk-in Customer',
-            'customer_phone'     => 'N/A',
-            'items'              => $stmtItems->fetchAll(),
-            'subtotal'           => (float)$order['subtotal'],
-            'discount_amount'    => (float)$order['discount_amount'],
-            'tax_amount'         => 0.00,
-            'grand_total'        => (float)$order['total_amount'],
-            'paid_amount'        => (float)$order['total_amount'],
-            'change_amount'      => 0.00,
-            'payments'           => [['method' => $order['payment_method'] ?? 'cash', 'amount' => (float)$order['total_amount']]],
-            'return_policy'      => 'Exchange within 3 days with receipt in original condition.',
-            'thank_you_message'  => 'Thank you for shopping at GroCo Superstore!'
-        ];
+        $items = $stmtItems->fetchAll();
+
+        $cashierName = '';
+        if (!empty($mk['admin'])) {
+            $c = $pdo->prepare('SELECT COALESCE(NULLIF(full_name, \'\'), username) FROM admins WHERE id = ?');
+            $c->execute([(int) $mk['admin']]);
+            $cashierName = (string) $c->fetchColumn();
+        }
+
+        // Was this receipt printed before? (activity log is the audit trail; no schema change needed)
+        $prev = $pdo->prepare("SELECT COUNT(*) FROM admin_activity_logs WHERE activity_type IN ('pos.receipt_print','pos.reprint') AND description LIKE ?");
+        $prev->execute(['%' . $order['order_number'] . '%']);
+        $isCopy = ((int) $prev->fetchColumn() > 0);
+        log_admin_activity($isCopy ? 'pos.reprint' : 'pos.receipt_print', ($isCopy ? 'Reprinted' : 'Printed') . " receipt {$order['order_number']}");
+    } catch (Throwable $e) {
+        error_log('[admin/pos/receipts] load failed: ' . $e->getMessage());
+        http_response_code(500);
+        echo 'Could not load the receipt.';
+        exit;
     }
+
+    $w = strtolower((string) input('w', '80', 'get'));
+    if (!in_array($w, ['58', '80', 'a4'], true)) {
+        $w = '80';
+    }
+    $store = [
+        'name'  => pos_setting($pdo, 'site_name', site_name()),
+        'addr'  => pos_setting($pdo, 'site_address', ''),
+        'phone' => pos_setting($pdo, 'site_phone', ''),
+    ];
+    $cur = pos_setting($pdo, 'site_currency_symbol', '৳');
+    $money = static fn($v) => $cur . number_format((float) $v, 2);
+
+    $gross    = (float) $order['subtotal'];
+    $discount = (float) $order['discount_amount'];
+    $total    = (float) $order['total_amount'];
+    $vat      = max(0.0, round($total - ($gross - $discount), 2));
+    $pays = [];
+    if ($mk) {
+        foreach (['cash' => 'Cash', 'card' => 'Card', 'bkash' => 'bKash / Mobile', 'bank' => 'Bank transfer', 'wallet' => 'Wallet'] as $k => $label) {
+            if ((float) ($mk[$k] ?? 0) > 0) {
+                $pays[$label] = (float) $mk[$k];
+            }
+        }
+    } else {
+        $pays[ucfirst(str_replace('_', ' ', (string) $order['payment_method']))] = $total; // legacy sale without split data
+    }
+    $change = (float) ($mk['change'] ?? 0);
+    $paidTotal = array_sum($pays) + $change;
+    $isVoid = ($order['status'] === 'cancelled');
+    $bodyWidth = $w === 'a4' ? '190mm' : ($w === '58' ? '48mm' : '72mm');
+    $font = $w === 'a4' ? '13px' : ($w === '58' ? '10px' : '12px');
+    header('Cache-Control: no-store');
     ?>
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>POS Receipt — <?= e($receipt['transaction_number']) ?></title>
-        <style>
-            * { box-sizing: border-box; }
-            body {
-                font-family: 'Courier New', Courier, monospace, sans-serif;
-                color: #000;
-                margin: 0;
-                padding: 10px;
-                background: #f1f3f5;
-            }
-            .no-print {
-                display: flex;
-                gap: 8px;
-                justify-content: center;
-                margin-bottom: 16px;
-            }
-            .btn-print {
-                background: #228be6;
-                color: #fff;
-                border: none;
-                padding: 6px 14px;
-                font-size: 12px;
-                font-weight: bold;
-                border-radius: 4px;
-                cursor: pointer;
-                text-decoration: none;
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-            }
-            .btn-format {
-                background: #fff;
-                color: #333;
-                border: 1px solid #ced4da;
-                padding: 6px 12px;
-                font-size: 12px;
-                border-radius: 4px;
-                cursor: pointer;
-                text-decoration: none;
-            }
-            .btn-format.active {
-                background: #339af0;
-                color: #fff;
-                border-color: #339af0;
-            }
-            .receipt-container {
-                background: #fff;
-                margin: 0 auto;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            /* Format sizes */
-            .format-80mm { width: 80mm; max-width: 300px; padding: 12px; font-size: 12px; }
-            .format-58mm { width: 58mm; max-width: 220px; padding: 8px; font-size: 10px; }
-            .format-a4   { width: 100%; max-width: 750px; padding: 30px; font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt <?= e($order['order_number']) ?></title>
+    <style>
+        @page { margin: <?= $w === 'a4' ? '12mm' : '2mm' ?>; }
+        body { font-family: <?= $w === 'a4' ? "Arial, Helvetica, sans-serif" : "'Courier New', Courier, monospace" ?>; font-size: <?= $font ?>; color:#000; margin:0 auto; padding:6px; width:<?= $bodyWidth ?>; background:#fff; }
+        .c { text-align:center; } .r { text-align:right; }
+        h1 { font-size: <?= $w === 'a4' ? '22px' : '14px' ?>; margin:0 0 2px; }
+        p { margin:2px 0; }
+        .line { border-top:1px dashed #000; margin:6px 0; }
+        table { width:100%; border-collapse:collapse; }
+        th { text-align:left; border-bottom:1px solid #000; font-size:<?= $font ?>; }
+        td { vertical-align:top; padding:2px 0; }
+        .row { display:flex; justify-content:space-between; }
+        .strong { font-weight:700; }
+        .stamp { border:2px solid #000; display:inline-block; padding:2px 8px; margin:4px 0; font-weight:700; letter-spacing:1px; }
+        @media screen { .noprint { margin-bottom:8px; } }
+        @media print { .noprint { display:none; } }
+    </style>
+</head>
+<body onload="window.print();">
+    <div class="noprint c">
+        Paper:
+        <?php foreach (['58' => '58mm', '80' => '80mm', 'a4' => 'A4'] as $k => $lbl): ?>
+            <a href="?id=<?= (int) $orderId ?>&amp;w=<?= $k ?>"<?= $k === $w ? ' style="font-weight:700"' : '' ?>><?= $lbl ?></a>&nbsp;
+        <?php endforeach; ?>
+        <button type="button" onclick="window.print()">Print</button>
+    </div>
 
-            .text-center { text-align: center; }
-            .text-right { text-align: right; }
-            .font-bold { font-weight: bold; }
-            .header { margin-bottom: 10px; }
-            .header h1 { font-size: 15px; margin: 0; font-weight: 800; letter-spacing: 0.5px; }
-            .format-58mm .header h1 { font-size: 13px; }
-            .format-a4 .header h1 { font-size: 24px; }
-            .header p { margin: 2px 0; }
-            .divider { border-top: 1px dashed #000; margin: 8px 0; }
-            .format-a4 .divider { border-top: 1px solid #dee2e6; margin: 16px 0; }
-            .item-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-            .item-table th, .item-table td { padding: 3px 0; text-align: left; }
-            .item-table .qty-col { text-align: center; width: 40px; }
-            .item-table .price-col { text-align: right; width: 70px; }
-            .summary-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-            .total-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #000; }
-            .format-58mm .total-row { font-size: 12px; }
-            .format-a4 .total-row { font-size: 18px; border-top: 2px solid #000; }
-            .payments-section { margin-top: 6px; padding-top: 4px; border-top: 1px dotted #666; font-size: 11px; }
-            .format-58mm .payments-section { font-size: 9px; }
-            .footer { margin-top: 14px; font-size: 10px; }
-            .format-58mm .footer { font-size: 8px; }
-            .barcode-box { letter-spacing: 4px; font-weight: bold; font-size: 14px; margin: 8px 0; }
+    <div class="c">
+        <h1><?= e($store['name']) ?></h1>
+        <?php if ($store['addr'] !== ''): ?><p><?= e($store['addr']) ?></p><?php endif; ?>
+        <?php if ($store['phone'] !== ''): ?><p>Phone: <?= e($store['phone']) ?></p><?php endif; ?>
+        <?php if ($isCopy): ?><div class="stamp">DUPLICATE COPY</div><?php endif; ?>
+        <?php if ($isVoid): ?><div class="stamp">VOIDED SALE</div><?php endif; ?>
+    </div>
+    <div class="line"></div>
+    <p>Receipt: <strong><?= e($order['order_number']) ?></strong></p>
+    <p>Date: <?= e(date('Y-m-d H:i', strtotime((string) $order['created_at']))) ?></p>
+    <?php if ($cashierName !== ''): ?><p>Cashier: <?= e($cashierName) ?></p><?php endif; ?>
+    <?php if (!empty($mk['shift'])): ?><p>Register/Shift: #<?= (int) $mk['shift'] ?></p><?php endif; ?>
+    <p>Customer: <?= e($order['customer_name'] ?? 'Walk-in Customer') ?></p>
+    <div class="line"></div>
 
-            @media print {
-                body { background: #fff; padding: 0; }
-                .no-print { display: none !important; }
-                .receipt-container { box-shadow: none; margin: 0; }
-                .format-80mm { width: 80mm; max-width: 80mm; padding: 0; }
-                .format-58mm { width: 58mm; max-width: 58mm; padding: 0; }
-                .format-a4 { width: 100%; padding: 0; }
-            }
-        </style>
-    </head>
-    <body>
+    <table>
+        <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Total</th></tr></thead>
+        <tbody>
+        <?php foreach ($items as $row): ?>
+            <tr>
+                <td><?= e($row['product_name']) ?></td>
+                <td class="r"><?= e(pos_fmt_qty((float) $row['quantity'])) ?></td>
+                <td class="r"><?= e(number_format((float) $row['price'], 2)) ?></td>
+                <td class="r"><?= e(number_format((float) $row['line_total'], 2)) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <div class="line"></div>
 
-        <div class="no-print">
-            <button class="btn-print" onclick="window.print();">🖨️ Print Receipt</button>
-            <a href="?id=<?= $orderId ?>&format=80mm" class="btn-format <?= $format === '80mm' ? 'active' : '' ?>">80mm Thermal</a>
-            <a href="?id=<?= $orderId ?>&format=58mm" class="btn-format <?= $format === '58mm' ? 'active' : '' ?>">58mm Thermal</a>
-            <a href="?id=<?= $orderId ?>&format=a4" class="btn-format <?= $format === 'a4' ? 'active' : '' ?>">A4 Invoice</a>
-            <button class="btn-format" onclick="window.close();">✕ Close</button>
-        </div>
+    <div class="row"><span>Subtotal</span><span><?= e($money($gross)) ?></span></div>
+    <?php if ($discount > 0): ?><div class="row"><span>Discount</span><span>-<?= e($money($discount)) ?></span></div><?php endif; ?>
+    <?php if ($vat > 0): ?><div class="row"><span>VAT / Tax</span><span><?= e($money($vat)) ?></span></div><?php endif; ?>
+    <div class="row strong" style="font-size:<?= $w === 'a4' ? '16px' : '13px' ?>;"><span>TOTAL</span><span><?= e($money($total)) ?></span></div>
+    <div class="line"></div>
+    <?php foreach ($pays as $label => $amt): ?>
+        <div class="row"><span><?= e($label) ?></span><span><?= e($money($amt)) ?></span></div>
+    <?php endforeach; ?>
+    <div class="row"><span>Paid</span><span><?= e($money($paidTotal)) ?></span></div>
+    <div class="row"><span>Change</span><span><?= e($money($change)) ?></span></div>
 
-        <div class="receipt-container format-<?= htmlspecialchars($format) ?>">
-            
-            <div class="header text-center">
-                <h1><?= e($receipt['store']['name'] ?? 'GROCO SUPERSTORE') ?></h1>
-                <p><?= e($receipt['store']['address'] ?? 'Road 4, Mid Badda, Dhaka') ?></p>
-                <p>Phone: <?= e($receipt['store']['phone'] ?? '+8801700000000') ?></p>
-                <?php if (!empty($receipt['store']['vat_reg_no'])): ?>
-                    <p>VAT BIN: <?= e($receipt['store']['vat_reg_no']) ?></p>
-                <?php endif; ?>
-                <div class="divider"></div>
-                <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px;">
-                    <span>Txn: <strong><?= e($receipt['transaction_number']) ?></strong></span>
-                    <span><?= date('d/m/Y H:i', strtotime($receipt['date_time'])) ?></span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:10px;">
-                    <span>Cashier: <?= e($receipt['cashier']) ?></span>
-                    <span>Cust: <?= e($receipt['customer_name']) ?></span>
-                </div>
-            </div>
-
-            <div class="divider"></div>
-
-            <table class="item-table">
-                <thead>
-                    <tr style="border-bottom: 1px dashed #000;">
-                        <th>Item</th>
-                        <th class="qty-col">Qty</th>
-                        <th class="price-col">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($receipt['items'] as $it): 
-                        $pName = $it['product_name'] ?? ($it['name'] ?? 'Item');
-                        $qty = (float)($it['quantity'] ?? 1);
-                        $uPrice = (float)($it['unit_price'] ?? ($it['price'] ?? 0));
-                        $lineTot = (float)($it['line_total'] ?? ($qty * $uPrice));
-                        $unit = $it['unit'] ?? 'pcs';
-                    ?>
-                        <tr>
-                            <td>
-                                <div><?= e($pName) ?></div>
-                                <div style="font-size:9px; color:#555;">@ ৳<?= number_format($uPrice, 2) ?><?= $unit !== 'pcs' ? '/' . e($unit) : '' ?></div>
-                            </td>
-                            <td class="qty-col"><?= $qty ?></td>
-                            <td class="price-col">৳<?= number_format($lineTot, 2) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-
-            <div class="divider"></div>
-
-            <div class="summary-row">
-                <span>Subtotal:</span>
-                <span>৳<?= number_format((float)$receipt['subtotal'], 2) ?></span>
-            </div>
-            <?php if ((float)$receipt['discount_amount'] > 0): ?>
-                <div class="summary-row" style="color: #c92a2a;">
-                    <span>Discount:</span>
-                    <span>-৳<?= number_format((float)$receipt['discount_amount'], 2) ?></span>
-                </div>
-            <?php endif; ?>
-            <?php if ((float)$receipt['tax_amount'] > 0): ?>
-                <div class="summary-row">
-                    <span>VAT (incl):</span>
-                    <span>৳<?= number_format((float)$receipt['tax_amount'], 2) ?></span>
-                </div>
-            <?php endif; ?>
-
-            <div class="total-row">
-                <span>GRAND TOTAL:</span>
-                <span>৳<?= number_format((float)$receipt['grand_total'], 2) ?></span>
-            </div>
-
-            <div class="payments-section">
-                <div style="font-weight:bold; margin-bottom:2px;">Tender Breakdown:</div>
-                <?php if (!empty($receipt['payments'])): ?>
-                    <?php foreach ($receipt['payments'] as $pay): ?>
-                        <div class="summary-row">
-                            <span style="text-transform: capitalize;"><?= e($pay['payment_method'] ?? ($pay['method'] ?? 'Cash')) ?>:</span>
-                            <span>৳<?= number_format((float)$pay['amount'], 2) ?></span>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div class="summary-row">
-                        <span>Paid:</span>
-                        <span>৳<?= number_format((float)$receipt['paid_amount'], 2) ?></span>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ((float)$receipt['change_amount'] > 0): ?>
-                    <div class="summary-row" style="font-weight:bold; margin-top:2px;">
-                        <span>Change Given:</span>
-                        <span>৳<?= number_format((float)$receipt['change_amount'], 2) ?></span>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="footer text-center">
-                <div class="barcode-box">*<?= e($receipt['transaction_number']) ?>*</div>
-                <p class="font-bold"><?= e($receipt['thank_you_message']) ?></p>
-                <p><?= e($receipt['return_policy']) ?></p>
-                <p style="font-size:8px; color:#666; margin-top:6px;">Printed: <?= date('Y-m-d H:i:s') ?> | System: GroCo POS v2.6 Enterprise</p>
-            </div>
-
-        </div>
-
-        <script>
-            // Auto-trigger print dialog after render
-            window.addEventListener('DOMContentLoaded', () => {
-                if (window.location.search.indexOf('noprint') === -1) {
-                    setTimeout(() => window.print(), 300);
-                }
-            });
-        </script>
-    </body>
-    </html>
+    <div class="line"></div>
+    <div class="c" style="font-size:<?= $w === '58' ? '9px' : '11px' ?>;">
+        <p>Thank you for shopping with <?= e($store['name']) ?>!</p>
+    </div>
+</body>
+</html>
     <?php
     exit;
 }
 
-// OTHERWISE RENDER DIRECTORY LIST VIEW IN DASHBOARD LAYOUT
-$pageTitle = 'POS Invoices & Transaction Receipts — GroCo Admin';
+// OTHERWISE RENDER DIRECTORY LIST VIEW IN LAYOUT
+$pageTitle = 'POS Invoices — GroCo Admin';
 require_once __DIR__ . '/../layouts/dashboard_layout.php';
+$q = trim(input('q', '', 'get'));
 ?>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5); flex-wrap:wrap; gap:16px;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5);">
     <div>
-        <h1 style="font-size:var(--fs-xl); font-weight:800; color:var(--color-text); margin:0;">POS Sales Invoices & Receipts</h1>
-        <p style="font-size:var(--fs-sm); color:var(--color-text-muted); margin:4px 0 0 0;">Inspect counter sales records, print thermal slips (80mm/58mm), or export transaction history.</p>
+        <h1 style="font-size:var(--fs-xl); font-weight:800; color:var(--color-text); margin:0;">POS Invoices Directory</h1>
+        <p style="font-size:var(--fs-sm); color:var(--color-text-muted); margin:4px 0 0 0;">Search a sale and reprint it on 58mm, 80mm or A4 paper. Reprinting never creates a sale and is logged.</p>
     </div>
-    <div style="display:flex; gap:10px;">
-        <a href="index.php" class="btn btn-primary" style="border-radius:var(--radius-pill); font-weight:700;"><i class="fas fa-cash-register"></i> Open POS Terminal</a>
-    </div>
+    <a href="index.php" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700;"><i class="fas fa-arrow-left"></i> POS Terminal</a>
 </div>
+
+<form method="get" style="display:flex; gap:8px; margin-bottom:var(--space-4);">
+    <label for="rcptSearch" class="sr-only" style="position:absolute; left:-9999px;">Search receipt number</label>
+    <input id="rcptSearch" type="search" name="q" value="<?= e($q) ?>" placeholder="Search receipt no. e.g. POS-20261007" style="flex:1; padding:10px 14px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-text);">
+    <button type="submit" class="btn btn-primary" style="border:none; border-radius:var(--radius-pill); font-weight:700;"><i class="fas fa-magnifying-glass"></i> Search</button>
+</form>
 
 <div class="dashboard-card" style="padding:0; overflow:hidden;">
     <div class="admin-table-wrapper" style="border:none;">
         <table class="admin-data-table" style="font-size:13px;">
             <thead>
                 <tr>
-                    <th style="padding:16px 20px;">Transaction #</th>
-                    <th style="padding:16px 20px;">Order #</th>
-                    <th style="padding:16px 20px;">Customer</th>
-                    <th style="padding:16px 20px; text-align:right;">Subtotal</th>
-                    <th style="padding:16px 20px; text-align:right;">Discount</th>
-                    <th style="padding:16px 20px; text-align:right;">Total Due</th>
-                    <th style="padding:16px 20px;">Date & Time</th>
-                    <th style="padding:16px 20px; width:220px; text-align:right;">Print Thermal Formats</th>
+                    <th style="padding:16px 20px;">Order Number</th>
+                    <th style="padding:16px 20px; text-align:right; width:150px;">Order Subtotal</th>
+                    <th style="padding:16px 20px; text-align:right; width:150px;">Discount</th>
+                    <th style="padding:16px 20px; text-align:right; width:180px;">Total Due</th>
+                    <th style="padding:16px 20px; width:220px;">Created Date</th>
+                    <th style="padding:16px 20px; width:150px; text-align:right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php
                 try {
-                    $invoices = $pdo->query("
-                        SELECT o.*, pt.transaction_number, pt.id as pos_tx_id, u.full_name as cust_name
-                        FROM orders o
-                        LEFT JOIN pos_transactions pt ON pt.order_id = o.id
-                        LEFT JOIN users u ON u.id = o.user_id
-                        WHERE o.order_number LIKE 'POS-%' OR pt.id IS NOT NULL
-                        ORDER BY o.created_at DESC 
-                        LIMIT 50
-                    ")->fetchAll();
+                    $sqlList = "SELECT * FROM orders WHERE order_number LIKE 'POS-%'" . ($q !== '' ? ' AND order_number LIKE :q' : '') . ' ORDER BY created_at DESC LIMIT 50';
+                    $stList = $pdo->prepare($sqlList);
+                    $stList->execute($q !== '' ? [':q' => '%' . addcslashes($q, '%_\\') . '%'] : []);
+                    $orders = $stList->fetchAll();
                 } catch (PDOException $e) {
-                    $invoices = [];
+                    $orders = [];
                 }
-                if (!empty($invoices)):
-                    foreach ($invoices as $row):
-                        $txNum = $row['transaction_number'] ?: $row['order_number'];
-                        $custName = $row['cust_name'] ?: 'Walk-in Customer';
+                if (!empty($orders)):
+                    foreach ($orders as $row):
                 ?>
                     <tr style="border-bottom:1px solid var(--color-border); vertical-align:middle;">
-                        <td style="padding:12px 20px;"><strong style="color:var(--admin-color-primary);"><?= e($txNum) ?></strong></td>
-                        <td style="padding:12px 20px; font-weight:600;"><?= e($row['order_number']) ?></td>
-                        <td style="padding:12px 20px;"><?= e($custName) ?></td>
+                        <td style="padding:12px 20px;"><strong><?= e($row['order_number']) ?></strong></td>
                         <td style="padding:12px 20px; text-align:right; color:var(--color-text-muted);">৳<?= number_format((float)$row['subtotal'], 2) ?></td>
                         <td style="padding:12px 20px; text-align:right; color:#e03131;">-৳<?= number_format((float)$row['discount_amount'], 2) ?></td>
                         <td style="padding:12px 20px; text-align:right; font-weight:800; color:var(--color-primary);">৳<?= number_format((float)$row['total_amount'], 2) ?></td>
                         <td style="padding:12px 20px; color:var(--color-text-faint);"><?= date('M d, Y H:i', strtotime($row['created_at'])) ?></td>
                         <td style="padding:12px 20px; text-align:right;">
-                            <div style="display:inline-flex; gap:4px;">
-                                <a href="?id=<?= $row['id'] ?>&format=80mm" target="_blank" class="btn btn-secondary" style="padding:3px 8px; font-size:10px; border-radius:var(--radius-sm);"><i class="fas fa-print"></i> 80mm</a>
-                                <a href="?id=<?= $row['id'] ?>&format=58mm" target="_blank" class="btn btn-secondary" style="padding:3px 8px; font-size:10px; border-radius:var(--radius-sm);"><i class="fas fa-receipt"></i> 58mm</a>
-                                <a href="?id=<?= $row['id'] ?>&format=a4" target="_blank" class="btn btn-secondary" style="padding:3px 8px; font-size:10px; border-radius:var(--radius-sm);"><i class="fas fa-file-invoice"></i> A4</a>
-                            </div>
+                            <?php foreach (['58' => '58', '80' => '80', 'a4' => 'A4'] as $wk => $wl): ?><a href="?id=<?= (int) $row['id'] ?>&amp;w=<?= $wk ?>" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;" title="Reprint (<?= $wl ?>)"><i class="fas fa-print"></i> <?= $wl ?></a> <?php endforeach; ?>
                         </td>
                     </tr>
                 <?php
@@ -359,7 +245,7 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
                 else:
                 ?>
                     <tr>
-                        <td colspan="8" style="padding:32px; text-align:center; color:var(--color-text-faint);">No counter sales invoices logged in the database yet.</td>
+                        <td colspan="6" style="padding:32px; text-align:center; color:var(--color-text-faint);">No counter sales invoices logged in the specified period.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
@@ -370,3 +256,4 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
+

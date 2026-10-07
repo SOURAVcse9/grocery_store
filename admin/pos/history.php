@@ -10,6 +10,7 @@ declare(strict_types=1);
 $pageTitle = 'POS Sales History — GroCo Admin';
 require_once __DIR__ . '/../layouts/dashboard_layout.php';
 require_admin_permission('pos.access');
+require_once __DIR__ . '/../includes/pos_lib.php';
 
 $pdo = db();
 $error = null;
@@ -23,68 +24,19 @@ if (method_is('post') && input('action', '') === 'void') {
         $error = 'You do not have administrative permission to void invoice checkouts.';
     } else {
         $orderId = (int) input('order_id', '0');
+        $voidReason = (string) input('reason', '');
 
         try {
-            $pdo->beginTransaction();
-
-            // Load order status
-            $stmtOrder = $pdo->prepare("SELECT * FROM orders WHERE id = ? FOR UPDATE");
-            $stmtOrder->execute([$orderId]);
-            $order = $stmtOrder->fetch();
-
-            if (!$order || $order['status'] === 'cancelled') {
-                throw new Exception("Selected order cannot be voided.");
-            }
-
-            // Restore stock levels and log stock movements
-            $stmtItems = $pdo->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
-            $stmtItems->execute([$orderId]);
-            $items = $stmtItems->fetchAll();
-
-            $stmtUpdateStock = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
-            $stmtLog = $pdo->prepare("
-                INSERT INTO inventory_logs (product_id, admin_id, type, quantity, remaining_stock, note, created_at)
-                VALUES (:pid, :admin_id, 'stock_in', :qty, :rem, :note, NOW())
-            ");
-            $stmtGetStock = $pdo->prepare("SELECT stock FROM products WHERE id = ?");
-
-            foreach ($items as $item) {
-                $pid = (int)$item['product_id'];
-                $qty = (int)$item['quantity'];
-
-                $stmtUpdateStock->execute([$qty, $pid]);
-                
-                $stmtGetStock->execute([$pid]);
-                $remStock = (int)$stmtGetStock->fetchColumn();
-
-                $stmtLog->execute([
-                    'pid'      => $pid,
-                    'admin_id' => current_admin_id(),
-                    'qty'      => $qty,
-                    'rem'      => $remStock,
-                    'note'     => "Voided POS Counter sales transaction Order #{$order['order_number']}"
-                ]);
-            }
-
-            // Update order status to cancelled
-            $stmtCancel = $pdo->prepare("UPDATE orders SET status = 'cancelled', payment_status = 'refunded' WHERE id = ?");
-            $stmtCancel->execute([$orderId]);
-
-            // Adjust general ledger (payout refund entry)
-            $pdo->prepare("
-                INSERT INTO transactions (type, category_id, amount, reference, payment_method, reconciled, created_at)
-                VALUES ('expense', NULL, ?, ?, 'cash', 1, NOW())
-            ")->execute([$order['total_amount'], "Voided POS Invoice refund: {$order['order_number']}"]);
-
-            $pdo->commit();
-            log_admin_activity('pos.void_sale', "Voided checkout invoice sales for order ID: {$orderId} / #{$order['order_number']}");
-            $success = "Sales Invoice #{$order['order_number']} voided and inventory stock replenished successfully.";
-        } catch (Exception $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            error_log('[admin/pos/history] void failed: ' . $e->getMessage());
+            // Single hardened implementation (includes/pos_lib.php): POS sales only, no void after returns,
+            // reason mandatory, exact stock restore, wallet/points reversal, ledger reversal, original kept.
+            $v = pos_void_sale($pdo, $orderId, $voidReason, (int) current_admin_id());
+            log_admin_activity('pos.void_sale', "Voided POS sale {$v['order_number']} (order ID {$orderId}). Reason: " . pos_clip($voidReason, 250));
+            $success = 'Sales invoice #' . $v['order_number'] . ' voided and inventory stock replenished successfully.';
+        } catch (PosException $e) {
             $error = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log('[admin/pos/history] void failed: ' . $e->getMessage());
+            $error = 'The void failed due to a server error. Nothing was changed.';
         }
     }
 }
@@ -185,9 +137,10 @@ try {
                                     <a href="receipts.php?id=<?= $row['id'] ?>" target="_blank" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); text-decoration:none;"><i class="fas fa-print"></i> Reprint</a>
                                     
                                     <?php if (!$isCancelled && has_admin_permission('pos.void')): ?>
-                                        <form method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to void this invoice sale?');">
+                                        <form method="post" style="display:inline;" onsubmit="var r = prompt('Reason for voiding this sale (required):'); if (!r || !r.trim()) { return false; } this.reason.value = r.trim(); return confirm('Void this invoice sale? Stock is restored and the ledger reversed.');">
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="action" value="void">
+                                            <input type="hidden" name="reason" value="">
                                             <input type="hidden" name="order_id" value="<?= $row['id'] ?>">
                                             <button type="submit" class="btn btn-secondary" style="padding:4px 8px; font-size:10px; border-radius:var(--radius-sm); background:#f03e3e; color:#fff; border:none; cursor:pointer;"><i class="fas fa-ban"></i> Void</button>
                                         </form>

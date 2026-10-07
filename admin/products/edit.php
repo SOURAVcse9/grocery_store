@@ -264,6 +264,8 @@ if (method_is('post')) {
                                     } catch (Exception $gEx) {
                                         error_log('[admin/products/edit] Gallery upload fail: ' . $gEx->getMessage());
                                     }
+                                }
+                            }
                         }
 
                         log_admin_activity('products.edit', "Updated product details: '{$name}'");
