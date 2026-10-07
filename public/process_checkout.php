@@ -28,7 +28,7 @@ $paymentMethod = input('payment_method', 'cod');
 $note = trim(input('note', ''));
 
 // Validate Payment Method
-if (!in_array($paymentMethod, ['cod', 'card', 'bkash', 'nagad', 'rocket', 'sslcommerz'], true)) {
+if (!in_array($paymentMethod, ['cod', 'card', 'mobile_banking', 'bkash', 'nagad', 'rocket', 'sslcommerz'], true)) {
     json_response(false, 'Invalid payment method selected.', [], 400);
 }
 
@@ -43,13 +43,19 @@ $city = '';
 $postalCode = '';
 
 if (is_logged_in() && $addressOption !== 'new') {
-    // Validate saved address ownership
+    // Validate saved address ownership & load recipient details
     $addressId = (int) $addressOption;
-    $addrStmt = $pdo->prepare('SELECT id FROM addresses WHERE id = :id AND user_id = :uid LIMIT 1');
+    $addrStmt = $pdo->prepare('SELECT id, recipient_name, phone, address_line1, city, postal_code FROM addresses WHERE id = :id AND user_id = :uid LIMIT 1');
     $addrStmt->execute(['id' => $addressId, 'uid' => current_user_id()]);
-    if (!$addrStmt->fetch()) {
+    $savedAddress = $addrStmt->fetch();
+    if (!$savedAddress) {
         json_response(false, 'Selected shipping address is invalid.', [], 400);
     }
+    $recipientName = (string)$savedAddress['recipient_name'];
+    $phone = (string)$savedAddress['phone'];
+    $addressLine1 = (string)$savedAddress['address_line1'];
+    $city = (string)$savedAddress['city'];
+    $postalCode = (string)($savedAddress['postal_code'] ?? '');
 } else {
     // Validate new address inputs
     $recipientName = trim(input('recipient_name', ''));
@@ -259,9 +265,12 @@ try {
     // Generate secure order number: ORD-[Ymd]-[Random bytes hex]
     $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
 
+    // Normalize DB payment method
+    $dbPaymentMethod = in_array($paymentMethod, ['bkash', 'nagad', 'rocket'], true) ? 'mobile_banking' : $paymentMethod;
+
     $orderInsert = $pdo->prepare('
-        INSERT INTO orders (order_number, user_id, address_id, coupon_id, subtotal, discount_amount, delivery_charge, total_amount, payment_method, payment_status, status, note, created_at, updated_at)
-        VALUES (:order_num, :uid, :address_id, :coupon_id, :subtotal, :discount, :delivery, :total, :method, \'unpaid\', \'pending\', :note, NOW(), NOW())
+        INSERT INTO orders (order_number, user_id, address_id, coupon_id, subtotal, discount_amount, delivery_charge, total_amount, payment_method, payment_status, inventory_deducted, status, note, created_at, updated_at)
+        VALUES (:order_num, :uid, :address_id, :coupon_id, :subtotal, :discount, :delivery, :total, :method, \'unpaid\', 1, \'pending\', :note, NOW(), NOW())
     ');
     $orderInsert->execute([
         'order_num'  => $orderNumber,
@@ -272,7 +281,7 @@ try {
         'discount'   => $discountAmount,
         'delivery'   => $deliveryCharge,
         'total'      => $grandTotal,
-        'method'     => $paymentMethod,
+        'method'     => $dbPaymentMethod,
         'note'       => $note
     ]);
     
@@ -349,14 +358,37 @@ try {
         'email'        => !is_logged_in() ? trim(input('email', '')) : current_user()['email']
     ];
 
-    $redirectUrl = url_for('thank-you.php');
-    if ($paymentMethod !== 'cod') {
-        $redirectUrl = url_for('payment-gateway.php?order_id=' . $orderId);
+    if ($paymentMethod === 'cod') {
+        $redirectUrl = url_for('thank-you.php');
+        json_response(true, 'Order placed successfully!', [
+            'redirect' => $redirectUrl
+        ]);
     }
 
-    json_response(true, 'Order placed successfully!', [
-        'redirect' => $redirectUrl
-    ]);
+    // Online Payment via SSLCOMMERZ
+    require_once __DIR__ . '/includes/PaymentService.php';
+    $paymentService = new PaymentService($pdo);
+    $shippingPayload = [
+        'name'     => $recipientName,
+        'phone'    => $phone,
+        'address1' => $addressLine1,
+        'city'     => $city,
+        'postal'   => $postalCode
+    ];
+
+    $onlineResult = $paymentService->initiateOnlinePayment($orderId, $userId, $shippingPayload, $paymentMethod);
+
+    if ($onlineResult['success'] && !empty($onlineResult['gateway_url'])) {
+        json_response(true, 'Order placed! Redirecting to secure SSLCOMMERZ gateway...', [
+            'redirect' => $onlineResult['gateway_url'],
+            'tran_id'  => $onlineResult['tran_id']
+        ]);
+    } else {
+        // Fallback to retry payment page if gateway session could not be established immediately
+        json_response(true, 'Order placed! Proceeding to payment...', [
+            'redirect' => url_for('order-pay.php?order_id=' . $orderId . '&notice=' . urlencode($onlineResult['error'] ?? 'Please complete payment.'))
+        ]);
+    }
 
 } catch (PDOException $e) {
     $pdo->rollBack();

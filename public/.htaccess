@@ -27,6 +27,8 @@ ServerSignature Off
     RewriteRule ^brand/([a-zA-Z0-9_-]+)/?$ products.php?brand=$1 [L,QSA]
     RewriteRule ^search/?$ search.php [L,QSA]
     RewriteRule ^categories/?$ categories.php [L,QSA]
+    RewriteRule ^cart/?$ cart.php [L,QSA]
+    RewriteRule ^checkout/?$ checkout.php [L,QSA]
     RewriteRule ^sitemap\.xml$ sitemap.php [L]
     RewriteRule ^robots\.txt$ robots.php [L]
 

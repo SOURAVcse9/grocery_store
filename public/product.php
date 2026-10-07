@@ -742,54 +742,7 @@ require_once __DIR__ . '/header.php';
         });
     }
 
-    // 5. Add to Cart inside product details
-    const addBtn = document.getElementById('detailBtnAdd');
-    addBtn?.addEventListener('click', async () => {
-        const pId = addBtn.dataset.productId;
-        const qty = qtyInput ? qtyInput.value : '1';
-
-        const originalText = addBtn.innerHTML;
-        addBtn.disabled = true;
-        addBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
-
-        const json = await window.apiPost('ajax/add_to_cart.php', {
-            product_id: pId,
-            quantity: qty
-        });
-
-        addBtn.disabled = false;
-        addBtn.innerHTML = originalText;
-
-        if (json.success) {
-            window.showToast?.(json.message, 'success');
-            const cartBadge = document.getElementById('cartCount');
-            if (cartBadge && json.data?.cart_count !== undefined) {
-                cartBadge.textContent = json.data.cart_count.toString();
-            }
-        }
-    });
-
-    // Buy Now inside product details
-    const buyBtn = document.getElementById('detailBtnBuy');
-    buyBtn?.addEventListener('click', async () => {
-        const pId = buyBtn.dataset.productId;
-        const qty = qtyInput ? qtyInput.value : '1';
-
-        buyBtn.disabled = true;
-
-        const json = await window.apiPost('ajax/add_to_cart.php', {
-            product_id: pId,
-            quantity: qty
-        });
-
-        if (json.success) {
-            window.location.href = 'checkout.php';
-        } else {
-            buyBtn.disabled = false;
-        }
-    });
-
-    // 6. Frequently Bought Together (FBT) calculations
+    // 5. Frequently Bought Together (FBT) calculations
     const fbtContainer = document.querySelector('.fbt-container');
     if (fbtContainer) {
         const fbtCheckboxes = fbtContainer.querySelectorAll('.fbt-checkbox');

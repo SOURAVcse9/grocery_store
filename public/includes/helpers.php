@@ -306,9 +306,16 @@ function is_active_page(string $page): bool
 function input(string $key, string $default = '', string $method = 'post'): string
 {
     $source = $method === 'get' ? $_GET : $_POST;
+    if (empty($source) && $method === 'post' && !empty($_SERVER['CONTENT_TYPE']) && str_contains($_SERVER['CONTENT_TYPE'], 'application/json')) {
+        static $jsonInput = null;
+        if ($jsonInput === null) {
+            $jsonInput = json_decode((string) file_get_contents('php://input'), true) ?: [];
+        }
+        $source = $jsonInput;
+    }
     $value = $source[$key] ?? $default;
 
-    return is_string($value) ? trim($value) : $default;
+    return is_scalar($value) ? trim((string) $value) : $default;
 }
 
 /**

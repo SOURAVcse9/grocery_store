@@ -80,6 +80,16 @@ $currentUri = $_SERVER['REQUEST_URI'];
                 </li>
             <?php endif; ?>
 
+            <!-- Payments & Gateways -->
+            <?php if (has_admin_permission('orders.view') || has_admin_permission('reports.view')): ?>
+                <li>
+                    <a href="<?= BASE_URL ?>/../admin/payments/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/payments/') ? 'active' : '' ?>">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Payments Ledger</span>
+                    </a>
+                </li>
+            <?php endif; ?>
+
             <!-- Customers -->
             <?php if (has_admin_permission('customers.view')): ?>
                 <li>

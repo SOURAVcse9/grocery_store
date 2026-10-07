@@ -213,9 +213,9 @@ try {
                     <?php 
                     $first = true;
                     foreach (array_keys($faqsList) as $catName): 
-                        $catSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $catName));
+                        $catSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$catName));
                     ?>
-                        <li><a href="#<?= $catSlug ?>" class="faq-nav-link <?= $first ? 'active' : '' ?>"><i class="fas fa-circle-question"></i> <?= e($catName) ?></a></li>
+                        <li><a href="#<?= $catSlug ?>" class="faq-nav-link <?= $first ? 'active' : '' ?>"><i class="fas fa-circle-question"></i> <?= e((string)$catName) ?></a></li>
                     <?php 
                         $first = false;
                     endforeach; 
@@ -226,10 +226,10 @@ try {
             <!-- Right: Accordion content -->
             <div class="faq-contents">
                 <?php foreach ($faqsList as $catName => $itemsList): 
-                    $catSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $catName));
+                    $catSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$catName));
                 ?>
                     <div class="faq-group-wrapper" id="<?= $catSlug ?>">
-                        <h2 class="faq-group-title"><i class="fas fa-circle-question"></i> <?= e($catName) ?> Questions</h2>
+                        <h2 class="faq-group-title"><i class="fas fa-circle-question"></i> <?= e((string)$catName) ?> Questions</h2>
                         
                         <?php foreach ($itemsList as $f): ?>
                             <div class="faq-item">
