@@ -139,59 +139,6 @@
           }
         });
       }
-
-      // Add to Cart inside Quick View
-      const addToCartBtn = container.querySelector('.qv-btn-add');
-      addToCartBtn?.addEventListener('click', async () => {
-        const productId = addToCartBtn.dataset.productId;
-        const quantity = qtyInput ? qtyInput.value : '1';
-
-        const originalHtml = addToCartBtn.innerHTML;
-        addToCartBtn.disabled = true;
-        addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
-
-        const json = await window.apiPost('ajax/add_to_cart.php', {
-          product_id: productId,
-          quantity: quantity
-        });
-
-        addToCartBtn.disabled = false;
-        addToCartBtn.innerHTML = originalHtml;
-
-        if (json.success) {
-          window.showToast?.(json.message, 'success');
-          // Update cart badge in header
-          const badge = document.getElementById('cartCount');
-          if (badge && json.data?.cart_count !== undefined) {
-            badge.textContent = json.data.cart_count.toString();
-          }
-          closeModal();
-        }
-      });
-
-      // Buy Now inside Quick View
-      const buyNowBtn = container.querySelector('.qv-btn-buy');
-      buyNowBtn?.addEventListener('click', async () => {
-        const productId = buyNowBtn.dataset.productId;
-        const quantity = qtyInput ? qtyInput.value : '1';
-
-        const originalHtml = buyNowBtn.innerHTML;
-        buyNowBtn.disabled = true;
-        buyNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
-
-        const json = await window.apiPost('ajax/add_to_cart.php', {
-          product_id: productId,
-          quantity: quantity
-        });
-
-        if (json.success) {
-          // Redirect to checkout page directly
-          window.location.href = 'checkout.php';
-        } else {
-          buyNowBtn.disabled = false;
-          buyNowBtn.innerHTML = originalHtml;
-        }
-      });
     }
   });
 })();

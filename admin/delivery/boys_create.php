@@ -110,4 +110,4 @@ if (method_is('post')) {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

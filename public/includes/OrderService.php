@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/CacheService.php';
 require_once __DIR__ . '/QueueService.php';
+require_once __DIR__ . '/EventDispatcher.php';
 
 class OrderService
 {
@@ -151,7 +152,20 @@ class OrderService
             }
 
             $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
-            $userId = !empty($orderData['user_id']) ? (int)$orderData['user_id'] : null;
+            $userId = !empty($orderData['user_id']) ? (int)$orderData['user_id'] : 0;
+            if ($userId <= 0) {
+                // Fetch first valid customer id as fallback for guest orders
+                $uStmt = $this->pdo->query("SELECT id FROM users ORDER BY id ASC LIMIT 1");
+                $userId = (int)($uStmt->fetchColumn() ?: 1);
+            }
+
+            $rawPm = strtolower((string)($orderData['payment_method'] ?? 'cod'));
+            $paymentMethod = match ($rawPm) {
+                'card', 'stripe', 'credit_card' => 'card',
+                'mobile_banking', 'bkash', 'nagad', 'rocket' => 'mobile_banking',
+                default => 'cod'
+            };
+
             $discount = (float)($orderData['discount_amount'] ?? 0.0);
             $deliveryFee = (float)($orderData['delivery_charge'] ?? ($orderData['delivery_fee'] ?? 0.0));
             $totalAmount = max(0.0, ($subtotal + $deliveryFee - $discount));
@@ -177,7 +191,7 @@ class OrderService
                 $discount,
                 $deliveryFee,
                 $totalAmount,
-                $orderData['payment_method'] ?? 'cod',
+                $paymentMethod,
                 $orderData['payment_status'] ?? 'unpaid',
                 $orderData['note'] ?? ''
             ]);
@@ -204,6 +218,14 @@ class OrderService
 
             $this->pdo->commit();
             CacheService::invalidateCatalog();
+
+            EventDispatcher::dispatch('order.created', [
+                'order_id'     => $orderId,
+                'order_number' => $orderNumber,
+                'user_id'      => $userId,
+                'total_amount' => $totalAmount,
+                'items_count'  => count($orderItemsToInsert)
+            ]);
 
             // Push confirmation email to async queue if email provided
             if (!empty($orderData['customer_email'])) {

@@ -13,22 +13,48 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/dbconnect.php';
 
+$id = (int) input('id', '0', 'get');
 $slug = input('slug', '', 'get');
 
+// 1. Handle old URL migration: /product.php?id=123 -> 301 redirect to clean canonical URL
+if ($id > 0 && empty($slug)) {
+    try {
+        $stmtId = db()->prepare('SELECT slug FROM products WHERE id = :id AND is_active = 1 AND deleted_at IS NULL LIMIT 1');
+        $stmtId->execute(['id' => $id]);
+        $foundSlug = $stmtId->fetchColumn();
+        if ($foundSlug) {
+            header('Location: ' . product_url((string)$foundSlug), true, 301);
+            exit;
+        }
+    } catch (PDOException $e) {
+        // Fallback to 404 below
+    }
+    require __DIR__ . '/404.php';
+    exit;
+}
+
 if (empty($slug)) {
-    redirect(url_for('products.php'));
+    require __DIR__ . '/404.php';
+    exit;
+}
+
+// 2. Handle direct legacy query accesses: product.php?slug=xxx -> 301 redirect to /product/xxx
+$reqUri = $_SERVER['REQUEST_URI'] ?? '';
+if (str_contains($reqUri, 'product.php') && !str_contains($reqUri, 'product/')) {
+    header('Location: ' . product_url($slug), true, 301);
+    exit;
 }
 
 try {
     $pdo = db();
 
-    // 1. Fetch Product details
+    // Fetch Product details
     $stmt = $pdo->prepare('
         SELECT p.*, 
                c.name AS category_name, 
                c.slug AS category_slug, 
                b.name AS brand_name,
-               COALESCE(AVG(pr.rating), 0) AS avg_rating,
+               COALESCE(AVG(pr.rating), p.avg_rating, 0) AS avg_rating,
                COUNT(pr.id) AS review_count
         FROM products p
         LEFT JOIN categories c ON c.id = p.category_id
@@ -42,8 +68,8 @@ try {
     $product = $stmt->fetch();
 
     if (!$product) {
-        flash('catalog', 'Product not found or unavailable.', 'error');
-        redirect(url_for('products.php'));
+        require __DIR__ . '/404.php';
+        exit;
     }
 
     $productId = (int) $product['id'];
@@ -248,15 +274,18 @@ try {
 }
 
 // Page layout meta & SEO details
-$pageTitle = !empty($product['meta_title']) ? $product['meta_title'] : ($product['name'] . ' | Buy Online in Bangladesh | ' . site_name());
-$pageDescription = !empty($product['meta_description']) ? $product['meta_description'] : ($product['short_description'] ?? truncate($product['description'] ?? '', 160));
-$pageCanonical = build_canonical_url('product.php', ['slug' => $product['slug']]);
-$pageImage = !empty($gallery) ? image_url($gallery[0], 'products') : image_url($product['thumbnail'], 'products');
+$pageTitle = !empty($product['seo_title']) ? $product['seo_title'] : (!empty($product['meta_title']) ? $product['meta_title'] : ($product['name'] . ' | ' . site_name()));
+$pageDescription = !empty($product['seo_description']) ? $product['seo_description'] : (!empty($product['meta_description']) ? $product['meta_description'] : ($product['short_description'] ?? truncate($product['description'] ?? '', 160)));
+$pageCanonical = product_url($product['slug']);
+$pageImage = !empty($product['og_image']) ? image_url($product['og_image'], 'products') : (!empty($gallery) ? image_url($gallery[0], 'products') : image_url($product['thumbnail'], 'products'));
+$ogTitle = !empty($product['og_title']) ? $product['og_title'] : $pageTitle;
+$ogDescription = !empty($product['og_description']) ? $product['og_description'] : $pageDescription;
+$pageRobots = !empty($product['meta_robots']) ? $product['meta_robots'] : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 
 // Prepare Breadcrumb trail BEFORE header.php so meta-tags.php can emit BreadcrumbList JSON-LD
 $breadcrumbs = [
     ['title' => t('shop') ?? 'Shop', 'link' => 'products.php'],
-    ['title' => $product['category_name'] ?? 'Category', 'link' => 'products.php?category=' . ($product['category_slug'] ?? '')],
+    ['title' => $product['category_name'] ?? 'Category', 'link' => category_url($product['category_slug'] ?? '')],
     ['title' => $product['name']]
 ];
 
@@ -287,17 +316,27 @@ require_once __DIR__ . '/header.php';
                 <?php 
                 $mainImg = !empty($gallery) ? $gallery[0] : null;
                 $mainImgUrl = image_url($mainImg, 'products');
+                $mainImgSrcset = get_responsive_srcset($mainImg, 'products');
+                $imgAltText = generate_image_alt($product['name'], $product['image_alt'] ?? null);
                 ?>
-                <img class="detail-main-image" id="detailMainImage" src="<?= e($mainImgUrl) ?>" alt="<?= e($product['name']) ?>">
+                <img class="detail-main-image" id="detailMainImage" 
+                     src="<?= e($mainImgUrl) ?>" 
+                     <?php if (!empty($mainImgSrcset)): ?>srcset="<?= e($mainImgSrcset) ?>" sizes="(max-width: 768px) 100vw, 600px"<?php endif; ?>
+                     alt="<?= e($imgAltText) ?>" 
+                     width="600" height="600" 
+                     loading="eager" fetchpriority="high" decoding="async"
+                     onerror="this.onerror=null;this.removeAttribute('srcset');this.src='<?= e(image_url(null, 'products')) ?>';"
+                     style="aspect-ratio: 1 / 1; object-fit: contain;">
             </div>
             
             <?php if (!empty($gallery) && count($gallery) > 1): ?>
                 <div class="detail-thumbnails">
                     <?php foreach ($gallery as $idx => $img): 
                         $thumbUrl = image_url($img, 'products');
+                        $thumbAlt = generate_image_alt($product['name'] . ' - view ' . ($idx + 1));
                     ?>
                         <button type="button" class="detail-thumb-btn <?= $idx === 0 ? 'active' : '' ?>" data-large-url="<?= e($thumbUrl) ?>" aria-label="View product image <?= $idx + 1 ?>">
-                            <img src="<?= e($thumbUrl) ?>" alt="Thumb <?= $idx + 1 ?>">
+                            <img src="<?= e($thumbUrl) ?>" alt="<?= e($thumbAlt) ?>" width="80" height="80" loading="lazy" decoding="async" style="aspect-ratio: 1 / 1; object-fit: contain;">
                         </button>
                     <?php endforeach; ?>
                 </div>
@@ -703,54 +742,7 @@ require_once __DIR__ . '/header.php';
         });
     }
 
-    // 5. Add to Cart inside product details
-    const addBtn = document.getElementById('detailBtnAdd');
-    addBtn?.addEventListener('click', async () => {
-        const pId = addBtn.dataset.productId;
-        const qty = qtyInput ? qtyInput.value : '1';
-
-        const originalText = addBtn.innerHTML;
-        addBtn.disabled = true;
-        addBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
-
-        const json = await window.apiPost('ajax/add_to_cart.php', {
-            product_id: pId,
-            quantity: qty
-        });
-
-        addBtn.disabled = false;
-        addBtn.innerHTML = originalText;
-
-        if (json.success) {
-            window.showToast?.(json.message, 'success');
-            const cartBadge = document.getElementById('cartCount');
-            if (cartBadge && json.data?.cart_count !== undefined) {
-                cartBadge.textContent = json.data.cart_count.toString();
-            }
-        }
-    });
-
-    // Buy Now inside product details
-    const buyBtn = document.getElementById('detailBtnBuy');
-    buyBtn?.addEventListener('click', async () => {
-        const pId = buyBtn.dataset.productId;
-        const qty = qtyInput ? qtyInput.value : '1';
-
-        buyBtn.disabled = true;
-
-        const json = await window.apiPost('ajax/add_to_cart.php', {
-            product_id: pId,
-            quantity: qty
-        });
-
-        if (json.success) {
-            window.location.href = 'checkout.php';
-        } else {
-            buyBtn.disabled = false;
-        }
-    });
-
-    // 6. Frequently Bought Together (FBT) calculations
+    // 5. Frequently Bought Together (FBT) calculations
     const fbtContainer = document.querySelector('.fbt-container');
     if (fbtContainer) {
         const fbtCheckboxes = fbtContainer.querySelectorAll('.fbt-checkbox');

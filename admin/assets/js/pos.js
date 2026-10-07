@@ -15,7 +15,8 @@
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
       return;
     }
-    const threshold = 50; // Scan key interval threshold in milliseconds
+    if (document.querySelector('.modal.show')) return;
+    const threshold = 80; // Scan key interval threshold in milliseconds
     const now = Date.now();
 
     if (now - lastKeyTime > threshold) {
@@ -37,115 +38,112 @@
     }
   });
 
+  // ---- tiny non-blocking toast + beep (cashier must never lose the keyboard focus) ----
+  function posToast(msg, type) {
+    let box = document.getElementById('posToastBox');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'posToastBox';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      box.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:360px;';
+      document.body.appendChild(box);
+    }
+    const t = document.createElement('div');
+    const bg = type === 'error' ? '#e03131' : (type === 'warn' ? '#f08c00' : '#2f9e44');
+    t.style.cssText = 'background:' + bg + ';color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.25);';
+    t.textContent = msg;
+    box.appendChild(t);
+    setTimeout(() => t.remove(), type === 'error' ? 5000 : 2500);
+    if (type === 'error' || type === 'warn') { posBeep(); }
+  }
+  function posBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.frequency.value = 330; g.gain.value = 0.05; o.connect(g); g.connect(ctx.destination);
+      o.start(); setTimeout(() => { o.stop(); ctx.close(); }, 160);
+    } catch (e) { /* audio not available */ }
+  }
+  window.posToast = posToast;
+
+  function focusScan() {
+    const el = document.getElementById('posFilterSearch');
+    if (el) el.focus();
+  }
+
   function lookupPOSBarcode(code) {
-    console.log('Barcode scanned: ', code);
     const cleanCode = code.trim();
     if (cleanCode === '') return;
-    
-    // Find item with data-sku or data-barcode matching code in local DOM first
-    const cells = document.querySelectorAll('.touch-product-cell');
-    let found = false;
-    
-    cells.forEach(el => {
-      const sku = (el.getAttribute('data-sku') || '').toLowerCase();
-      const barcode = (el.getAttribute('data-barcode') || '').toLowerCase();
-      const id = (el.getAttribute('data-id') || '');
-      const lowerCode = cleanCode.toLowerCase();
-      
-      if (sku === lowerCode || barcode === lowerCode || id === lowerCode) {
-        const prodId = parseInt(el.getAttribute('data-id'));
-        const name = el.getAttribute('data-name-original') || el.getAttribute('data-name');
-        const price = parseFloat(el.getAttribute('data-price'));
-        const stock = parseInt(el.getAttribute('data-stock'));
-        const image = el.getAttribute('data-image') || '';
-        const itemSku = el.getAttribute('data-sku') || '';
-        if (typeof window.addTouchCartItem === 'function') {
-          window.addTouchCartItem(prodId, name, price, stock, image, itemSku);
-          found = true;
-        }
-      }
-    });
-    
-    if (found) return;
+    const lc = cleanCode.toLowerCase();
 
-    // Fallback: Query unified AJAX search endpoint
     fetch('ajax/search_products.php?q=' + encodeURIComponent(cleanCode))
       .then(r => r.json())
       .then(data => {
-        if (data.success && data.products && data.products.length > 0) {
-          let exactMatch = data.products.find(p => 
-            (p.barcode && p.barcode.toLowerCase() === cleanCode.toLowerCase()) || 
-            (p.sku && p.sku.toLowerCase() === cleanCode.toLowerCase())
-          );
-          
-          let targetProduct = exactMatch || data.products[0];
-          if (targetProduct) {
-            tryAddProduct(targetProduct);
-          }
+        const list = (data.success && data.products) ? data.products : [];
+        // A scan must match a barcode / SKU EXACTLY. We never guess a "close" product.
+        const exact = list.find(p => (p.barcode && String(p.barcode).toLowerCase() === lc) || (p.sku && String(p.sku).toLowerCase() === lc));
+        if (exact) {
+          tryAddProduct(exact);
+        } else if (list.length > 0 && !/^[0-9]{6,}$/.test(cleanCode)) {
+          // Typed text (not a barcode-looking number): show the choices instead of auto-adding
+          const dd = document.getElementById('posAutocompleteDropdown');
+          const si = document.getElementById('posFilterSearch');
+          if (dd && si) { si.value = cleanCode; currentProducts = list; activeIndex = -1; renderDropdown(dd, list); }
         } else {
-          alert('Product not found: ' + cleanCode);
+          posToast('Product not found: ' + cleanCode, 'error');
         }
+        focusScan();
       })
       .catch(err => {
         console.error(err);
-        alert('Error searching for product: ' + cleanCode);
+        posToast('Search failed (network?). Barcode ' + cleanCode + ' was NOT added.', 'error');
       });
   }
 
-  // Keyboard shortcut bounds
+  // Keyboard shortcuts:
+  // F1 Search | F2 Customer | F3 Hold | F4 Resume | F5 Discount | F6 Payment
+  // F7 Return | F8 Reprint | F9 Cash In/Out | F10 New sale | Ctrl+Enter confirm payment | Esc close search
+  function modalOpen() { return !!document.querySelector('.modal.show'); }
+  function openPopup(url) { window.open(url, '_blank', 'width=1100,height=760'); }
   window.addEventListener('keydown', (e) => {
-    // F2: Focus Search
-    if (e.key === 'F2') {
-      e.preventDefault();
-      document.getElementById('posFilterSearch')?.focus();
+    const k = e.key;
+    if (!/^F([1-9]|10)$/.test(k) && !(k === 'Enter' && (e.ctrlKey || e.metaKey))) return;
+    e.preventDefault();
+
+    if (k === 'Enter') { // confirm payment from anywhere inside the payment modal
+      const btn = document.getElementById('btnConfirmPOSSale');
+      if (btn && btn.offsetParent !== null && !btn.disabled) btn.click();
+      return;
     }
-    // F4: Focus Customer Search
-    if (e.key === 'F4') {
-      e.preventDefault();
-      document.getElementById('posCustomerSearch')?.focus();
+    if (modalOpen()) { // inside the payment modal only F9 (cash field) keeps its old meaning
+      if (k === 'F9') document.querySelector('#checkoutPaymentModal #splitCash')?.focus();
+      return;
     }
-    // F8: Hold / Suspend Sale
-    if (e.key === 'F8') {
-      e.preventDefault();
-      if (typeof window.suspendPOSCart === 'function') {
-        window.suspendPOSCart();
-      }
-    }
-    // F9: Focus split cash input inside modal if visible, otherwise focus sidebar cash input
-    if (e.key === 'F9') {
-      e.preventDefault();
-      const modalCash = document.querySelector('#checkoutPaymentModal #splitCash');
-      if (modalCash && modalCash.offsetParent !== null) {
-        modalCash.focus();
-      } else {
-        document.getElementById('splitCash')?.focus();
-      }
-    }
-    // F10: Complete Sale
-    if (e.key === 'F10') {
-      e.preventDefault();
-      const confirmBtn = document.getElementById('btnConfirmPOSSale');
-      if (confirmBtn && confirmBtn.offsetParent !== null && !confirmBtn.disabled) {
-        confirmBtn.click();
-      } else if (typeof window.submitPOSCheckoutFinalist === 'function') {
-        window.submitPOSCheckoutFinalist();
-      }
-    }
-    // ESC: Cancel Sale / Reset Cart
-    if (e.key === 'Escape') {
-      // Don't intercept ESC if a Bootstrap modal is open
-      const anyOpenModal = document.querySelector('.modal.show');
-      if (anyOpenModal) return;
-      e.preventDefault();
-      if (confirm('Are you sure you want to cancel the current sale and empty the cart?')) {
-        if (typeof window.touchCart !== 'undefined') {
-          window.touchCart = {};
-          if (typeof window.renderTouchCart === 'function') {
-            window.renderTouchCart();
-          }
+    switch (k) {
+      case 'F1': focusScan(); break;
+      case 'F2': document.getElementById('posCustomerSearch')?.focus(); break;
+      case 'F3': if (typeof window.suspendPOSCart === 'function') window.suspendPOSCart(); break;
+      case 'F4': openPopup('hold-orders.php'); break;
+      case 'F5': document.getElementById('posCartDiscount')?.focus(); break;
+      case 'F6': if (typeof window.submitPOSCheckoutFinalist === 'function') window.submitPOSCheckoutFinalist(); break;
+      case 'F7': openPopup('returns.php'); break;
+      case 'F8': openPopup('receipts.php'); break;
+      case 'F9': openPopup('register.php'); break;
+      case 'F10':
+        if (Object.keys(window.touchCart || {}).length === 0 || confirm('Start a NEW sale? The current cart will be cleared.')) {
+          if (typeof window.clearTouchCart === 'function') window.clearTouchCart();
+          focusScan();
         }
-      }
+        break;
     }
+  });
+
+  // Keep the scanner ready: if focus drifts to <body> (e.g. after a button click) put it back.
+  document.addEventListener('focusout', () => {
+    setTimeout(() => {
+      if (!modalOpen() && (document.activeElement === document.body || document.activeElement === null)) focusScan();
+    }, 120);
   });
 
   let activeIndex = -1;
@@ -180,6 +178,7 @@
           fetch('ajax/search_products.php?q=' + encodeURIComponent(val))
             .then(r => r.json())
             .then(data => {
+              if (searchInput.value.trim() !== val) return; // stale response
               if (data.success && data.products) {
                 currentProducts = data.products;
                 activeIndex = -1;
@@ -218,6 +217,7 @@
           highlightItem(dropdown);
         } else if (e.key === 'Enter') {
           e.preventDefault();
+          clearTimeout(timeout);
           if (currentProducts.length > 0 && activeIndex >= 0) {
             const p = currentProducts[activeIndex];
             tryAddProduct(p);
@@ -411,11 +411,11 @@
 
   function tryAddProduct(p) {
     if (p.is_active === 0) {
-      alert('Product is inactive.');
+      posToast('"' + p.name + '" is inactive.', 'error');
       return;
     }
     if (p.stock <= 0) {
-      alert('Out of Stock.');
+      posToast('"' + p.name + '" is out of stock.', 'error');
       return;
     }
     if (typeof window.addTouchCartItem === 'function') {
@@ -659,7 +659,8 @@
     
     let subtotal = 0;
     Object.keys(window.touchCart).forEach(k => {
-      subtotal += (window.touchCart[k].price * window.touchCart[k].qty);
+      const it = window.touchCart[k];
+      subtotal += Math.max(0, it.price * it.qty - (it.line_discount || 0));
     });
     
     const discountEl = document.getElementById('posCartDiscount');
@@ -880,7 +881,13 @@
     
     const selectEl = document.getElementById('posCustomerSelect');
     const customerId = selectEl ? selectEl.value : '0';
-    const itemsData = keys.map(k => window.touchCart[k]);
+    // Only what the server needs. price is sent so a cashier override can be authorised server-side.
+    const itemsData = keys.map(k => { const it = window.touchCart[k]; return { id: it.id, qty: it.qty, price: it.price, line_discount: it.line_discount || 0 }; });
+    // One key per sale attempt: if the network drops and the cashier retries, the server returns the
+    // ORIGINAL sale instead of creating a second one.
+    if (!window.posIdemKey) {
+      window.posIdemKey = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('k' + Date.now() + Math.random().toString(16).slice(2));
+    }
     
     // Assemble transaction details for storage in note
     let paymentNote = 'POS checkout.';
@@ -910,6 +917,7 @@
     formData.append('bank_transfer', bank.toString());
     formData.append('customer_id', customerId);
     formData.append('note', paymentNote);
+    formData.append('idempotency_key', window.posIdemKey);
     formData.append('csrf_token', window.csrfToken || '');
     
     const confirmBtn = document.getElementById('btnConfirmPOSSale');
@@ -929,15 +937,14 @@
             confirmBtn.innerText = 'Confirm Sale';
         }
         if (data.success) {
-            alert('Checkout finalized successfully!');
+            window.posIdemKey = null; // next sale gets a fresh key
+            posToast('Sale ' + data.order_number + ' complete \u2014 total \u09f3' + Number(data.total).toFixed(2) + (data.change > 0 ? ', CHANGE \u09f3' + Number(data.change).toFixed(2) : ''), 'ok');
+            if (data.change > 0) { alert('CHANGE DUE: \u09f3' + Number(data.change).toFixed(2)); }
             // Print receipt
             window.open('receipts.php?id=' + data.order_id, '_blank', 'width=400,height=600');
             
-            // Clear cart
-            window.touchCart = {};
-            if (typeof window.renderTouchCart === 'function') {
-                window.renderTouchCart();
-            }
+            // Clear cart IN PLACE (the page keeps a private reference to the same object)
+            if (typeof window.clearTouchCart === 'function') { window.clearTouchCart(); }
 
             // Hide modal
             const modalEl = document.getElementById('checkoutPaymentModal');
@@ -985,6 +992,9 @@
               searchInput.focus();
             }
         } else {
+            // A definite server rejection: the sale was NOT recorded, so a fresh key is safe.
+            window.posIdemKey = null;
+            posToast('Checkout failed: ' + data.error, 'error');
             alert('POS Checkout failed: ' + data.error);
         }
     })
@@ -994,7 +1004,8 @@
             confirmBtn.innerText = 'Confirm Sale';
         }
         console.error(err);
-        alert('Server communications error during checkout.');
+        // Unknown outcome: KEEP the same idempotency key so a retry cannot double-charge.
+        alert('Network error during checkout. The sale may or may not have been recorded. Press Confirm again to safely retry (duplicates are prevented), or check Receipts.');
     });
   }
 

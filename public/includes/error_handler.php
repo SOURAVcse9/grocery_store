@@ -33,6 +33,11 @@ function exception_handler(Throwable $e): void
     );
     log_action('FATAL_EXCEPTION', $logMsg);
 
+    if (PHP_SAPI === 'cli' || defined('GROCO_CLI_TEST_MODE')) {
+        fwrite(STDERR, "\n[FATAL EXCEPTION in CLI] " . $logMsg . "\n" . $e->getTraceAsString() . "\n");
+        return;
+    }
+
     // Set correct HTTP 500 error code
     if (!headers_sent()) {
         header('HTTP/1.1 500 Internal Server Error');

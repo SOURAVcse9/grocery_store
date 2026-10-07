@@ -14,7 +14,11 @@
 declare(strict_types=1);
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    if (!headers_sent()) {
+        session_start();
+    } elseif (PHP_SAPI === 'cli') {
+        @session_start();
+    }
 }
 
 /**

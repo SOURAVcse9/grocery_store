@@ -40,7 +40,12 @@ if (isset($cartItems) && is_array($cartItems)) {
                     <div class="mini-cart-info">
                         <h4 class="mini-cart-name"><a href="<?= $prodUrl ?>"><?= e($item['name']) ?></a></h4>
                         <div class="mini-cart-qty-price">
-                            <span class="mini-cart-qty"><?= $qty ?></span> x <span class="mini-cart-price"><?= format_price($price) ?></span>
+                            <span class="mini-cart-price"><?= format_price($price) ?></span>
+                        </div>
+                        <div class="mini-cart-adjuster">
+                            <button type="button" class="mini-cart-qty-btn cart-qty-minus" data-product-id="<?= (int) $item['product_id'] ?>" aria-label="Decrease">&minus;</button>
+                            <input type="number" class="cart-qty-input mini-cart-qty-input" value="<?= $qty ?>" min="1" max="<?= (int) ($item['stock'] ?? 999) ?>" data-original="<?= $qty ?>" readonly>
+                            <button type="button" class="mini-cart-qty-btn cart-qty-plus" data-product-id="<?= (int) $item['product_id'] ?>" aria-label="Increase">&plus;</button>
                         </div>
                     </div>
                     <button type="button" class="mini-cart-remove-btn btn-remove-cart-item" data-product-id="<?= (int) $item['product_id'] ?>" title="Remove item" aria-label="Remove Item">

@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../public/dbconnect.php';
+require_once __DIR__ . '/../../public/includes/cloudinary.php';
 require_once __DIR__ . '/../middleware/auth_middleware.php';
 
 require_admin_auth();
@@ -37,7 +38,7 @@ try {
     }
 
     // Fetch existing gallery images
-    $galStmt = $pdo->prepare("SELECT id, image_url AS image_path FROM product_images WHERE product_id = :pid ORDER BY sort_order ASC");
+    $galStmt = $pdo->prepare("SELECT id, image_url AS image_path, image_public_id, image_width, image_height FROM product_images WHERE product_id = :pid ORDER BY sort_order ASC");
     $galStmt->execute(['pid' => $productId]);
     $gallery = $galStmt->fetchAll();
 
@@ -56,20 +57,25 @@ if (method_is('post')) {
         if (isset($_POST['delete_gallery_image_id'])) {
             $delImgId = (int) $_POST['delete_gallery_image_id'];
             try {
-                $imgQ = $pdo->prepare("SELECT image_url AS image_path FROM product_images WHERE id = :id LIMIT 1");
+                $imgQ = $pdo->prepare("SELECT image_url, image_public_id FROM product_images WHERE id = :id LIMIT 1");
                 $imgQ->execute(['id' => $delImgId]);
-                $imgName = $imgQ->fetchColumn();
+                $imgRow = $imgQ->fetch();
                 
-                if ($imgName) {
-                    $imgPath = __DIR__ . '/../../public/uploads/products/' . $imgName;
-                    if (file_exists($imgPath)) {
-                        @unlink($imgPath);
+                if ($imgRow) {
+                    if (!empty($imgRow['image_public_id'])) {
+                        CloudinaryService::delete($imgRow['image_public_id']);
+                    }
+                    if (!empty($imgRow['image_url'])) {
+                        $imgPath = __DIR__ . '/../../public/uploads/products/' . basename($imgRow['image_url']);
+                        if (file_exists($imgPath) && is_file($imgPath)) {
+                            @unlink($imgPath);
+                        }
                     }
                     $pdo->prepare("DELETE FROM product_images WHERE id = :id")->execute(['id' => $delImgId]);
-                    log_admin_activity('products.delete_gallery_image', "Deleted gallery image '{$imgName}' for product '{$product['name']}'");
+                    log_admin_activity('products.delete_gallery_image', "Deleted gallery image for product '{$product['name']}'");
                     flash('products_edit_msg', 'Gallery image deleted successfully.', 'success');
                 }
-            } catch (PDOException $e) {
+            } catch (Exception $e) {
                 error_log('[admin/products/edit] Delete gallery image fail: ' . $e->getMessage());
             }
             redirect(current_url());
@@ -102,6 +108,11 @@ if (method_is('post')) {
         
         $metaTitle = trim(input('meta_title', ''));
         $metaDesc = trim(input('meta_description', ''));
+        $seoTitle = trim(input('seo_title', $metaTitle));
+        $seoDesc  = trim(input('seo_description', $metaDesc));
+        $imageAlt = trim(input('image_alt', $product['image_alt'] ?? $name));
+        $ogTitle  = trim(input('og_title', ''));
+        $ogDesc   = trim(input('og_description', ''));
 
         if (empty($name) || empty($slug) || $price <= 0) {
             $error = 'Product Name, URL Slug, and a valid Price are required fields.';
@@ -118,29 +129,30 @@ if (method_is('post')) {
                     $error = 'This URL slug is already taken. Please choose another unique slug.';
                 } else {
                     $thumbnailName = $product['thumbnail'];
+                    $imagePublicId = $product['image_public_id'] ?? null;
+                    $imageWidth    = $product['image_width'] ?? null;
+                    $imageHeight   = $product['image_height'] ?? null;
                     
-                    // Handle Main Thumbnail Upload
+                    // Handle Main Thumbnail Replacement via Cloudinary Service
                     if (!empty($_FILES['thumbnail']['name'])) {
-                        $file = $_FILES['thumbnail'];
-                        if (!validate_uploaded_image($file, 3 * 1024 * 1024)) {
-                            $error = 'Invalid thumbnail file. Must be JPG, JPEG, PNG, or WebP under 3MB.';
-                        } else {
-                            $uploadDir = __DIR__ . '/../../public/uploads/products';
-                            if (!is_dir($uploadDir)) {
-                                mkdir($uploadDir, 0775, true);
-                            }
-                            
-                            // Delete old thumbnail
-                            if (!empty($product['thumbnail'])) {
-                                $oldThumbPath = $uploadDir . '/' . $product['thumbnail'];
-                                if (file_exists($oldThumbPath)) {
-                                    @unlink($oldThumbPath);
+                        try {
+                            if (!empty($product['image_public_id'])) {
+                                $uploadResult = CloudinaryService::replace($_FILES['thumbnail'], $product['image_public_id'], 'products', $slug);
+                            } else {
+                                $uploadResult = CloudinaryService::upload($_FILES['thumbnail'], 'products', $slug);
+                                if (!empty($product['thumbnail'])) {
+                                    $oldThumbPath = __DIR__ . '/../../public/uploads/products/' . basename($product['thumbnail']);
+                                    if (file_exists($oldThumbPath) && is_file($oldThumbPath)) {
+                                        @unlink($oldThumbPath);
+                                    }
                                 }
                             }
-                            
-                            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                            $thumbnailName = 'prod_' . uniqid('', true) . '.' . $ext;
-                            move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $thumbnailName);
+                            $thumbnailName = $uploadResult['url'] ?? $uploadResult['filename'] ?? null;
+                            $imagePublicId = $uploadResult['public_id'] ?? null;
+                            $imageWidth    = $uploadResult['width'] ?? null;
+                            $imageHeight   = $uploadResult['height'] ?? null;
+                        } catch (Exception $ex) {
+                            $error = 'Thumbnail upload failed: ' . $ex->getMessage();
                         }
                     }
 
@@ -167,69 +179,90 @@ if (method_is('post')) {
                             ]);
                         }
 
-                        // Update product row
+                        // Update product row with SEO & Cloudinary columns
                         $stmt = $pdo->prepare("
                             UPDATE products SET
                                 category_id = :category_id, brand_id = :brand_id, name = :name, slug = :slug,
                                 description = :description, short_description = :short_description, 
                                 sku = :sku, barcode = :barcode, price = :price, cost_price = :cost_price,
                                 discount_price = :discount_price, stock = :stock, min_stock = :min_stock, 
-                                weight = :weight, unit = :unit, thumbnail = :thumbnail, is_featured = :is_featured,
-                                is_trending = :is_trending, is_flash_sale = :is_flash_sale, is_active = :is_active,
-                                status = :status, meta_title = :meta_title, meta_description = :meta_description,
+                                weight = :weight, unit = :unit, thumbnail = :thumbnail,
+                                image_public_id = :image_public_id, image_alt = :image_alt, 
+                                image_width = :image_width, image_height = :image_height,
+                                is_featured = :is_featured, is_trending = :is_trending, is_flash_sale = :is_flash_sale, 
+                                is_active = :is_active, status = :status, 
+                                meta_title = :meta_title, meta_description = :meta_description,
+                                seo_title = :seo_title, seo_description = :seo_description,
+                                og_title = :og_title, og_description = :og_description,
                                 updated_at = NOW()
                             WHERE id = :id
                         ");
 
                         $stmt->execute([
                             'category_id'       => $categoryId > 0 ? $categoryId : null,
-                            'brand_id'           => $brandId > 0 ? $brandId : null,
-                            'name'               => $name,
-                            'slug'               => $slug,
-                            'description'        => $longDesc,
-                            'short_description'  => $shortDesc,
-                            'sku'                => $sku,
-                            'barcode'            => $barcode,
-                            'price'              => $price,
-                            'cost_price'         => $costPrice > 0 ? $costPrice : null,
-                            'discount_price'     => $discountPrice > 0 ? $discountPrice : null,
-                            'stock'              => $stock,
-                            'min_stock'          => $minStock,
-                            'weight'             => $weight > 0 ? $weight : null,
-                            'unit'               => $unit,
-                            'thumbnail'          => $thumbnailName,
-                            'is_featured'        => $isFeatured,
-                            'is_trending'        => $isTrending,
-                            'is_flash_sale'      => $isFlashSale,
-                            'is_active'          => $is_active,
-                            'status'             => $status,
-                            'meta_title'         => $metaTitle,
-                            'meta_description'   => $metaDesc,
-                            'id'                 => $productId
+                            'brand_id'          => $brandId > 0 ? $brandId : null,
+                            'name'              => $name,
+                            'slug'              => $slug,
+                            'description'       => $longDesc,
+                            'short_description' => $shortDesc,
+                            'sku'               => $sku,
+                            'barcode'           => $barcode,
+                            'price'             => $price,
+                            'cost_price'        => $costPrice > 0 ? $costPrice : null,
+                            'discount_price'    => $discountPrice > 0 ? $discountPrice : null,
+                            'stock'             => $stock,
+                            'min_stock'         => $minStock,
+                            'weight'            => $weight > 0 ? $weight : null,
+                            'unit'              => $unit,
+                            'thumbnail'         => $thumbnailName,
+                            'image_public_id'   => $imagePublicId,
+                            'image_alt'         => $imageAlt ?: $name,
+                            'image_width'       => $imageWidth,
+                            'image_height'      => $imageHeight,
+                            'is_featured'       => $isFeatured,
+                            'is_trending'       => $isTrending,
+                            'is_flash_sale'     => $isFlashSale,
+                            'is_active'         => $is_active,
+                            'status'            => $status,
+                            'meta_title'        => $metaTitle ?: $name,
+                            'meta_description'  => $metaDesc ?: $shortDesc,
+                            'seo_title'         => $seoTitle ?: $name,
+                            'seo_description'   => $seoDesc ?: $shortDesc,
+                            'og_title'          => $ogTitle ?: null,
+                            'og_description'    => $ogDesc ?: null,
+                            'id'                => $productId
                         ]);
 
-                        // Handle Multiple Gallery Images uploads additions
+                        // Handle Multiple Gallery Images uploads additions via Cloudinary
                         if (!empty($_FILES['gallery']['name'][0])) {
                             $files = $_FILES['gallery'];
-                            $uploadDir = __DIR__ . '/../../public/uploads/products';
                             
                             $insGal = $pdo->prepare("
-                                INSERT INTO product_images (product_id, image_url, sort_order, created_at)
-                                VALUES (:pid, :path, :sort, NOW())
+                                INSERT INTO product_images (product_id, image_url, image_public_id, image_width, image_height, sort_order, created_at)
+                                VALUES (:pid, :path, :pub_id, :w, :h, :sort, NOW())
                             ");
 
                             for ($i = 0; $i < count($files['name']); $i++) {
                                 if ($files['error'][$i] === UPLOAD_ERR_OK) {
-                                    $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
-                                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true) && $files['size'][$i] <= 3 * 1024 * 1024 && @getimagesize($files['tmp_name'][$i])) {
-                                        $galName = 'gal_' . uniqid('', true) . '.' . $ext;
-                                        if (move_uploaded_file($files['tmp_name'][$i], $uploadDir . '/' . $galName)) {
-                                            $insGal->execute([
-                                                'pid'  => $productId,
-                                                'path' => $galName,
-                                                'sort' => $i + count($gallery)
-                                            ]);
-                                        }
+                                    $singleFile = [
+                                        'name'     => $files['name'][$i],
+                                        'type'     => $files['type'][$i],
+                                        'tmp_name' => $files['tmp_name'][$i],
+                                        'error'    => $files['error'][$i],
+                                        'size'     => $files['size'][$i],
+                                    ];
+                                    try {
+                                        $galUpload = CloudinaryService::upload($singleFile, 'products', $slug . '-gal-' . time() . '-' . ($i + 1));
+                                        $insGal->execute([
+                                            'pid'    => $productId,
+                                            'path'   => $galUpload['url'] ?? $galUpload['filename'],
+                                            'pub_id' => $galUpload['public_id'] ?? null,
+                                            'w'      => $galUpload['width'] ?? null,
+                                            'h'      => $galUpload['height'] ?? null,
+                                            'sort'   => $i + count($gallery)
+                                        ]);
+                                    } catch (Exception $gEx) {
+                                        error_log('[admin/products/edit] Gallery upload fail: ' . $gEx->getMessage());
                                     }
                                 }
                             }
@@ -389,7 +422,16 @@ try {
                 <div class="form-field-group" style="margin:0; flex:1;">
                     <label for="prodThumb" style="font-weight:700;">Replace Main Listing Thumbnail</label>
                     <input type="file" id="prodThumb" name="thumbnail" accept="image/*" style="font-size:12px; display:block; margin-top:4px;">
+                    <?php if (!empty($product['image_public_id'])): ?>
+                        <span class="field-help-text" style="color:var(--color-success);"><i class="fas fa-cloud-check"></i> Stored on Cloudinary CDN (<code><?= e($product['image_public_id']) ?></code>)</span>
+                    <?php endif; ?>
                 </div>
+            </div>
+
+            <div class="form-field-group">
+                <label for="imageAlt" style="font-weight:700;">Image Alt Text (SEO & Accessibility)</label>
+                <input type="text" id="imageAlt" name="image_alt" value="<?= e($product['image_alt'] ?? '') ?>" placeholder="e.g. Fresh Organic Bananas 1 Dozen" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                <span class="field-help-text">Descriptive alt text for Google Image Search ranking and accessibility.</span>
             </div>
 
             <!-- Existing gallery list with instant deletion buttons -->
@@ -416,22 +458,35 @@ try {
             <div class="form-field-group">
                 <label for="prodGallery" style="font-weight:700;">Add More Gallery Images</label>
                 <input type="file" id="prodGallery" name="gallery[]" accept="image/*" multiple style="font-size:12px; display:block; margin-top:6px;">
-                <span class="field-help-text">JPG, WebP, PNG (max 3MB). Multi-selection active.</span>
+                <span class="field-help-text">JPG, WebP, PNG (max 5MB). Multi-selection active. Serves via CDN.</span>
             </div>
         </div>
 
         <!-- SEO meta tags -->
         <div class="dashboard-card" style="margin-bottom:0; padding:var(--space-6);">
-            <h2 style="font-size:14px; font-weight:800; color:var(--color-text); margin-bottom:var(--space-4); border-bottom:1px solid var(--color-border); padding-bottom:8px;">Search Engine Optimization (SEO)</h2>
+            <h2 style="font-size:14px; font-weight:800; color:var(--color-text); margin-bottom:var(--space-4); border-bottom:1px solid var(--color-border); padding-bottom:8px;">Search Engine Optimization (SEO) & Open Graph</h2>
             
             <div class="form-field-group">
                 <label for="seoTitle" style="font-weight:700;">SEO Meta Title</label>
-                <input type="text" id="seoTitle" name="meta_title" value="<?= e($product['meta_title'] ?? '') ?>" placeholder="Descriptive title for Google search results" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                <input type="text" id="seoTitle" name="meta_title" value="<?= e($product['seo_title'] ?: ($product['meta_title'] ?? '')) ?>" placeholder="Descriptive title for Google search results" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                <span class="field-help-text">Overrides the default page title in Google Search SERPs.</span>
             </div>
 
             <div class="form-field-group">
                 <label for="seoDesc" style="font-weight:700;">SEO Meta Description</label>
-                <textarea id="seoDesc" name="meta_description" rows="3" placeholder="Compelling summary snippet showing under search results" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; font-family:inherit; resize:vertical;"><?= e($product['meta_description'] ?? '') ?></textarea>
+                <textarea id="seoDesc" name="meta_description" rows="3" placeholder="Compelling summary snippet showing under search results" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none; font-family:inherit; resize:vertical;"><?= e($product['seo_description'] ?: ($product['meta_description'] ?? '')) ?></textarea>
+                <span class="field-help-text">Optimal length: 120-160 characters.</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" class="grid-2">
+                <div class="form-field-group">
+                    <label for="ogTitle" style="font-weight:700;">Social (OG) Title (Optional)</label>
+                    <input type="text" id="ogTitle" name="og_title" value="<?= e($product['og_title'] ?? '') ?>" placeholder="Title for Facebook / WhatsApp / Twitter cards" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                </div>
+                <div class="form-field-group">
+                    <label for="ogDesc" style="font-weight:700;">Social (OG) Description (Optional)</label>
+                    <input type="text" id="ogDesc" name="og_description" value="<?= e($product['og_description'] ?? '') ?>" placeholder="Description for social link shares" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--fs-sm); outline:none;">
+                </div>
             </div>
         </div>
 
@@ -522,4 +577,4 @@ function generateProductUrlSlug() {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

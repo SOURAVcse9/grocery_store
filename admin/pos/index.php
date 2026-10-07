@@ -10,6 +10,7 @@ declare(strict_types=1);
 $pageTitle = 'Enterprise POS Checkout — GroCo Admin';
 require_once __DIR__ . '/../layouts/dashboard_layout.php';
 require_admin_permission('pos.access');
+require_once __DIR__ . '/../includes/pos_lib.php';
 
 $pdo = db();
 $adminId = current_admin_id();
@@ -253,6 +254,11 @@ try {
 let touchCart = {};
 window.touchCart = touchCart;
 window.csrfToken = '<?= csrf_token() ?>';
+window.POS_DECIMAL = <?= pos_decimal_qty_enabled($pdo) ? 'true' : 'false' ?>;
+window.POS_CAN_DISCOUNT = <?= (has_admin_permission('pos.discount') || has_admin_permission('pos.override')) ? 'true' : 'false' ?>;
+function escHtml(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function clearTouchCart() { Object.keys(touchCart).forEach(k => delete touchCart[k]); renderTouchCart(); }
+function lineNet(it) { return Math.max(0, it.price * it.qty - (it.line_discount || 0)); }
 
 function filterPOSCatalog() {
     const searchEl = document.getElementById('posFilterSearch');
@@ -304,31 +310,50 @@ function updateLoyaltyUI() {
 }
 
 function addTouchCartItem(id, name, price, stock, image = '', sku = '') {
+    id = parseInt(id, 10);
     if (touchCart[id]) {
-        if (touchCart[id].qty < stock) {
-            touchCart[id].qty++;
-        } else {
-            alert('Out of stock.');
-        }
+        touchCart[id].stock = stock;
+        if (touchCart[id].qty + 1 <= stock + 1e-9) {
+            touchCart[id].qty = Math.round((touchCart[id].qty + 1) * 1000) / 1000;
+        } else if (window.posToast) { window.posToast('Only ' + stock + ' in stock.', 'warn'); }
     } else {
-        touchCart[id] = { id, name, price, qty: 1, stock, image, sku };
+        touchCart[id] = { id, name, price, qty: 1, stock, image, sku, line_discount: 0 };
     }
     renderTouchCart();
     document.getElementById('posFilterSearch')?.focus();
 }
 
 function updateTouchQty(id, change) {
-    if (touchCart[id]) {
-        touchCart[id].qty += change;
-        if (touchCart[id].qty <= 0) {
-            delete touchCart[id];
-        } else if (touchCart[id].qty > touchCart[id].stock) {
-            touchCart[id].qty = touchCart[id].stock;
-            alert('Out of stock.');
-        }
+    if (touchCart[id]) { setTouchQty(id, touchCart[id].qty + change); return; }
+    renderTouchCart();
+}
+
+function setTouchQty(id, value) {
+    const it = touchCart[id];
+    if (!it) return;
+    let q = parseFloat(value);
+    if (!isFinite(q) || q <= 0) { delete touchCart[id]; renderTouchCart(); return; }
+    if (!window.POS_DECIMAL) q = Math.round(q);
+    q = Math.round(q * 1000) / 1000;
+    if (q > it.stock + 1e-9) {
+        q = it.stock;
+        if (window.posToast) window.posToast('Only ' + it.stock + ' in stock.', 'warn');
     }
+    it.qty = q;
+    if ((it.line_discount || 0) > it.price * q) it.line_discount = 0;
     renderTouchCart();
     document.getElementById('posFilterSearch')?.focus();
+}
+
+function setLineDiscount(id) {
+    const it = touchCart[id];
+    if (!it || !window.POS_CAN_DISCOUNT) return;
+    const v = prompt('Line discount for \u201c' + it.name + '\u201d (৳, total for this line):', it.line_discount || 0);
+    if (v === null) return;
+    const d = parseFloat(v);
+    if (!isFinite(d) || d < 0 || d > it.price * it.qty) { alert('Invalid discount.'); return; }
+    it.line_discount = Math.round(d * 100) / 100;
+    renderTouchCart();
 }
 
 const canOverridePrice = <?= has_admin_permission('pos.override') ? 'true' : 'false' ?>;
@@ -371,32 +396,31 @@ function renderTouchCart() {
             priceDisplay = `<span onclick="triggerPriceOverride(${item.id});" style="text-decoration: underline; cursor: pointer; color: var(--color-primary);" title="Click to override price">৳${item.price} <i class="fas fa-edit" style="font-size: 8px;"></i></span>`;
         }
         
-        const itemTax = (0.00).toFixed(2);
-        const itemSubtotal = (item.price * item.qty).toFixed(2);
+        const itemSubtotal = lineNet(item).toFixed(2);
         const fallbackImg = '<?= BASE_URL ?>/../admin/assets/images/placeholder.png';
-        const imgSrc = item.image ? item.image : fallbackImg;
-        
+        const imgSrc = escHtml(item.image ? item.image : fallbackImg);
+        const nm = escHtml(item.name);
+        const qtyStep = window.POS_DECIMAL ? 'any' : '1';
+
         row.innerHTML = `
             <div style="width:36px; height:36px; border-radius:4px; overflow:hidden; border:1px solid var(--color-border); flex-shrink:0;">
                 <img src="${imgSrc}" alt="" style="width:100%; height:100%; object-fit:cover;">
             </div>
             <div style="flex:1; min-width:0;">
-                <strong style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${item.name}">${item.name}</strong>
-                <span style="font-size:9px; color:var(--color-text-faint);">SKU: ${item.sku || 'N/A'}</span>
+                <strong style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${nm}">${nm}</strong>
+                <span style="font-size:9px; color:var(--color-text-faint);">SKU: ${escHtml(item.sku || 'N/A')} &bull; stock ${escHtml(item.stock)}</span>
             </div>
-            <div style="display:flex; flex-direction:column; align-items:center; gap:2px; width:65px; flex-shrink:0;">
-                <div style="display:flex; align-items:center; gap:4px;">
-                    <button type="button" onclick="updateTouchQty(${item.id}, -1);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">-</button>
-                    <strong style="font-size:11px;">${item.qty}</strong>
-                    <button type="button" onclick="updateTouchQty(${item.id}, 1);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">+</button>
-                </div>
+            <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                <button type="button" aria-label="Decrease quantity" onclick="updateTouchQty(${item.id}, -1);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:26px; height:26px; border-radius:4px; cursor:pointer;">&minus;</button>
+                <input type="number" aria-label="Quantity" min="0" step="${qtyStep}" value="${item.qty}" onchange="setTouchQty(${item.id}, this.value);" style="width:58px; padding:3px; text-align:center; border:1px solid var(--color-border); border-radius:4px; background:var(--color-surface); color:var(--color-text); font-size:12px; font-weight:700;">
+                <button type="button" aria-label="Increase quantity" onclick="updateTouchQty(${item.id}, 1);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:26px; height:26px; border-radius:4px; cursor:pointer;">+</button>
             </div>
-            <div style="width:100px; text-align:right; font-size:10px; color:var(--color-text-muted); line-height:1.3; flex-shrink:0;">
-                <div>Price: ৳${item.price.toFixed(2)}</div>
-                <div style="font-size:9px; color:var(--color-text-faint);">Disc: ৳0.00</div>
-                <div style="font-weight:700; color:var(--color-text);">Sub: ৳${itemSubtotal}</div>
+            <div style="width:104px; text-align:right; font-size:10px; color:var(--color-text-muted); line-height:1.3; flex-shrink:0;">
+                <div>৳${item.price.toFixed(2)} &times; ${escHtml(item.qty)}</div>
+                <div style="font-size:9px; color:var(--color-text-faint);">${window.POS_CAN_DISCOUNT ? `<a href="#" onclick="setLineDiscount(${item.id}); return false;" style="color:var(--color-primary);">Disc: ৳${(item.line_discount || 0).toFixed(2)}</a>` : 'Disc: ৳' + (item.line_discount || 0).toFixed(2)}</div>
+                <div style="font-weight:700; color:var(--color-text);">৳${itemSubtotal}</div>
             </div>
-            <button type="button" onclick="updateTouchQty(${item.id}, -${item.qty});" style="border:none; background:transparent; color:#e03131; cursor:pointer; padding:4px; font-size:13px; flex-shrink:0;" title="Remove Item"><i class="fas fa-trash-alt"></i></button>
+            <button type="button" aria-label="Remove item" onclick="setTouchQty(${item.id}, 0);" style="border:none; background:transparent; color:#e03131; cursor:pointer; padding:6px; font-size:14px; flex-shrink:0;" title="Remove"><i class="fas fa-trash"></i></button>
         `;
         wrapper.appendChild(row);
     });
@@ -409,7 +433,7 @@ function recalculatePOSBalances() {
     window.recalculatePOSBalances = recalculatePOSBalances;
     let subtotal = 0;
     Object.keys(touchCart).forEach(k => {
-        subtotal += (touchCart[k].price * touchCart[k].qty);
+        subtotal += lineNet(touchCart[k]);
     });
     
     const discountEl = document.getElementById('posCartDiscount');
@@ -460,10 +484,9 @@ function suspendPOSCart() {
     .then(data => {
         if (data.success) {
             alert('Cart suspended successfully!');
-            touchCart = {};
-            renderTouchCart();
+            clearTouchCart();
         } else {
-            alert('Failed to suspend cart.');
+            alert(data.error || 'Failed to suspend cart.');
         }
     });
 }
@@ -471,9 +494,51 @@ function suspendPOSCart() {
 // Export cart functions to window scope immediately
 window.addTouchCartItem = addTouchCartItem;
 window.updateTouchQty = updateTouchQty;
+window.setTouchQty = setTouchQty;
+window.setLineDiscount = setLineDiscount;
+window.clearTouchCart = clearTouchCart;
 window.renderTouchCart = renderTouchCart;
 window.suspendPOSCart = suspendPOSCart;
 window.updateLoyaltyUI = updateLoyaltyUI;
+
+window.applyResumedCart = function (data) {
+    sessionStorage.setItem('groco_pos_resume_cart', JSON.stringify(data));
+    location.reload();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const resumeDataStr = sessionStorage.getItem('groco_pos_resume_cart');
+    if (resumeDataStr) {
+        try {
+            const data = JSON.parse(resumeDataStr);
+            sessionStorage.removeItem('groco_pos_resume_cart');
+            if (data && data.cartData) {
+                let items = data.cartData;
+                items = Array.isArray(items) ? items : (items && typeof items === 'object' ? Object.values(items) : []);
+                Object.keys(touchCart).forEach(k => delete touchCart[k]);
+                items.forEach(it => {
+                    const id = parseInt(it && it.id, 10), qty = parseFloat(it && it.qty), price = parseFloat(it && it.price), stock = parseFloat(it && it.stock);
+                    if (!(id > 0) || !(qty > 0) || !isFinite(price) || price < 0) return;
+                    touchCart[id] = { id, name: String(it.name || ('#' + id)), price, qty, stock: isFinite(stock) ? stock : qty,
+                                      image: String(it.image || ''), sku: String(it.sku || ''), line_discount: Math.max(0, parseFloat(it.line_discount) || 0) };
+                });
+                
+                if (data.customerId > 0) {
+                    const custSelect = document.getElementById('posCustomerSelect');
+                    if (custSelect) {
+                        custSelect.value = data.customerId;
+                    }
+                }
+                renderTouchCart();
+                if (typeof updateLoyaltyUI === 'function') {
+                    updateLoyaltyUI();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to parse resumed cart', e);
+        }
+    }
+});
 </script>
 
 <!-- Checkout Split Payment Modal -->
@@ -682,4 +747,4 @@ window.updateLoyaltyUI = updateLoyaltyUI;
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

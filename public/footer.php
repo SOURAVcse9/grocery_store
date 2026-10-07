@@ -90,8 +90,13 @@ declare(strict_types=1);
 <script src="<?= asset('js/newsletter.js') ?>"></script>
 <script src="<?= asset('js/custom-select.js') ?>"></script>
 <?php if (!empty($extraScripts) && is_array($extraScripts)): ?>
-    <?php foreach ($extraScripts as $__js): ?>
-        <script src="<?= asset($__js) ?>"></script>
+    <?php
+    $__loadedCore = ['js/toast.js', 'js/app.js', 'js/cart.js', 'js/notifications.js', 'js/lazyload.js', 'js/performance.js', 'js/pwa.js', 'js/security.js', 'js/newsletter.js', 'js/custom-select.js'];
+    ?>
+    <?php foreach (array_unique($extraScripts) as $__js): ?>
+        <?php if (!in_array($__js, $__loadedCore, true)): ?>
+            <script src="<?= asset($__js) ?>"></script>
+        <?php endif; ?>
     <?php endforeach; ?>
 <?php endif; ?>
 

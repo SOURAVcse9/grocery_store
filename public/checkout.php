@@ -212,25 +212,36 @@ $breadcrumbs = [
                             </div>
                         </label>
 
-                        <!-- Card payment placeholder -->
-                        <label class="payment-card disabled" title="Card payments are coming soon.">
-                            <input type="radio" name="payment_method" value="card" disabled>
+                        <!-- SSLCOMMERZ Online Gateway -->
+                        <label class="payment-card" title="Pay securely with Cards, Mobile Banking & Net Banking via SSLCOMMERZ">
+                            <input type="radio" name="payment_method" value="sslcommerz">
                             <div class="payment-card-content">
-                                <div class="payment-icon"><i class="fab fa-cc-visa"></i></div>
-                                <div class="payment-name">Online Payment</div>
-                                <div class="payment-desc">Visa / Mastercard (coming soon).</div>
+                                <div class="payment-icon"><i class="fas fa-shield-halved"></i></div>
+                                <div class="payment-name">Pay Online (SSLCOMMERZ)</div>
+                                <div class="payment-desc">Cards, bKash, Nagad, Rocket, Net Banking</div>
                             </div>
                         </label>
 
-                        <!-- Mobile banking placeholder -->
-                        <label class="payment-card disabled" title="Mobile banking is coming soon.">
-                            <input type="radio" name="payment_method" value="mobile_banking" disabled>
+                        <!-- Card payment -->
+                        <label class="payment-card" title="Pay with Visa, Mastercard or AMEX">
+                            <input type="radio" name="payment_method" value="card">
+                            <div class="payment-card-content">
+                                <div class="payment-icon"><i class="fab fa-cc-visa"></i></div>
+                                <div class="payment-name">Credit / Debit Card</div>
+                                <div class="payment-desc">Visa, Mastercard, AMEX</div>
+                            </div>
+                        </label>
+
+                        <!-- Mobile banking -->
+                        <label class="payment-card" title="Pay via bKash, Nagad, Rocket or Upay">
+                            <input type="radio" name="payment_method" value="mobile_banking">
                             <div class="payment-card-content">
                                 <div class="payment-icon"><i class="fas fa-mobile-screen-button"></i></div>
                                 <div class="payment-name">Mobile Banking</div>
-                                <div class="payment-desc">bKash / Nagad (coming soon).</div>
+                                <div class="payment-desc">bKash, Nagad, Rocket, Upay</div>
                             </div>
                         </label>
+
 
                     </div>
                 </section>

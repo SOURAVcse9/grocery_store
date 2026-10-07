@@ -44,9 +44,9 @@ $bannerStats = scanFolderStats($bannerUploadDir);
 $usedImages = [];
 
 try {
-    $prodImgs = $pdo->query("SELECT image FROM products WHERE image IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
-    $prodExtraImgs = $pdo->query("SELECT image_path FROM product_images")->fetchAll(PDO::FETCH_COLUMN);
-    $bannerImgs = $pdo->query("SELECT image_path FROM banners")->fetchAll(PDO::FETCH_COLUMN);
+    $prodImgs = $pdo->query("SELECT thumbnail FROM products WHERE thumbnail IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
+    $prodExtraImgs = $pdo->query("SELECT image_url FROM product_images WHERE image_url IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
+    $bannerImgs = $pdo->query("SELECT image_path FROM banners WHERE image_path IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
 
     $usedImages = array_unique(array_merge($prodImgs, $prodExtraImgs, $bannerImgs));
 } catch (PDOException $e) {
@@ -124,4 +124,4 @@ if (method_is('post') && input('file_action', '') === 'purge_unused') {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

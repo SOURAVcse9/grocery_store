@@ -50,63 +50,74 @@ function asset(string $path): string
 function image_url(?string $path, string $placeholderCategory = 'ui'): string
 {
     if (!empty($path)) {
-        // Already absolute (http/https) — return as-is.
+        // 1. Already absolute (http/https) — return as-is.
         if (preg_match('#^https?://#i', $path)) {
             return $path;
         }
 
+        // 2. Cloudinary public ID (e.g. groco/products/...)
+        if (class_exists('CloudinaryService') && CloudinaryService::isConfigured() && (str_starts_with($path, 'groco/') || !str_contains($path, '.'))) {
+            return CloudinaryService::url($path, [], $placeholderCategory);
+        }
+
         $cleaned = ltrim($path, '/');
 
-        // 1. If it starts with uploads/
+        // 3. Direct uploads/ path
         if (str_starts_with($cleaned, 'uploads/')) {
             $filePath = PUBLIC_PATH . '/' . $cleaned;
             if (file_exists($filePath)) {
-                $mtime = filemtime($filePath);
-                return BASE_URL . '/' . $cleaned . '?v=' . $mtime;
+                return BASE_URL . '/' . $cleaned . '?v=' . filemtime($filePath);
             }
         }
 
-        // 2. If it directly exists under public/uploads/
+        // 4. Directly under public/uploads/
         $directUpload = PUBLIC_PATH . '/uploads/' . $cleaned;
         if (file_exists($directUpload)) {
-            $mtime = filemtime($directUpload);
-            return BASE_URL . '/uploads/' . $cleaned . '?v=' . $mtime;
+            return BASE_URL . '/uploads/' . $cleaned . '?v=' . filemtime($directUpload);
         }
 
-        // 3. If it is a filename and exists in uploads/<category>/
-        $folder = $placeholderCategory;
-        if ($folder === 'users') {
-            $folder = 'users';
-        }
-        $filePath = PUBLIC_PATH . '/uploads/' . $folder . '/' . $cleaned;
-        if (file_exists($filePath)) {
-            $mtime = filemtime($filePath);
-            return BASE_URL . '/uploads/' . $folder . '/' . $cleaned . '?v=' . $mtime;
+        // 5. Look in category-specific uploads folder or search common upload directories
+        $checkFolders = array_unique([$placeholderCategory, 'products', 'categories', 'brands', 'banners', 'users', 'reviews']);
+        foreach ($checkFolders as $folder) {
+            $filePath = PUBLIC_PATH . '/uploads/' . $folder . '/' . $cleaned;
+            if (file_exists($filePath)) {
+                return BASE_URL . '/uploads/' . $folder . '/' . $cleaned . '?v=' . filemtime($filePath);
+            }
         }
 
-        // 4. If it starts with storage/
+        // 6. If it starts with storage/
         if (str_starts_with($cleaned, 'storage/')) {
             $filePath = PUBLIC_PATH . '/../' . $cleaned;
             if (file_exists($filePath)) {
-                $mtime = filemtime($filePath);
-                return rtrim(dirname(BASE_URL), '/') . '/' . $cleaned . '?v=' . $mtime;
+                return rtrim(dirname(BASE_URL), '/') . '/' . $cleaned . '?v=' . filemtime($filePath);
             }
         }
 
-        // 5. For standard assets inside assets/images/
+        // 7. Standard assets inside assets/images/
         $filePath = PUBLIC_PATH . '/assets/images/' . $cleaned;
         if (file_exists($filePath)) {
-            $mtime = filemtime($filePath);
-            return BASE_URL . '/assets/images/' . $cleaned . '?v=' . $mtime;
+            return BASE_URL . '/assets/images/' . $cleaned . '?v=' . filemtime($filePath);
+        }
+        foreach (['ui', 'products', 'categories', 'brands', 'banners'] as $folder) {
+            $filePath = PUBLIC_PATH . '/assets/images/' . $folder . '/' . $cleaned;
+            if (file_exists($filePath)) {
+                return BASE_URL . '/assets/images/' . $folder . '/' . $cleaned . '?v=' . filemtime($filePath);
+            }
         }
     }
 
-    // Default Fallback
-    $fallbackPath = 'assets/images/' . $placeholderCategory . '/placeholder.png';
-    $filePath = PUBLIC_PATH . '/' . $fallbackPath;
-    if (!file_exists($filePath)) {
-        $fallbackPath = 'assets/images/ui/placeholder.png';
+    // Default Fallback Placeholder (prefer crisp transparent SVG, fall back to PNG)
+    $fallbackSvg = 'assets/images/' . $placeholderCategory . '/placeholder.svg';
+    if (file_exists(PUBLIC_PATH . '/' . $fallbackSvg)) {
+        $fallbackPath = $fallbackSvg;
         $filePath = PUBLIC_PATH . '/' . $fallbackPath;
+    } else {
+        $fallbackPath = 'assets/images/' . $placeholderCategory . '/placeholder.png';
+        $filePath = PUBLIC_PATH . '/' . $fallbackPath;
+        if (!file_exists($filePath)) {
+            $fallbackPath = 'assets/images/ui/placeholder.png';
+            $filePath = PUBLIC_PATH . '/' . $fallbackPath;
+        }
     }
     $mtime = file_exists($filePath) ? filemtime($filePath) : time();
     return BASE_URL . '/' . $fallbackPath . '?v=' . $mtime;
@@ -187,6 +198,53 @@ function url_for(string $page): string
 }
 
 /**
+ * product_url() — Clean SEO-friendly product detail URL: /product/fresh-milk-1-liter
+ */
+function product_url(string $slug): string
+{
+    $cleanSlug = trim($slug);
+    return BASE_URL . '/product/' . rawurlencode($cleanSlug);
+}
+
+/**
+ * category_url() — Clean SEO-friendly category catalog URL: /category/dairy-products
+ */
+function category_url(string $slug, int $page = 1): string
+{
+    $cleanSlug = trim($slug);
+    $url = BASE_URL . '/category/' . rawurlencode($cleanSlug);
+    if ($page > 1) {
+        $url .= '?page=' . $page;
+    }
+    return $url;
+}
+
+/**
+ * brand_url() — Clean SEO-friendly brand catalog URL: /brand/pran
+ */
+function brand_url(string $slug, int $page = 1): string
+{
+    $cleanSlug = trim($slug);
+    $url = BASE_URL . '/brand/' . rawurlencode($cleanSlug);
+    if ($page > 1) {
+        $url .= '?page=' . $page;
+    }
+    return $url;
+}
+
+/**
+ * search_url() — Clean search URL: /search?q=milk
+ */
+function search_url(?string $query = null): string
+{
+    $url = BASE_URL . '/search';
+    if ($query !== null && trim($query) !== '') {
+        $url .= '?q=' . urlencode(trim($query));
+    }
+    return $url;
+}
+
+/**
  * current_url() — including query string, used for "redirect back after login".
  */
 function current_url(): string
@@ -248,9 +306,16 @@ function is_active_page(string $page): bool
 function input(string $key, string $default = '', string $method = 'post'): string
 {
     $source = $method === 'get' ? $_GET : $_POST;
+    if (empty($source) && $method === 'post' && !empty($_SERVER['CONTENT_TYPE']) && str_contains($_SERVER['CONTENT_TYPE'], 'application/json')) {
+        static $jsonInput = null;
+        if ($jsonInput === null) {
+            $jsonInput = json_decode((string) file_get_contents('php://input'), true) ?: [];
+        }
+        $source = $jsonInput;
+    }
     $value = $source[$key] ?? $default;
 
-    return is_string($value) ? trim($value) : $default;
+    return is_scalar($value) ? trim((string) $value) : $default;
 }
 
 /**

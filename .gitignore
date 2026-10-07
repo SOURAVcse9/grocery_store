@@ -115,6 +115,7 @@ cache/
 tmp/
 temp/
 scratch/
+*.zip
 
 # ------------------------------------------------------------------------------
 # 4. Database Backups, Dumps & Ad-hoc Exports
@@ -161,6 +162,9 @@ screenshots/
 # ------------------------------------------------------------------------------
 vendor/
 node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

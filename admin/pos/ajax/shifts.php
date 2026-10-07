@@ -12,6 +12,7 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../../public/dbconnect.php';
 require_once __DIR__ . '/../../includes/auth_helpers.php';
+require_once __DIR__ . '/../../includes/pos_lib.php';
 
 // Safe JSON auth validation checks
 if (!is_admin_logged_in()) {
@@ -20,9 +21,9 @@ if (!is_admin_logged_in()) {
     exit;
 }
 
-if (!has_admin_permission('pos.manage')) {
+if (!has_admin_permission('pos.manage') && !has_admin_permission('pos.access') && !has_admin_permission('pos.cash') && !has_admin_permission('pos.sale')) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Forbidden']);
+    echo json_encode(['success' => false, 'error' => 'Forbidden: POS terminal access required.']);
     exit;
 }
 
@@ -53,70 +54,43 @@ try {
 
         if ($action === 'open_shift') {
             $openingCash = (float) input('opening_cash', '0.00');
-
-            // Verify no open shift exists
-            $stmtCheck = $pdo->prepare("SELECT id FROM pos_shifts WHERE admin_id = ? AND status = 'open' LIMIT 1");
-            $stmtCheck->execute([$adminId]);
-            if ($stmtCheck->fetch()) {
-                echo json_encode(['success' => false, 'error' => 'A register shift is already active.']);
-                exit;
-            }
-
-            $ins = $pdo->prepare("
-                INSERT INTO pos_shifts (admin_id, opening_cash, status, start_time, created_at)
-                VALUES (?, ?, 'open', NOW(), NOW())
-            ");
-            $ins->execute([$adminId, $openingCash]);
-
-            log_admin_activity('pos.open_shift', "Opened new POS cashier register shift with starting cash ৳{$openingCash}");
-            echo json_encode(['success' => true, 'message' => 'Shift opened successfully.']);
+            $shiftId = pos_open_shift($pdo, (int) $adminId, $openingCash);
+            log_admin_activity('pos.open_shift', "Opened POS shift #{$shiftId} with starting cash ৳{$openingCash}");
+            echo json_encode(['success' => true, 'message' => 'Shift opened successfully.', 'shift_id' => $shiftId]);
             exit;
         }
 
         if ($action === 'close_shift') {
-            $actualCash = (float) input('actual_cash', '0.00');
+            $closed = pos_close_shift($pdo, (int) $adminId, (float) input('actual_cash', '0.00'));
+            log_admin_activity('pos.close_shift', "Closed shift #{$closed['shift_id']}: expected ৳{$closed['expected']}, counted ৳{$closed['actual']}, difference ৳{$closed['difference']}");
+            echo json_encode(['success' => true, 'message' => 'Shift closed successfully.', 'expected' => $closed['expected'], 'actual' => $closed['actual'], 'difference' => $closed['difference']]);
+            exit;
+        }
 
-            $stmtActive = $pdo->prepare("SELECT * FROM pos_shifts WHERE admin_id = ? AND status = 'open' LIMIT 1");
-            $stmtActive->execute([$adminId]);
-            $activeShift = $stmtActive->fetch();
+        if ($action === 'summary') {
+            $sh = pos_active_shift($pdo, (int) $adminId);
+            echo json_encode($sh ? ['success' => true, 'summary' => pos_shift_summary($pdo, $sh)] : ['success' => false, 'error' => 'No active shift.']);
+            exit;
+        }
 
-            if (!$activeShift) {
-                echo json_encode(['success' => false, 'error' => 'No active shift found to close.']);
+        if ($action === 'cash_in' || $action === 'cash_out') {
+            if (!has_admin_permission('pos.cash') && !has_admin_permission('pos.manage')) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => 'Forbidden: cash drawer permission required.']);
                 exit;
             }
-
-            // Calculate shift sales
-            $stmtSales = $pdo->prepare("
-                SELECT SUM(total_amount) 
-                FROM orders 
-                WHERE status = 'delivered' 
-                  AND order_number LIKE 'POS-%'
-                  AND created_at >= ?
-            ");
-            $stmtSales->execute([$activeShift['start_time']]);
-            $shiftSales = (float) $stmtSales->fetchColumn();
-
-            $expectedCash = (float)$activeShift['opening_cash'] + $shiftSales;
-
-            $up = $pdo->prepare("
-                UPDATE pos_shifts SET 
-                    end_time = NOW(),
-                    closing_cash = ?,
-                    actual_cash = ?,
-                    status = 'closed'
-                WHERE id = ?
-            ");
-            $up->execute([$expectedCash, $actualCash, $activeShift['id']]);
-
-            log_admin_activity('pos.close_shift', "Closed register shift ID: {$activeShift['id']}. Cash Count: ৳{$actualCash}");
-            echo json_encode(['success' => true, 'message' => 'Shift closed successfully.']);
+            pos_drawer_tx($pdo, (int) $adminId, $action, (float) input('amount', '0'), (string) input('notes', ''));
+            log_admin_activity('pos.drawer_tx', "Drawer {$action} ৳" . (float) input('amount', '0'));
+            echo json_encode(['success' => true, 'message' => 'Drawer transaction recorded.']);
             exit;
         }
     }
 
     echo json_encode(['success' => false, 'error' => 'Invalid request action.']);
 
-} catch (Exception $e) {
-    error_log('[admin/pos/ajax/shifts] Shift operation failed: ' . $e->getMessage());
+} catch (PosException $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+} catch (Throwable $e) {
+    error_log('[admin/pos/ajax/shifts] Shift operation failed: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Shift operation failed due to a server error.']);
 }

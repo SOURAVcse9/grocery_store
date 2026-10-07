@@ -10,6 +10,7 @@ declare(strict_types=1);
 $pageTitle = 'Cash Register Management — GroCo Admin';
 require_once __DIR__ . '/../layouts/dashboard_layout.php';
 require_admin_permission('pos.cash');
+require_once __DIR__ . '/../includes/pos_lib.php';
 
 $pdo = db();
 $adminId = current_admin_id();
@@ -27,30 +28,17 @@ try {
     $cashOutflow = 0.0;
     $drawerTxLogs = [];
 
+    $shiftSum = null;
     if ($activeShift) {
-        // Calculate POS counter sales since shift started
-        $stmtSales = $pdo->prepare("
-            SELECT SUM(total_amount) 
-            FROM orders 
-            WHERE status = 'delivered' 
-              AND order_number LIKE 'POS-%'
-              AND created_at >= ?
-        ");
-        $stmtSales->execute([$activeShift['start_time']]);
-        $shiftSales = (float) $stmtSales->fetchColumn();
+        // Single source of truth for drawer maths (cash tenders only, refunds, cash in/out).
+        $shiftSum    = pos_shift_summary($pdo, $activeShift);
+        $shiftSales  = $shiftSum['cash_sales'];
+        $cashInflow  = $shiftSum['cash_in'];
+        $cashOutflow = $shiftSum['cash_out'];
 
-        // Calculate cash-ins and cash-outs from drawer
         $stmtTx = $pdo->prepare("SELECT * FROM pos_drawer_transactions WHERE shift_id = ? ORDER BY created_at DESC");
         $stmtTx->execute([$activeShift['id']]);
         $drawerTxLogs = $stmtTx->fetchAll();
-
-        foreach ($drawerTxLogs as $tx) {
-            if ($tx['type'] === 'cash_in') {
-                $cashInflow += (float) $tx['amount'];
-            } else {
-                $cashOutflow += (float) $tx['amount'];
-            }
-        }
     }
 
 } catch (PDOException $e) {
@@ -62,80 +50,52 @@ try {
 // 2. Handle Cash In / Cash Out Drawer transaction
 if (method_is('post') && input('pos_action', '') === 'drawer_tx' && $activeShift) {
     verify_csrf_or_fail();
-    $txType = input('tx_type', 'cash_in');
-    $amount = (float) input('amount', '0.00');
-    $notes = trim(input('notes', ''));
-
-    if ($amount <= 0) {
-        $error = 'Drawer transaction amount must be greater than zero.';
-    } else {
-        try {
-            $stmtIns = $pdo->prepare("
-                INSERT INTO pos_drawer_transactions (shift_id, type, amount, notes, created_at)
-                VALUES (?, ?, ?, ?, NOW())
-            ");
-            $stmtIns->execute([$activeShift['id'], $txType, $amount, $notes]);
-
-            // Post transaction to general ledger
-            $ledgerType = ($txType === 'cash_in') ? 'income' : 'expense';
-            $pdo->prepare("
-                INSERT INTO transactions (type, category_id, amount, reference, payment_method, reconciled, created_at)
-                VALUES (?, NULL, ?, ?, 'cash', 1, NOW())
-            ")->execute([$ledgerType, $amount, "POS Shift #{$activeShift['id']} Drawer {$txType}: {$notes}"]);
-
-            log_admin_activity('pos.drawer_tx', "Logged register drawer {$txType} of ৳{$amount}. Notes: {$notes}");
-            $success = "Register drawer transaction logged successfully!";
-            header('Location: register.php');
-            exit;
-        } catch (PDOException $e) {
-            error_log('[admin/pos/register] drawer tx failed: ' . $e->getMessage());
-            $error = 'Failed to record drawer transaction.';
-        }
+    try {
+        pos_drawer_tx($pdo, (int) $adminId, (string) input('tx_type', ''), (float) input('amount', '0'), (string) input('notes', ''));
+        log_admin_activity('pos.drawer_tx', 'Logged register drawer ' . input('tx_type', '') . ' of ৳' . (float) input('amount', '0'));
+        flash('pos_msg', 'Register drawer transaction logged successfully!', 'success');
+        header('Location: register.php');
+        exit;
+    } catch (PosException $e) {
+        $error = $e->getMessage();
+    } catch (Throwable $e) {
+        error_log('[admin/pos/register] drawer tx failed: ' . $e->getMessage());
+        $error = 'Failed to record drawer transaction.';
     }
 }
 
 // 3. Handle Opening Shift
 if (method_is('post') && input('pos_action', '') === 'open_shift') {
     verify_csrf_or_fail();
-    $openingCash = (float) input('opening_cash', '0.00');
-
     try {
-        $ins = $pdo->prepare("INSERT INTO pos_shifts (admin_id, opening_cash, status, start_time) VALUES (?, ?, 'open', NOW())");
-        $ins->execute([$adminId, $openingCash]);
-        log_admin_activity('pos.open_shift', "Opened cash register shift drawer with opening cash ৳{$openingCash}");
+        $newShiftId = pos_open_shift($pdo, (int) $adminId, (float) input('opening_cash', '0'));
+        log_admin_activity('pos.open_shift', 'Opened cash register shift #' . $newShiftId . ' with opening cash ৳' . (float) input('opening_cash', '0'));
         flash('pos_msg', 'Cash Register opened successfully!', 'success');
         header('Location: index.php');
         exit;
-    } catch (PDOException $e) {
+    } catch (PosException $e) {
+        $error = $e->getMessage();
+    } catch (Throwable $e) {
         error_log('[admin/pos/register] open failed: ' . $e->getMessage());
-        $error = 'Failed to open register: ' . $e->getMessage();
+        $error = 'Failed to open register.';
     }
 }
 
-// 4. Handle Closing Shift (Z-Report Generation & Close)
+// 4. Handle Closing Shift (Z-Report). The variance is stored exactly as counted — never silently adjusted.
 if (method_is('post') && input('pos_action', '') === 'close_shift' && $activeShift) {
     verify_csrf_or_fail();
-    $actualCash = (float) input('actual_cash', '0.00');
-    $expectedCash = (float)$activeShift['opening_cash'] + $shiftSales + $cashInflow - $cashOutflow;
-
     try {
-        $up = $pdo->prepare("
-            UPDATE pos_shifts SET 
-                end_time = NOW(),
-                closing_cash = ?,
-                actual_cash = ?,
-                status = 'closed'
-            WHERE id = ?
-        ");
-        $up->execute([$expectedCash, $actualCash, $activeShift['id']]);
-
-        log_admin_activity('pos.close_shift', "Closed cash register shift ID: {$activeShift['id']}. Reconciled counted cash: ৳{$actualCash}");
-        flash('pos_msg', 'Cash Register Shift closed and reconciled successfully!', 'success');
+        $closed = pos_close_shift($pdo, (int) $adminId, (float) input('actual_cash', '0'));
+        $diff = $closed['difference'];
+        log_admin_activity('pos.close_shift', "Closed shift #{$closed['shift_id']}: expected ৳{$closed['expected']}, counted ৳{$closed['actual']}, difference ৳{$diff}");
+        flash('pos_msg', 'Shift closed. Expected ৳' . number_format($closed['expected'], 2) . ', counted ৳' . number_format($closed['actual'], 2) . ', difference ' . ($diff >= 0 ? '+' : '-') . '৳' . number_format(abs($diff), 2), $diff == 0.0 ? 'success' : 'warning');
         header('Location: index.php');
         exit;
-    } catch (PDOException $e) {
+    } catch (PosException $e) {
+        $error = $e->getMessage();
+    } catch (Throwable $e) {
         error_log('[admin/pos/register] close shift failed: ' . $e->getMessage());
-        $error = 'Failed to close register due to database error.';
+        $error = 'Failed to close register due to a database error.';
     }
 }
 
@@ -157,7 +117,7 @@ try {
 $reportAction = input('action', '', 'get');
 if ($reportAction === 'x_report' && $activeShift) {
     // Generate X Report (current reading, does not close the register)
-    $expectedDrawer = $activeShift['opening_cash'] + $shiftSales + $cashInflow - $cashOutflow;
+    $expectedDrawer = $shiftSum['expected_cash'];
     ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -181,7 +141,12 @@ if ($reportAction === 'x_report' && $activeShift) {
         </div>
         <div class="line"></div>
         <div class="row-val"><span>Opening Cash:</span><span>৳<?= number_format((float)$activeShift['opening_cash'], 2) ?></span></div>
-        <div class="row-val"><span>POS Sales Inflow:</span><span>৳<?= number_format($shiftSales, 2) ?></span></div>
+        <div class="row-val"><span>Cash Sales:</span><span>৳<?= number_format($shiftSales, 2) ?></span></div>
+        <div class="row-val"><span>Card Sales:</span><span>৳<?= number_format($shiftSum['card'], 2) ?></span></div>
+        <div class="row-val"><span>Mobile Banking:</span><span>৳<?= number_format($shiftSum['bkash'], 2) ?></span></div>
+        <div class="row-val"><span>Bank Transfer:</span><span>৳<?= number_format($shiftSum['bank'], 2) ?></span></div>
+        <div class="row-val"><span>Wallet:</span><span>৳<?= number_format($shiftSum['wallet'], 2) ?></span></div>
+        <div class="row-val"><span>Cash Refunds:</span><span>-৳<?= number_format($shiftSum['cash_refunds'], 2) ?></span></div>
         <div class="row-val"><span>Drawer Cash-Ins:</span><span>৳<?= number_format($cashInflow, 2) ?></span></div>
         <div class="row-val"><span>Drawer Cash-Outs:</span><span>৳<?= number_format($cashOutflow, 2) ?></span></div>
         <div class="line"></div>
@@ -235,7 +200,7 @@ if ($reportAction === 'x_report' && $activeShift) {
                         <strong>৳<?= number_format((float)$activeShift['opening_cash'], 2) ?></strong>
                     </div>
                     <div style="display:flex; justify-content:space-between; color:#0ca678;">
-                        <span>POS Counter Sales:</span>
+                        <span>Cash Sales:</span>
                         <strong>+৳<?= number_format($shiftSales, 2) ?></strong>
                     </div>
                     <div style="display:flex; justify-content:space-between; color:#0ca678;">
@@ -246,9 +211,17 @@ if ($reportAction === 'x_report' && $activeShift) {
                         <span>Drawer Outflow:</span>
                         <strong>-৳<?= number_format($cashOutflow, 2) ?></strong>
                     </div>
+                    <div style="display:flex; justify-content:space-between; color:#e03131;">
+                        <span>Cash Refunds:</span>
+                        <strong>-৳<?= number_format((float)$shiftSum['cash_refunds'], 2) ?></strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px;">
+                        <span>Card / Mobile / Bank / Wallet sales (not in drawer):</span>
+                        <strong>৳<?= number_format((float)($shiftSum['card'] + $shiftSum['bkash'] + $shiftSum['bank'] + $shiftSum['wallet']), 2) ?></strong>
+                    </div>
                     <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-border); padding-top:8px; font-size:14px; color:var(--color-text);">
                         <span>Expected Drawer Cash:</span>
-                        <strong>৳<?= number_format((float)$activeShift['opening_cash'] + $shiftSales + $cashInflow - $cashOutflow, 2) ?></strong>
+                        <strong>৳<?= number_format((float)$shiftSum['expected_cash'], 2) ?></strong>
                     </div>
                 </div>
 
@@ -407,4 +380,4 @@ if ($reportAction === 'x_report' && $activeShift) {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

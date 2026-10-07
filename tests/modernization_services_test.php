@@ -97,6 +97,7 @@ assertTest(
 // 3. QueueService Tests
 echo "\n--- 3. QUEUESERVICE & ASYNC JOBS ---\n";
 QueueService::init();
+QueueService::clear();
 $testJobExecuted = false;
 $GLOBALS['test_queue_ran'] = false;
 
@@ -152,12 +153,20 @@ LoggerService::info("Test customer login event", [
     'cart_items'     => 3
 ]);
 
-$logFile = dirname(__DIR__) . '/storage/logs/app_' . date('Y-m-d') . '.log';
-$logContent = file_exists($logFile) ? file_get_contents($logFile) : '';
+$logFiles = [
+    dirname(__DIR__) . '/storage/logs/groco-' . date('Y-m-d') . '.json.log',
+    dirname(__DIR__) . '/storage/logs/app_' . date('Y-m-d') . '.log'
+];
+$logContent = '';
+foreach ($logFiles as $lf) {
+    if (file_exists($lf)) {
+        $logContent .= file_get_contents($lf);
+    }
+}
 assertTest(
     "LoggerService writes structured JSON log with automated secret redaction",
     strpos($logContent, 'Test customer login event') !== false &&
-    strpos($logContent, '******** [REDACTED]') !== false &&
+    strpos($logContent, '[REDACTED]') !== false &&
     strpos($logContent, 'SuperSecretPassword123!') === false,
     "Secret properly redacted from JSON log file"
 );

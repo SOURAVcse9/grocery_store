@@ -225,4 +225,3 @@ function deleteSingleSubscriber(id) {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>

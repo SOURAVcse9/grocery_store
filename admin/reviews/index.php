@@ -422,4 +422,4 @@ require_once __DIR__ . '/../layouts/dashboard_layout.php';
 <script src="<?= BASE_URL ?>/assets/js/reviews.js"></script>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
-</div>
+

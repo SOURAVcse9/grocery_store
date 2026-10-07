@@ -1,8 +1,9 @@
-# Deny all direct web access — developer test suite, not part of the production app.
-<IfModule mod_authz_core.c>
-    Require all denied
-</IfModule>
+# ==============================================================================
+# tests/.htaccess — Deny All Public Web Access
+# ==============================================================================
+# Automated test suites and regression scripts must not be invoked publicly.
+# ==============================================================================
+Require all denied
 <IfModule !mod_authz_core.c>
-    Order Deny,Allow
     Deny from all
 </IfModule>

@@ -28,6 +28,21 @@ if ($page < 1) {
     $page = 1;
 }
 
+// 301 Redirect legacy URL accesses without filters to clean canonical routes
+$reqUri = $_SERVER['REQUEST_URI'] ?? '';
+$hasSpecialFilters = is_numeric($minPrice) || is_numeric($maxPrice) || $inStock || $discounted || $minRating > 0 || (!empty($sort) && $sort !== 'newest') || mb_strlen($searchQuery) >= 2;
+
+if (str_contains($reqUri, 'products.php') && !$hasSpecialFilters) {
+    if (!empty($categorySlug) && empty($brandSlug)) {
+        header('Location: ' . category_url($categorySlug, $page), true, 301);
+        exit;
+    }
+    if (!empty($brandSlug) && empty($categorySlug)) {
+        header('Location: ' . brand_url($brandSlug, $page), true, 301);
+        exit;
+    }
+}
+
 $limit = 9;
 $offset = ($page - 1) * $limit;
 
@@ -164,31 +179,45 @@ try {
 
     if (!empty($categorySlug)) {
         // Find category name & description for SEO
-        $catQuery = $pdo->prepare('SELECT name, description FROM categories WHERE slug = :slug LIMIT 1');
+        $catQuery = $pdo->prepare('SELECT id, name, slug, description, image, meta_title, meta_description FROM categories WHERE slug = :slug AND is_active = 1 LIMIT 1');
         $catQuery->execute(['slug' => $categorySlug]);
         $catRow = $catQuery->fetch();
-        if ($catRow !== false) {
-            $catName = $catRow['name'];
-            $breadcrumbs[] = ['title' => $catName];
-            $bannerTitle = $catName;
-            $bannerText = !empty($catRow['description']) ? $catRow['description'] : ('Order fresh ' . $catName . ' online at best prices in Bangladesh with fast home delivery.');
-            $pageTitle = $catName . ' | Buy Fresh Groceries Online | ' . site_name();
-            $pageDescription = format_meta_description($bannerText);
-            $pageCanonical = build_canonical_url('products.php', ['category' => $categorySlug]);
+        if ($catRow === false) {
+            require __DIR__ . '/404.php';
+            exit;
+        }
+        $catName = $catRow['name'];
+        $breadcrumbs[] = ['title' => $catName];
+        $bannerTitle = $catName;
+        $bannerText = !empty($catRow['description']) ? $catRow['description'] : ('Order fresh ' . $catName . ' online at best prices in Bangladesh with fast home delivery.');
+        $pageTitle = !empty($catRow['meta_title']) ? $catRow['meta_title'] : ($catName . ' | Buy Fresh Groceries Online | ' . site_name());
+        $pageDescription = !empty($catRow['meta_description']) ? $catRow['meta_description'] : format_meta_description($bannerText);
+        $pageCanonical = category_url($categorySlug, $page);
+        $ogTitle = $pageTitle;
+        $ogDescription = $pageDescription;
+        if (!empty($catRow['image'])) {
+            $pageImage = image_url($catRow['image'], 'categories');
         }
     } elseif (!empty($brandSlug)) {
         // Find brand name
-        $brandQuery = $pdo->prepare('SELECT name, description FROM brands WHERE slug = :slug LIMIT 1');
+        $brandQuery = $pdo->prepare('SELECT id, name, slug, description, logo, meta_title, meta_description FROM brands WHERE slug = :slug AND is_active = 1 LIMIT 1');
         $brandQuery->execute(['slug' => $brandSlug]);
         $brandRow = $brandQuery->fetch();
-        if ($brandRow !== false) {
-            $brandName = $brandRow['name'];
-            $breadcrumbs[] = ['title' => $brandName];
-            $bannerTitle = $brandName;
-            $bannerText = !empty($brandRow['description']) ? $brandRow['description'] : ('Shop authentic ' . $brandName . ' products online with fast home delivery in Bangladesh.');
-            $pageTitle = $brandName . ' Products | Buy Online | ' . site_name();
-            $pageDescription = format_meta_description($bannerText);
-            $pageCanonical = build_canonical_url('products.php', ['brand' => $brandSlug]);
+        if ($brandRow === false) {
+            require __DIR__ . '/404.php';
+            exit;
+        }
+        $brandName = $brandRow['name'];
+        $breadcrumbs[] = ['title' => $brandName];
+        $bannerTitle = $brandName;
+        $bannerText = !empty($brandRow['description']) ? $brandRow['description'] : ('Shop authentic ' . $brandName . ' products online with fast home delivery in Bangladesh.');
+        $pageTitle = !empty($brandRow['meta_title']) ? $brandRow['meta_title'] : ($brandName . ' Products | Buy Online | ' . site_name());
+        $pageDescription = !empty($brandRow['meta_description']) ? $brandRow['meta_description'] : format_meta_description($bannerText);
+        $pageCanonical = brand_url($brandSlug, $page);
+        $ogTitle = $pageTitle;
+        $ogDescription = $pageDescription;
+        if (!empty($brandRow['logo'])) {
+            $pageImage = image_url($brandRow['logo'], 'brands');
         }
     } elseif (!empty($searchQuery)) {
         $breadcrumbs[] = ['title' => 'Search: "' . $searchQuery . '"'];
@@ -196,11 +225,12 @@ try {
         $bannerText = 'Showing products matching your search query: "' . $searchQuery . '"';
         $pageTitle = 'Search results for "' . $searchQuery . '" | ' . site_name();
         $pageDescription = format_meta_description('Browse grocery search results for ' . $searchQuery . ' at ' . site_name() . '.');
-        $pageCanonical = build_canonical_url('products.php');
+        $pageCanonical = search_url($searchQuery);
         $pageRobots = 'noindex, follow';
     } else {
         $pageTitle = 'All Groceries & Daily Essentials | ' . site_name();
         $pageDescription = format_meta_description($bannerText);
+        $pageCanonical = ($page > 1) ? url_for('products.php?page=' . $page) : url_for('products.php');
     }
 
 } catch (PDOException $e) {

@@ -10,6 +10,7 @@ declare(strict_types=1);
 $pageTitle = 'Shift Management — GroCo Admin';
 require_once __DIR__ . '/../layouts/dashboard_layout.php';
 require_admin_permission('pos.manage');
+require_once __DIR__ . '/../includes/pos_lib.php';
 
 $pdo = db();
 $adminId = current_admin_id();
@@ -23,17 +24,10 @@ try {
     $activeShift = $stmtActive->fetch();
 
     $shiftSales = 0.0;
+    $shiftSum = null;
     if ($activeShift) {
-        // Calculate sales during this shift (delivered POS orders since start_time)
-        $stmtSales = $pdo->prepare("
-            SELECT SUM(total_amount) 
-            FROM orders 
-            WHERE status = 'delivered' 
-              AND order_number LIKE 'POS-%'
-              AND created_at >= ?
-        ");
-        $stmtSales->execute([$activeShift['start_time']]);
-        $shiftSales = (float) $stmtSales->fetchColumn();
+        $shiftSum   = pos_shift_summary($pdo, $activeShift);
+        $shiftSales = $shiftSum['cash_sales'];
     }
 
 } catch (PDOException $e) {
@@ -42,28 +36,18 @@ try {
     $shiftSales = 0;
 }
 
-// 2. Handle Closing Cash Shift Register drawer
+// 2. Handle Closing Cash Shift Register drawer (shared, transactional logic)
 if (method_is('post') && input('pos_action', '') === 'close_shift' && $activeShift) {
     verify_csrf_or_fail();
-    $actualCash = (float) input('actual_cash', '0.00');
-    $expectedCash = (float)$activeShift['opening_cash'] + $shiftSales;
-
     try {
-        $up = $pdo->prepare("
-            UPDATE pos_shifts SET 
-                end_time = NOW(),
-                closing_cash = ?,
-                actual_cash = ?,
-                status = 'closed'
-            WHERE id = ?
-        ");
-        $up->execute([$expectedCash, $actualCash, $activeShift['id']]);
-
-        log_admin_activity('pos.close_shift', "Closed cash register shift ID: {$activeShift['id']}. Drawer Cash Count: ৳{$actualCash}");
-        flash('pos_msg', 'Cash Register Shift closed and reconciled successfully!', 'success');
+        $closed = pos_close_shift($pdo, (int) $adminId, (float) input('actual_cash', '0'));
+        log_admin_activity('pos.close_shift', "Closed shift #{$closed['shift_id']}: expected ৳{$closed['expected']}, counted ৳{$closed['actual']}, difference ৳{$closed['difference']}");
+        flash('pos_msg', 'Cash Register Shift closed and reconciled. Difference: ' . ($closed['difference'] >= 0 ? '+' : '-') . '৳' . number_format(abs($closed['difference']), 2), $closed['difference'] == 0.0 ? 'success' : 'warning');
         header('Location: index.php');
         exit;
-    } catch (PDOException $e) {
+    } catch (PosException $e) {
+        $error = $e->getMessage();
+    } catch (Throwable $e) {
         error_log('[admin/pos/shift] close shift failed: ' . $e->getMessage());
         $error = 'Failed to close register due to database error.';
     }
@@ -121,7 +105,7 @@ try {
                 </div>
                 <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-border); padding-top:8px; font-size:14px; color:var(--color-text);">
                     <span>Expected Drawer Cash:</span>
-                    <strong>৳<?= number_format((float)$activeShift['opening_cash'] + $shiftSales, 2) ?></strong>
+                    <strong>৳<?= number_format((float)$shiftSum['expected_cash'], 2) ?></strong>
                 </div>
             </div>
 
@@ -201,4 +185,4 @@ try {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>
+

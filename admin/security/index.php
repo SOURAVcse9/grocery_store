@@ -62,7 +62,7 @@ try {
     
     // Fetch failed login attempts from admin_login_logs
     $failedAttempts = $pdo->query("
-        SELECT username, ip_address, login_time, success, user_agent 
+        SELECT COALESCE(login_identity, 'Unknown') AS username, ip_address, login_time, success, user_agent 
         FROM admin_login_logs 
         WHERE success = 0 
         ORDER BY login_time DESC 
@@ -196,4 +196,3 @@ try {
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
 ?>
-</div>

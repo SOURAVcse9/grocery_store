@@ -79,6 +79,9 @@ try {
     </div>
 </div>
 
+<!-- 0. Operations panel (date-filtered POS / online / stock / shift KPIs) -->
+<?php if (has_admin_permission('dashboard.view')) { require __DIR__ . '/includes/dashboard_ops_panel.php'; } ?>
+
 <!-- 1. Stats Counter Widgets -->
 <?php if (has_admin_permission('dashboard.view')): ?>
     <section class="stats-cards-grid" aria-label="Quick stats widgets">
@@ -389,4 +392,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Close layout wrapper
 require_once __DIR__ . '/layouts/footer.php';
 ?>
-</div>
+

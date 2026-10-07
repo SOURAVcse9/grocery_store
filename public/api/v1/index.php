@@ -8,8 +8,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../dbconnect.php';
+require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/CacheService.php';
 require_once __DIR__ . '/../../includes/MediaService.php';
+require_once __DIR__ . '/../../includes/EventDispatcher.php';
 require_once __DIR__ . '/ApiResponse.php';
 
 // Handle CORS Preflight
@@ -403,14 +405,38 @@ try {
             break;
 
         // ----------------------------------------------------------------------
-        // ORDERS: GET /api/v1/orders & GET /api/v1/orders/{id}
+        // ORDERS: GET /api/v1/orders, GET /api/v1/orders/{id}, POST /api/v1/orders
         // ----------------------------------------------------------------------
         case 'orders':
+            $orderService = new OrderService($pdo);
+
+            if ($method === 'POST') {
+                $userId = is_logged_in() ? (int)get_current_user_id() : null;
+                $items = $input['items'] ?? [];
+                if (empty($items) || !is_array($items)) {
+                    ApiResponse::error('Cart items array cannot be empty', 400);
+                }
+
+                $orderData = [
+                    'user_id'         => $userId,
+                    'address_id'      => $input['address_id'] ?? null,
+                    'coupon_id'       => $input['coupon_id'] ?? null,
+                    'discount_amount' => (float)($input['discount_amount'] ?? 0.0),
+                    'delivery_charge' => (float)($input['delivery_charge'] ?? 5.0),
+                    'payment_method'  => (string)($input['payment_method'] ?? 'cod'),
+                    'payment_status'  => (string)($input['payment_status'] ?? 'unpaid'),
+                    'note'            => (string)($input['note'] ?? ''),
+                    'customer_email'  => (string)($input['customer_email'] ?? '')
+                ];
+
+                $created = $orderService->createOrder($orderData, $items);
+                ApiResponse::success($created, null, 201);
+            }
+
             if (!is_logged_in()) {
                 ApiResponse::unauthorized('Customer login required');
             }
             $userId = (int)get_current_user_id();
-            $orderService = new OrderService($pdo);
 
             if ($method === 'GET') {
                 if ($subId && is_numeric($subId)) {
@@ -430,6 +456,76 @@ try {
                         'total_pages' => $ordersData['total_pages']
                     ]);
                 }
+            }
+            break;
+
+        // ----------------------------------------------------------------------
+        // AUTH: POST /api/v1/auth/login, register, logout & GET /api/v1/auth/me
+        // ----------------------------------------------------------------------
+        case 'auth':
+            $custService = new CustomerService($pdo);
+
+            if ($subId === 'login' && $method === 'POST') {
+                $email = trim((string)($input['email'] ?? ''));
+                $password = (string)($input['password'] ?? '');
+
+                if ($email === '' || $password === '') {
+                    ApiResponse::error('Email and password are required', 400);
+                }
+
+                $user = attempt_login($email, $password);
+                if (!$user) {
+                    ApiResponse::error('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+                }
+
+                $_SESSION['user_id'] = (int)$user['id'];
+                $_SESSION['customer_id'] = (int)$user['id'];
+                $_SESSION['customer_authenticated'] = true;
+                $_SESSION['role_id'] = (int)$user['role_id'];
+                $_SESSION['session_version'] = (int)($user['session_version'] ?? 1);
+
+                $profile = $custService->getById((int)$user['id']);
+                ApiResponse::success(['message' => 'Logged in successfully', 'user' => $profile]);
+            } elseif ($subId === 'register' && $method === 'POST') {
+                $name = trim((string)($input['full_name'] ?? ($input['name'] ?? '')));
+                $email = strtolower(trim((string)($input['email'] ?? '')));
+                $password = (string)($input['password'] ?? '');
+                $phone = trim((string)($input['phone'] ?? ''));
+
+                if ($name === '' || $email === '' || strlen($password) < 6) {
+                    ApiResponse::error('Valid name, email, and password (min 6 chars) required', 400);
+                }
+
+                $existing = $custService->getByEmail($email);
+                if ($existing) {
+                    ApiResponse::error('An account with this email already exists', 409, 'EMAIL_EXISTS');
+                }
+
+                $hash = password_hash($password, PASSWORD_BCRYPT);
+                $stmt = $pdo->prepare("INSERT INTO users (full_name, email, password, phone, role_id, is_active, session_version, created_at) VALUES (?, ?, ?, ?, 2, 1, 1, NOW())");
+                $stmt->execute([$name, $email, $hash, $phone]);
+                $newUserId = (int)$pdo->lastInsertId();
+
+                $_SESSION['user_id'] = $newUserId;
+                $_SESSION['customer_id'] = $newUserId;
+                $_SESSION['customer_authenticated'] = true;
+                $_SESSION['role_id'] = 2;
+                $_SESSION['session_version'] = 1;
+
+                $profile = $custService->getById($newUserId);
+                ApiResponse::success(['message' => 'Account created successfully', 'user' => $profile], null, 201);
+            } elseif ($subId === 'logout' && $method === 'POST') {
+                unset($_SESSION['user_id'], $_SESSION['customer_id'], $_SESSION['customer_authenticated'], $_SESSION['role_id']);
+                ApiResponse::success(['message' => 'Logged out successfully']);
+            } elseif ($subId === 'me' && $method === 'GET') {
+                if (!is_logged_in()) {
+                    ApiResponse::unauthorized('Not authenticated');
+                }
+                $userId = (int)get_current_user_id();
+                $profile = $custService->getById($userId);
+                ApiResponse::success($profile);
+            } else {
+                ApiResponse::notFound('Auth endpoint not found');
             }
             break;
 
@@ -466,6 +562,180 @@ try {
                 } else {
                     ApiResponse::error($res['message'], 400, 'INVALID_COUPON', $res);
                 }
+            }
+            break;
+
+        // ----------------------------------------------------------------------
+        // POS: /api/v1/pos/* (Enterprise Retail Point-of-Sale Endpoints)
+        // ----------------------------------------------------------------------
+        case 'pos':
+            $pos = pos_service();
+            $adminId = (int)($_SESSION['admin_id'] ?? 1); // fallback for authorized cashier sessions
+            $storeId = (int)($input['store_id'] ?? ($_GET['store_id'] ?? 1));
+
+            if ($subId === 'products') {
+                if ($action === 'barcode' && !empty($segments[3])) {
+                    // GET /api/v1/pos/products/barcode/{barcode}
+                    $code = trim(urldecode($segments[3]));
+                    $stmt = $pdo->prepare("
+                        SELECT id, name, sku, barcode, price, discount_price, stock, unit, thumbnail, is_active 
+                        FROM products 
+                        WHERE (barcode = ? OR sku = ? OR id = ?) AND deleted_at IS NULL 
+                        LIMIT 1
+                    ");
+                    $numId = ctype_digit($code) ? (int)$code : 0;
+                    $stmt->execute([$code, $code, $numId]);
+                    $prod = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$prod) {
+                        ApiResponse::notFound("Product not found for barcode/SKU: {$code}");
+                    }
+
+                    $regPrice = (float)$prod['price'];
+                    $effectivePrice = ($prod['discount_price'] !== null && (float)$prod['discount_price'] > 0 && (float)$prod['discount_price'] < $regPrice)
+                        ? (float)$prod['discount_price'] : $regPrice;
+
+                    $prod['effective_price'] = $effectivePrice;
+                    $prod['image_url'] = MediaService::getUrl((string)$prod['thumbnail']);
+                    ApiResponse::success($prod);
+                } else {
+                    // GET /api/v1/pos/products (Search & Autocomplete)
+                    $search = trim((string)($_GET['q'] ?? ($_GET['search'] ?? '')));
+                    $catId = !empty($_GET['category_id']) ? (int)$_GET['category_id'] : null;
+                    $limit = min(100, max(1, (int)($_GET['limit'] ?? 30)));
+
+                    $where = ["deleted_at IS NULL AND is_active = 1"];
+                    $params = [];
+
+                    if ($search !== '') {
+                        $where[] = "(name LIKE ? OR sku LIKE ? OR barcode LIKE ? OR id = ?)";
+                        $searchTerm = '%' . $search . '%';
+                        $numId = ctype_digit($search) ? (int)$search : 0;
+                        $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $numId]);
+                    }
+                    if ($catId) {
+                        $where[] = "category_id = ?";
+                        $params[] = $catId;
+                    }
+
+                    $whereSql = implode(' AND ', $where);
+                    $stmt = $pdo->prepare("
+                        SELECT id, category_id, brand_id, name, sku, barcode, price, discount_price, stock, unit, thumbnail, is_active 
+                        FROM products 
+                        WHERE {$whereSql}
+                        ORDER BY name ASC 
+                        LIMIT {$limit}
+                    ");
+                    $stmt->execute($params);
+                    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $formatted = [];
+                    foreach ($products as $p) {
+                        $reg = (float)$p['price'];
+                        $eff = ($p['discount_price'] !== null && (float)$p['discount_price'] > 0 && (float)$p['discount_price'] < $reg)
+                            ? (float)$p['discount_price'] : $reg;
+                        
+                        $unit = trim((string)($p['unit'] ?? 'pcs'));
+                        $isWeighted = in_array(strtolower($unit), ['kg', 'gram', 'gm', 'liter', 'l', 'ml'], true);
+
+                        $formatted[] = [
+                            'id'              => (int)$p['id'],
+                            'name'            => $p['name'],
+                            'sku'             => $p['sku'],
+                            'barcode'         => $p['barcode'],
+                            'price'           => $eff,
+                            'regular_price'   => $reg,
+                            'discount_price'  => $p['discount_price'] !== null ? (float)$p['discount_price'] : null,
+                            'stock'           => (float)$p['stock'],
+                            'unit'            => $unit,
+                            'is_weighted'     => $isWeighted ? 1 : 0,
+                            'image_url'       => MediaService::getUrl((string)$p['thumbnail'])
+                        ];
+                    }
+
+                    ApiResponse::success($formatted, ['count' => count($formatted)]);
+                }
+            } elseif ($subId === 'transactions') {
+                if ($method === 'POST') {
+                    // POST /api/v1/pos/transactions (Process Sale)
+                    $payload = $input;
+                    $payload['cashier_id'] = $payload['cashier_id'] ?? $adminId;
+                    $payload['store_id'] = $storeId;
+                    $res = $pos->transaction()->processSale($payload);
+                    ApiResponse::success($res, null, 201);
+                } elseif ($method === 'GET' && $action && is_numeric($action)) {
+                    // GET /api/v1/pos/transactions/{id}
+                    $txId = (int)$action;
+                    $txData = $pos->transaction()->getTransaction($txId);
+                    if (!$txData) {
+                        ApiResponse::notFound("POS Transaction #{$txId} not found");
+                    }
+                    ApiResponse::success($txData);
+                } elseif ($method === 'GET' && is_numeric($subId)) {
+                    $txId = (int)$subId;
+                    $txData = $pos->transaction()->getTransaction($txId);
+                    if (!$txData) {
+                        ApiResponse::notFound("POS Transaction #{$txId} not found");
+                    }
+                    ApiResponse::success($txData);
+                }
+            } elseif ($subId === 'sync' && $method === 'POST') {
+                // POST /api/v1/pos/sync (Offline Queue Sync)
+                $queue = $input['queue'] ?? ($input['transactions'] ?? []);
+                if (!is_array($queue)) {
+                    ApiResponse::error('Invalid sync queue array payload', 400, 'INVALID_QUEUE');
+                }
+                $syncRes = $pos->sync()->syncBatch($queue);
+                ApiResponse::success($syncRes);
+            } elseif ($subId === 'shifts') {
+                if ($action === 'open' && $method === 'POST') {
+                    // POST /api/v1/pos/shifts/open
+                    $openingCash = (float)($input['opening_cash'] ?? 0.00);
+                    $note = (string)($input['note'] ?? '');
+                    $shift = $pos->shift()->openShift($adminId, $openingCash, $storeId, 1, 1, $note);
+                    ApiResponse::success($shift, null, 201);
+                } elseif ($action === 'close' && $method === 'POST') {
+                    // POST /api/v1/pos/shifts/close
+                    $shiftId = (int)($input['shift_id'] ?? 0);
+                    $actualCash = (float)($input['actual_cash'] ?? 0.00);
+                    $note = (string)($input['note'] ?? '');
+                    $closed = $pos->shift()->closeShift($shiftId, $actualCash, $note);
+                    ApiResponse::success($closed);
+                } elseif ($action === 'current' && $method === 'GET') {
+                    // GET /api/v1/pos/shifts/current
+                    $active = $pos->shift()->getActiveShift($adminId);
+                    if ($active) {
+                        $summary = $pos->shift()->getShiftSummary((int)$active['id']);
+                        ApiResponse::success($summary);
+                    } else {
+                        ApiResponse::success(['has_active_shift' => false]);
+                    }
+                }
+            } elseif ($subId === 'cash-movements' && $method === 'POST') {
+                // POST /api/v1/pos/cash-movements
+                $shiftId = (int)($input['shift_id'] ?? 0);
+                $type = (string)($input['type'] ?? 'cash_in');
+                $amount = (float)($input['amount'] ?? 0.00);
+                $reason = (string)($input['reason'] ?? '');
+                $authBy = !empty($input['authorized_by']) ? (int)$input['authorized_by'] : null;
+                $movId = $pos->shift()->recordCashMovement($shiftId, $adminId, $type, $amount, $reason, $authBy);
+                ApiResponse::success(['message' => 'Cash movement recorded successfully', 'movement_id' => $movId], null, 201);
+            } elseif ($subId === 'returns' && $method === 'POST') {
+                // POST /api/v1/pos/returns
+                $orderId = (int)($input['order_id'] ?? 0);
+                $returns = (array)($input['returns'] ?? []);
+                $methodRefund = (string)($input['refund_method'] ?? 'cash');
+                $reason = (string)($input['reason'] ?? 'POS Return');
+                $retRes = $pos->returns()->processReturn($orderId, $adminId, $returns, $methodRefund, $reason);
+                ApiResponse::success($retRes, null, 201);
+            } elseif ($subId === 'receipt' && $method === 'GET') {
+                // GET /api/v1/pos/receipt?id=123&is_tx=1
+                $recId = (int)($_GET['id'] ?? 0);
+                $isTx = !empty($_GET['is_tx']);
+                $recData = $pos->receipt()->getReceiptData($recId, $isTx, $adminId);
+                ApiResponse::success($recData);
+            } else {
+                ApiResponse::notFound("POS endpoint [/api/v1/pos/{$subId}] not found");
             }
             break;
 

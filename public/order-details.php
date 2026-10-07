@@ -143,6 +143,11 @@ try {
     $historyStmt->execute(['oid' => $orderId]);
     $history = $historyStmt->fetchAll();
 
+    // E. Fetch Latest Payment Transaction
+    $payStmt = $pdo->prepare('SELECT * FROM payments WHERE order_id = :oid ORDER BY id DESC LIMIT 1');
+    $payStmt->execute(['oid' => $orderId]);
+    $paymentRecord = $payStmt->fetch();
+
 } catch (PDOException $e) {
     error_log('[order-details.php] Load error: ' . $e->getMessage());
     flash('orders', 'Unable to load order details at this time. Please try again later.', 'error');
@@ -218,6 +223,9 @@ $breadcrumbs = [
                         <p>Invoice #: <strong><?= e($order['order_number']) ?></strong></p>
                         <p>Date: <?= date('M d, Y', strtotime($order['created_at'])) ?></p>
                         <p>Payment: <strong style="text-transform:uppercase;"><?= e($order['payment_method']) ?></strong> | Status: <strong style="text-transform:uppercase; color:var(--color-primary);"><?= e($order['payment_status']) ?></strong></p>
+                        <?php if (!empty($paymentRecord['tran_id'])): ?>
+                            <p style="font-size:11px; color:var(--color-text-muted);">Tran ID: <strong><?= e($paymentRecord['tran_id']) ?></strong> (<?= e($paymentRecord['status']) ?>)</p>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -333,6 +341,9 @@ $breadcrumbs = [
             <div class="no-print" style="display:flex; gap:var(--space-2); justify-content:space-between; margin-bottom:var(--space-5);">
                 <a href="<?= url_for('orders.php') ?>" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700;"><i class="fas fa-arrow-left"></i> Back to Orders</a>
                 <div style="display:flex; gap:var(--space-2);">
+                    <?php if ($order['payment_status'] !== 'paid' && $order['status'] !== 'cancelled'): ?>
+                        <a href="<?= url_for('order-pay.php?order_id=' . $orderId) ?>" class="btn btn-primary" style="background:#0ca678; border-color:#0ca678; font-size:11px; font-weight:700; border-radius:var(--radius-pill);"><i class="fas fa-credit-card"></i> Pay Now (৳<?= number_format((float)$order['total_amount'], 2) ?>)</a>
+                    <?php endif; ?>
                     <button type="button" class="btn btn-secondary btn-reorder-products" data-order-id="<?= $orderId ?>" style="font-size:11px; font-weight:700; border-radius:var(--radius-pill); border:none;"><i class="fas fa-arrows-rotate"></i> Reorder All Items</button>
                     <button type="button" class="btn btn-primary" id="btnPrintInvoice" style="font-size:11px; font-weight:700; border-radius:var(--radius-pill); border:none;"><i class="fas fa-print"></i> Print Invoice</button>
                 </div>

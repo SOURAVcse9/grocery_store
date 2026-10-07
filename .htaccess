@@ -2,13 +2,14 @@
 # GroCo Grocery Store — Root Apache Configuration (.htaccess)
 # ==============================================================================
 
-# Disable directory browsing
+# Disable directory browsing & server signatures
 Options -Indexes
+ServerSignature Off
 
 # ------------------------------------------------------------------------------
 # 1. Block Access to Sensitive Files, Schemas, & Secret Configurations
 # ------------------------------------------------------------------------------
-<FilesMatch "(?i)^(\.env|\.git|\.gitignore|composer\.(json|lock)|tree\.txt|.*\.sql|.*\.log|.*\.bak|.*\.sh|.*\.key|.*\.pem)$">
+<FilesMatch "(?i)^(\.env.*|\.git.*|\.gitignore|composer\.(json|lock)|tree\.txt|.*\.sql|.*\.log|.*\.bak|.*\.sh|.*\.key|.*\.pem|.*\.conf|.*\.ini|.*\.md)$">
     Require all denied
     <IfModule !mod_authz_core.c>
         Deny from all
@@ -23,14 +24,35 @@ Options -Indexes
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always set X-XSS-Protection "1; mode=block"
+    # Enable HSTS on HTTPS connections (1 year)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
 </IfModule>
 
 # ------------------------------------------------------------------------------
-# 3. URL Routing & Clean SEO Rewrites
+# 3. Gzip / Deflate Compression
+# ------------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+    AddOutputFilterByType DEFLATE application/xml application/xhtml+xml application/rss+xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 4. URL Routing, HTTPS Enforcement & Clean SEO Rewrites
 # ------------------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /grocery-store/
+
+    # Block direct web access to internal server directories
+    RewriteRule ^(storage|database|tools|scratch|tests)(/.*)?$ - [F,L]
+
+    # Automated HTTPS redirect in production environments (non-localhost)
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
     # Direct short URLs
     RewriteRule ^license/?$ public/activate.php [L,QSA]
@@ -41,12 +63,15 @@ Options -Indexes
     RewriteRule ^cart/?$ public/cart.php [L,QSA]
     RewriteRule ^checkout/?$ public/checkout.php [L,QSA]
     RewriteRule ^account/?$ public/account.php [L,QSA]
-    RewriteRule ^sitemap\.xml$ public/sitemap.xml [L]
-    RewriteRule ^robots\.txt$ public/robots.txt [L]
+    RewriteRule ^sitemap\.xml$ public/sitemap.php [L]
+    RewriteRule ^robots\.txt$ public/robots.php [L]
+    RewriteRule ^search/?$ public/search.php [L,QSA]
+    RewriteRule ^categories/?$ public/categories.php [L,QSA]
 
-    # Clean SEO Product and Category URLs
+    # Clean SEO Product, Category, and Brand URLs
     RewriteRule ^product/([a-zA-Z0-9_-]+)/?$ public/product.php?slug=$1 [L,QSA]
     RewriteRule ^category/([a-zA-Z0-9_-]+)/?$ public/products.php?category=$1 [L,QSA]
+    RewriteRule ^brand/([a-zA-Z0-9_-]+)/?$ public/products.php?brand=$1 [L,QSA]
 
     # If already targeting an existing file or directory, serve directly
     RewriteCond %{REQUEST_FILENAME} -f [OR]

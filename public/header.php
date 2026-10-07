@@ -72,12 +72,13 @@ $pageCanonical   = $pageCanonical ?? current_url();
     <link rel="stylesheet" href="<?= asset('css/header.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/footer.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/components.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/cart.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/notifications.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/performance.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/pwa.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/accessibility.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/newsletter.css') ?>">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="<?= url_for('manifest.json') ?>">
     <meta name="theme-color" content="#0b7285">
     <?php if (!empty($extraStylesheets) && is_array($extraStylesheets)): ?>
         <?php foreach ($extraStylesheets as $__css): ?>

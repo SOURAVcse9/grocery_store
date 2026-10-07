@@ -1,0 +1,9 @@
+# ==============================================================================
+# tools/.htaccess — Deny All Public Web Access
+# ==============================================================================
+# CLI maintenance tools and migration scripts must only run from command line.
+# ==============================================================================
+Require all denied
+<IfModule !mod_authz_core.c>
+    Deny from all
+</IfModule>

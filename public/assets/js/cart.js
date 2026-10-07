@@ -2,18 +2,24 @@
  * ==========================================================================
  * public/assets/js/cart.js
  * ==========================================================================
- * Comprehensive Cart operations:
- *   - Slide-out Floating Mini-Cart drawer creation & management
- *   - AJAX Add to Cart, Buy Now, Quantity Updates, and Removals
- *   - Coupon application handling
- *   - Dynamic DOM calculations for subtotal, VAT, delivery, and totals
+ * Centralized Shopping Cart & Mini-Cart Engine:
+ *   - Slide-out Floating Mini-Cart drawer creation & lifecycle management
+ *   - Global AJAX Add to Cart & Buy Now (handles cards, details, quickview)
+ *   - Quantity Updates & Removals (for both Cart Page & Mini-Cart drawer)
+ *   - Coupon application & removal handling
+ *   - Real-time DOM totals recalculation (subtotal, delivery, coupon, grand total)
+ *   - Protection against double-execution and rapid concurrent clicks
  * ==========================================================================
  */
 
 (function () {
   'use strict';
 
-  document.addEventListener('DOMContentLoaded', () => {
+  // Prevent multiple script registrations
+  if (window.__grocoCartLoaded) return;
+  window.__grocoCartLoaded = true;
+
+  function initCart() {
     // ---------------------------------------------------------------------
     // 1. Initialize Floating Mini-Cart Drawer
     // ---------------------------------------------------------------------
@@ -21,19 +27,19 @@
     let drawerOverlay = document.getElementById('miniCartOverlay');
 
     if (!drawer) {
-      // Create Drawer Panel
       drawer = document.createElement('div');
       drawer.id = 'floatingMiniCart';
       drawer.className = 'mini-cart-drawer';
       drawer.innerHTML = `
-        <div class="mini-cart-body" id="miniCartDrawerBody">
-          <div class="mini-cart-loading">
-            <i class="fas fa-spinner fa-spin fa-2x"></i>
-          </div>
+        <div class="mini-cart-header">
+          <span class="mini-cart-title"><i class="fas fa-shopping-basket"></i> Cart</span>
+          <button type="button" class="mini-cart-close-btn" id="miniCartCloseBtn" aria-label="Close Cart">&times;</button>
+        </div>
+        <div class="mini-cart-items-wrapper" style="display:flex;align-items:center;justify-content:center;height:100%;">
+          <i class="fas fa-spinner fa-spin fa-2x" style="color:var(--color-primary);"></i>
         </div>
       `;
 
-      // Create Overlay
       drawerOverlay = document.createElement('div');
       drawerOverlay.id = 'miniCartOverlay';
       drawerOverlay.className = 'mini-cart-overlay';
@@ -42,7 +48,10 @@
       document.body.appendChild(drawerOverlay);
     }
 
-    // Toggle drawer open/close
+    function isCurrentPageCart() {
+      return !!document.getElementById('cartPageContent') || !!document.getElementById('cartPageSubtotal');
+    }
+
     function toggleMiniCart(open) {
       if (open) {
         drawer.classList.add('is-open');
@@ -64,22 +73,35 @@
     });
     drawerOverlay.addEventListener('click', () => toggleMiniCart(false));
 
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+        toggleMiniCart(false);
+      }
+    });
+
     // Intercept clicks on the header cart icon link
     document.addEventListener('click', (e) => {
-      const headerCartBtn = e.target.closest('a[href*="cart.php"].icon-link');
-      if (headerCartBtn && !window.location.pathname.endsWith('cart.php')) {
-        e.preventDefault();
-        toggleMiniCart(true);
+      const headerCartBtn = e.target.closest('a[href*="cart.php"].icon-link, a[href$="/cart"].icon-link, a[href$="/cart/"].icon-link');
+      if (headerCartBtn) {
+        if (!isCurrentPageCart()) {
+          e.preventDefault();
+          toggleMiniCart(true);
+        }
       }
     });
 
     // ---------------------------------------------------------------------
     // 2. Fetch and Refresh Cart Data (Dynamic totals calculations)
     // ---------------------------------------------------------------------
+    function formatCurrency(amount) {
+      const num = parseFloat(amount);
+      return '৳' + (isNaN(num) ? '0.00' : num.toFixed(2));
+    }
+
     async function refreshMiniCart() {
       try {
-        const baseUrl = window.GROCO?.baseUrl || '';
-        const apiUrl = baseUrl ? (baseUrl + '/api/cart.php') : 'api/cart.php';
+        const apiUrl = window.resolveApiUrl ? window.resolveApiUrl('api/cart.php') : 'api/cart.php';
         const res = await fetch(apiUrl, {
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
@@ -87,10 +109,7 @@
 
         if (json.success && json.data) {
           // Update Drawer Content
-          const body = document.getElementById('miniCartDrawerBody');
-          if (body) {
-            body.innerHTML = json.data.html;
-          }
+          drawer.innerHTML = json.data.html;
 
           // Update Header Cart Badge
           const badge = document.getElementById('cartCount');
@@ -99,7 +118,7 @@
           }
 
           // If on the Cart Page, update page summaries too
-          if (window.location.pathname.endsWith('cart.php')) {
+          if (isCurrentPageCart()) {
             updateCartPageSummary(json.data);
           }
         }
@@ -108,22 +127,15 @@
       }
     }
 
-    function formatCurrency(amount) {
-      return '৳' + parseFloat(amount).toFixed(2);
-    }
-
-    // Update Summary box on public/cart.php
     function updateCartPageSummary(data) {
       const subtotalEl = document.getElementById('cartPageSubtotal');
       const discountRow = document.getElementById('cartPageDiscountRow');
       const discountEl = document.getElementById('cartPageDiscount');
       const deliveryEl = document.getElementById('cartPageDelivery');
-      const vatEl = document.getElementById('cartPageVat');
       const totalEl = document.getElementById('cartPageTotal');
 
       if (subtotalEl) subtotalEl.textContent = formatCurrency(data.subtotal);
       if (deliveryEl) deliveryEl.textContent = formatCurrency(data.delivery_charge);
-      if (vatEl) vatEl.textContent = formatCurrency(data.vat_amount);
       if (totalEl) totalEl.textContent = formatCurrency(data.grand_total);
 
       if (discountRow && discountEl) {
@@ -146,30 +158,42 @@
       }
     }
 
-    // Expose refresh to other scripts
     window.refreshMiniCart = refreshMiniCart;
+    window.toggleMiniCart = toggleMiniCart;
 
     // ---------------------------------------------------------------------
-    // 3. AJAX Add to Cart & Buy Now (Delegate actions globally)
+    // 3. Global AJAX Add to Cart & Buy Now
     // ---------------------------------------------------------------------
     document.body.addEventListener('click', async (e) => {
-      const btn = e.target.closest('.btn-add-cart, .btn-add-cart-detail, .qv-btn-add, .btn-buy-now');
+      const btn = e.target.closest('.btn-add-cart, .detail-btn-add, .qv-btn-add, .btn-buy-now, .detail-btn-buy, .qv-btn-buy');
       if (!btn) return;
 
+      // Ignore buttons explicitly flagged
+      if (btn.id === 'btnFbtAddAll') return;
+
       e.preventDefault();
-      
+
+      // Guard against rapid duplicate clicks
+      if (btn.disabled || btn.dataset.busy === '1') return;
+
       const productId = btn.dataset.productId || btn.closest('[data-id]')?.dataset.id || btn.closest('[data-product-id]')?.dataset.productId;
       if (!productId) return;
 
-      const isBuyNow = btn.classList.contains('btn-buy-now');
-      
-      // Determine quantity to add (e.g. from detail page input or default to 1)
-      const qtyInput = document.getElementById('productQtyInput');
-      const quantity = qtyInput ? qtyInput.value : '1';
+      const isBuyNow = btn.classList.contains('btn-buy-now') || btn.classList.contains('detail-btn-buy') || btn.classList.contains('qv-btn-buy');
 
-      // Button loading state
-      const origHtml = btn.innerHTML;
+      // Determine quantity scoped to button context
+      const container = btn.closest('.product-detail-actions, .product-card-footer, .product-actions, .qv-actions, .product-detail-layout') || document;
+      const qtyInput = container.querySelector('#detailQtyInput, #qvQtyInput, .detail-qty-input, .qv-qty-input, #productQtyInput')
+        || document.getElementById('detailQtyInput')
+        || document.getElementById('qvQtyInput');
+
+      let quantity = qtyInput ? (parseInt(qtyInput.value, 10) || 1) : 1;
+      if (quantity < 1) quantity = 1;
+
+      // Loading state
+      btn.dataset.busy = '1';
       btn.disabled = true;
+      const origHtml = btn.innerHTML;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
       try {
@@ -179,26 +203,39 @@
         });
 
         btn.disabled = false;
+        btn.dataset.busy = '0';
         btn.innerHTML = origHtml;
 
         if (json.success) {
           window.showToast?.(json.message, 'success');
 
-          // Update cart badge counter in header
+          // Update header cart badge
           const badge = document.getElementById('cartCount');
           if (badge && json.data?.cart_count !== undefined) {
             badge.textContent = json.data.cart_count.toString();
           }
 
           if (isBuyNow) {
-            // Redirect directly to checkout
-            window.location.href = 'checkout.php';
+            const checkoutUrl = window.resolveApiUrl ? window.resolveApiUrl('checkout.php') : 'checkout.php';
+            window.location.href = checkoutUrl;
           } else {
-            // Slide open mini cart on desktop
-            if (window.innerWidth > 768 && !window.location.pathname.endsWith('cart.php')) {
-              toggleMiniCart(true);
+            // Close QuickView modal if active
+            const qvModal = document.getElementById('quickviewModal');
+            if (qvModal && qvModal.classList.contains('is-open')) {
+              qvModal.classList.remove('is-open');
+              document.body.style.overflow = '';
+            }
+
+            // Open or refresh mini cart drawer on non-cart pages
+            if (!isCurrentPageCart()) {
+              if (window.innerWidth > 640) {
+                toggleMiniCart(true);
+              } else {
+                refreshMiniCart();
+              }
             } else {
-              refreshMiniCart();
+              // Reload or refresh on cart page
+              window.location.reload();
             }
           }
         } else {
@@ -206,62 +243,75 @@
         }
       } catch (err) {
         btn.disabled = false;
+        btn.dataset.busy = '0';
         btn.innerHTML = origHtml;
         window.showToast?.('Connection error. Please try again.', 'error');
       }
     });
 
     // ---------------------------------------------------------------------
-    // 4. Cart Page Actions (Quantity Toggles, Deletions, Coupons)
+    // 4. Quantity Adjusters & Removals (Works on Cart Page AND Mini-Cart Drawer)
     // ---------------------------------------------------------------------
-    // Delegate row-level updates on Cart Page or Mini-Cart list
     document.body.addEventListener('click', async (e) => {
       // Quantity Decrement (-)
       const minus = e.target.closest('.cart-qty-minus');
       if (minus) {
-        const input = minus.parentElement.querySelector('.cart-qty-input');
-        const productId = minus.dataset.productId;
-        let val = parseInt(input.value);
+        e.preventDefault();
+        const container = minus.closest('.cart-qty-adjuster, .mini-cart-adjuster, .cart-item-qty') || minus.parentElement;
+        const input = container ? container.querySelector('.cart-qty-input') : null;
+        const productId = minus.dataset.productId || minus.closest('[data-product-id]')?.dataset.productId;
+
+        if (!input || !productId) return;
+        let val = parseInt(input.value, 10) || 1;
 
         if (val > 1) {
           val--;
           input.value = val.toString();
           await updateCartQty(productId, val, input);
         }
+        return;
       }
 
       // Quantity Increment (+)
       const plus = e.target.closest('.cart-qty-plus');
       if (plus) {
-        const input = plus.parentElement.querySelector('.cart-qty-input');
-        const productId = plus.dataset.productId;
-        const maxVal = parseInt(input.getAttribute('max') || '999');
-        let val = parseInt(input.value);
+        e.preventDefault();
+        const container = plus.closest('.cart-qty-adjuster, .mini-cart-adjuster, .cart-item-qty') || plus.parentElement;
+        const input = container ? container.querySelector('.cart-qty-input') : null;
+        const productId = plus.dataset.productId || plus.closest('[data-product-id]')?.dataset.productId;
+
+        if (!input || !productId) return;
+        const maxVal = parseInt(input.getAttribute('max') || '999', 10);
+        let val = parseInt(input.value, 10) || 1;
 
         if (val < maxVal) {
           val++;
           input.value = val.toString();
           await updateCartQty(productId, val, input);
+        } else {
+          window.showToast?.(`Maximum available stock is ${maxVal} units.`, 'warning');
         }
+        return;
       }
 
       // Item Delete / Remove Button
       const deleteBtn = e.target.closest('.btn-remove-cart-item');
       if (deleteBtn) {
         e.preventDefault();
-        const productId = deleteBtn.dataset.productId;
+        const productId = deleteBtn.dataset.productId || deleteBtn.closest('[data-product-id]')?.dataset.productId;
         if (!productId) return;
 
         if (confirm('Are you sure you want to remove this item from your cart?')) {
           await removeCartItem(productId, deleteBtn);
         }
+        return;
       }
     });
 
-    // AJAX helper to update quantity
+    // Helper: Update Quantity via AJAX
     async function updateCartQty(productId, qty, inputEl) {
-      const originalVal = parseInt(inputEl.dataset.original || qty.toString());
-      
+      const originalVal = parseInt(inputEl.dataset.original || qty.toString(), 10);
+
       const json = await window.apiPost('ajax/update_cart.php', {
         product_id: productId,
         quantity: qty
@@ -269,26 +319,25 @@
 
       if (json.success) {
         inputEl.dataset.original = qty.toString();
-        
-        // Recalculate item line total on the cart page
-        const row = inputEl.closest('.cart-item-row');
-        if (row) {
+
+        // Update all line items in DOM with this productId
+        document.querySelectorAll(`.cart-item-row[data-product-id="${productId}"]`).forEach((row) => {
           const unitPrice = parseFloat(row.dataset.price);
           const lineTotalEl = row.querySelector('.cart-item-line-total');
-          if (lineTotalEl) {
+          if (lineTotalEl && !isNaN(unitPrice)) {
             lineTotalEl.textContent = formatCurrency(unitPrice * qty);
           }
-        }
-        
+        });
+
         refreshMiniCart();
       } else {
-        // Revert value in input on stock error
         inputEl.value = originalVal.toString();
+        window.showToast?.(json.message || 'Could not update quantity.', 'error');
         refreshMiniCart();
       }
     }
 
-    // AJAX helper to remove item
+    // Helper: Remove Item via AJAX
     async function removeCartItem(productId, btnEl) {
       const json = await window.apiPost('ajax/remove_cart.php', {
         product_id: productId
@@ -296,16 +345,17 @@
 
       if (json.success) {
         window.showToast?.(json.message, 'success');
-        
-        // Fade out row if on Cart Page
-        const row = btnEl.closest('.cart-item-row');
-        if (row) {
-          row.style.opacity = '0';
-          row.style.transform = 'translateX(-20px)';
+
+        // Animate out row if on Cart Page
+        const pageRow = document.querySelector(`.cart-item-row[data-product-id="${productId}"]`);
+        if (pageRow) {
+          pageRow.style.opacity = '0';
+          pageRow.style.transform = 'translateX(-20px)';
+          pageRow.style.transition = 'all 250ms ease';
           setTimeout(() => {
-            row.remove();
+            pageRow.remove();
             refreshMiniCart();
-          }, 300);
+          }, 250);
         } else {
           refreshMiniCart();
         }
@@ -313,7 +363,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // 5. Coupon Application Form
+    // 5. Coupon Application Form (Cart Page)
     // ---------------------------------------------------------------------
     const couponForm = document.getElementById('couponForm');
     if (couponForm) {
@@ -339,33 +389,40 @@
 
         if (json.success) {
           window.showToast?.(json.message, 'success');
-          // Reload page to show coupon row and totals, or refresh mini-cart
-          window.location.reload();
+          setTimeout(() => window.location.reload(), 400);
         } else {
-          window.showToast?.(json.message, 'error');
+          window.showToast?.(json.message || 'Invalid coupon code.', 'error');
         }
       });
     }
 
     // ---------------------------------------------------------------------
-    // 6. Coupon Removal
+    // 6. Coupon Removal (Cart Page)
     // ---------------------------------------------------------------------
     const removeCouponBtn = document.getElementById('btnRemoveCoupon');
-    removeCouponBtn?.addEventListener('click', async (e) => {
-      e.preventDefault();
-      
-      removeCouponBtn.disabled = true;
-      removeCouponBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    if (removeCouponBtn) {
+      removeCouponBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
 
-      const json = await window.apiPost('cart.php', {
-        remove_coupon: '1'
+        removeCouponBtn.disabled = true;
+        removeCouponBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        const json = await window.apiPost('cart.php', {
+          remove_coupon: '1'
+        });
+
+        if (json.success) {
+          window.showToast?.(json.message, 'success');
+          setTimeout(() => window.location.reload(), 400);
+        }
       });
+    }
+  }
 
-      if (json.success) {
-        window.showToast?.(json.message, 'success');
-        window.location.reload();
-      }
-    });
-
-  });
+  // Auto-boot when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCart);
+  } else {
+    initCart();
+  }
 })();

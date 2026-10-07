@@ -24,8 +24,30 @@ $queryParams = isset($queryParams) ? $queryParams : [];
 // Helper function to build page link preserving existing parameters
 $buildPageUrl = function(int $page) use ($baseUrl, $queryParams): string {
     $params = $queryParams;
+    unset($params['page']);
+
+    $categorySlug = $params['category'] ?? ($_GET['category'] ?? '');
+    $brandSlug = $params['brand'] ?? ($_GET['brand'] ?? '');
+    
+    // Check if other filters are present
+    $hasOtherFilters = !empty($params['min_price']) || !empty($params['max_price']) || !empty($params['availability']) || !empty($params['rating']) || !empty($params['discount']) || !empty($params['q']) || (!empty($params['sort']) && $params['sort'] !== 'newest');
+
+    // If clean category pagination with no extra search/filters
+    if (!empty($categorySlug) && empty($brandSlug) && !$hasOtherFilters && function_exists('category_url')) {
+        return category_url((string)$categorySlug, $page);
+    }
+
+    // If clean brand pagination with no extra search/filters
+    if (!empty($brandSlug) && empty($categorySlug) && !$hasOtherFilters && function_exists('brand_url')) {
+        return brand_url((string)$brandSlug, $page);
+    }
+
     $params['page'] = $page;
-    return url_for($baseUrl . '?' . http_build_query($params));
+    if ($page === 1) {
+        unset($params['page']);
+    }
+    $query = !empty($params) ? ('?' . http_build_query($params)) : '';
+    return url_for($baseUrl . $query);
 };
 
 $range = 2; // Number of pages to show around current page

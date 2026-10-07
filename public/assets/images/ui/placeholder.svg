@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <rect width="100%" height="100%" fill="transparent"/>
+  <g transform="translate(100, 75)" fill="none" stroke="currentColor">
+    <!-- Outer bag -->
+    <rect x="25" y="60" width="150" height="170" rx="16" fill="rgba(255, 255, 255, 0.04)" stroke="#495057" stroke-width="4"/>
+    <!-- Handle -->
+    <path d="M 65 60 C 65 20, 135 20, 135 60" fill="none" stroke="#0b7285" stroke-width="6" stroke-linecap="round"/>
+    <!-- Grocery leaf / apple icon inside bag -->
+    <path d="M 100 120 C 75 120, 60 145, 60 170 C 60 200, 95 215, 100 215 C 105 215, 140 200, 140 170 C 140 145, 125 120, 100 120 Z" fill="rgba(11, 114, 133, 0.2)" stroke="#1098ad" stroke-width="3"/>
+    <path d="M 100 120 C 100 105, 115 95, 125 95" fill="none" stroke="#2b8a3e" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <!-- Text -->
+  <text x="200" y="320" text-anchor="middle" fill="#868e96" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" letter-spacing="0.5">GroCo Grocery</text>
+  <text x="200" y="345" text-anchor="middle" fill="#adb5bd" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" opacity="0.7">Photo coming soon</text>
+</svg>
