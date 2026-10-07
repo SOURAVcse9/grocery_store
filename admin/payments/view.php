@@ -93,13 +93,9 @@ $paidAmount = (float)$payment['amount'];
 $refundedAmount = (float)$payment['refunded_amount'];
 $maxRefundable = max(0.0, round($paidAmount - $refundedAmount, 2));
 
-$pageTitle = 'Payment #' . $payment['tran_id'];
-require_once __DIR__ . '/../layouts/header.php';
-require_once __DIR__ . '/../layouts/sidebar.php';
-require_once __DIR__ . '/../layouts/topbar.php';
+$pageTitle = 'Payment #' . $payment['tran_id'] . ' — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 ?>
-
-<div class="admin-content-body">
     <!-- Breadcrumb & Top Bar -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <div>
@@ -317,7 +313,6 @@ require_once __DIR__ . '/../layouts/topbar.php';
         </div>
 
     </div>
-</div>
 
 <?php
 require_once __DIR__ . '/../layouts/footer.php';

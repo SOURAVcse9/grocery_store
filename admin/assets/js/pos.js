@@ -55,16 +55,17 @@
     t.textContent = msg;
     box.appendChild(t);
     setTimeout(() => t.remove(), type === 'error' ? 5000 : 2500);
-    if (type === 'error' || type === 'warn') { posBeep(); }
+    if (type === 'error' || type === 'warn') { posBeep(330, 160); }
   }
-  function posBeep() {
+  function posBeep(freq = 330, duration = 160) {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const o = ctx.createOscillator(); const g = ctx.createGain();
-      o.frequency.value = 330; g.gain.value = 0.05; o.connect(g); g.connect(ctx.destination);
-      o.start(); setTimeout(() => { o.stop(); ctx.close(); }, 160);
+      o.frequency.value = freq; g.gain.value = 0.08; o.connect(g); g.connect(ctx.destination);
+      o.start(); setTimeout(() => { o.stop(); ctx.close(); }, duration);
     } catch (e) { /* audio not available */ }
   }
+  window.posBeep = posBeep;
   window.posToast = posToast;
 
   function focusScan() {
@@ -418,6 +419,7 @@
       posToast('"' + p.name + '" is out of stock.', 'error');
       return;
     }
+    posBeep(880, 80); // High-pitch scanner confirmation chime
     if (typeof window.addTouchCartItem === 'function') {
       window.addTouchCartItem(p.id, p.name, p.price, p.stock, p.image || '', p.sku || '');
     }
@@ -786,10 +788,21 @@
     const totalEnteredEl = document.getElementById('modalTotalEntered');
     const remainingDueEl = document.getElementById('modalRemainingDue');
     const changeDueEl = document.getElementById('modalChangeDue');
+    const changeBanner = document.getElementById('modalChangeBanner');
+    const changeAmtEl = document.getElementById('modalChangeAmount');
 
     if (totalEnteredEl) totalEnteredEl.innerText = '৳' + totalEntered.toFixed(2);
     if (remainingDueEl) remainingDueEl.innerText = '৳' + remainingDue.toFixed(2);
     if (changeDueEl) changeDueEl.innerText = '৳' + change.toFixed(2);
+
+    if (changeBanner && changeAmtEl) {
+      if (change > 0) {
+        changeBanner.style.display = 'block';
+        changeAmtEl.innerText = change.toFixed(2);
+      } else {
+        changeBanner.style.display = 'none';
+      }
+    }
 
     // Validate inputs
     let isValid = true;

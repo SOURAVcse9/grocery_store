@@ -80,13 +80,10 @@ $missingIpns = $pdo->query("
 
 $totalAnomalies = count($statusMismatches) + count($amountMismatches);
 
-$pageTitle = 'Payment Gateway Reconciliation';
-require_once __DIR__ . '/../layouts/header.php';
-require_once __DIR__ . '/../layouts/sidebar.php';
-require_once __DIR__ . '/../layouts/topbar.php';
+$pageTitle = 'Payment Gateway Reconciliation — GroCo Admin';
+require_once __DIR__ . '/../layouts/dashboard_layout.php';
 ?>
 
-<div class="admin-content-body">
     <!-- Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <div>
@@ -293,8 +290,6 @@ require_once __DIR__ . '/../layouts/topbar.php';
             </tbody>
         </table>
     </div>
-
-</div>
 
 <?php
 require_once __DIR__ . '/../layouts/footer.php';

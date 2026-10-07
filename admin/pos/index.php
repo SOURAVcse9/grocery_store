@@ -119,25 +119,38 @@ try {
     </div>
 <?php else: ?>
     <!-- Touch screen responsive layout -->
-    <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:var(--space-4);" class="admin-dashboard-layout">
+    <div style="display:grid; grid-template-columns: 1.55fr 1fr; gap:var(--space-4);" class="admin-dashboard-layout">
         
         <!-- Left: Products selector block -->
-        <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Retail Departmental Category Filter Pills (Shwapno / Clothing / Grocery) -->
+            <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin;" id="posDepartmentTabs">
+                <button type="button" class="btn btn-sm pos-dept-btn active" data-dept="all" onclick="filterByDepartment('all', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-primary); color:#fff; border:none; transition:0.15s;"><i class="fas fa-th-large"></i> All Items</button>
+                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="produce" onclick="filterByDepartment('produce', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🥦 Fresh Produce</button>
+                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="dairy_bakery" onclick="filterByDepartment('dairy_bakery', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🥛 Dairy &amp; Bakery</button>
+                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="meat_fish" onclick="filterByDepartment('meat_fish', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🥩 Meat &amp; Fish</button>
+                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="grocery" onclick="filterByDepartment('grocery', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🌾 Staples &amp; Grocery</button>
+                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="clothing" onclick="filterByDepartment('clothing', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">👗 Clothing &amp; Fashion</button>
+                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="household" onclick="filterByDepartment('household', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🧴 Household &amp; Care</button>
+                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="snacks_drinks" onclick="filterByDepartment('snacks_drinks', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🍪 Snacks &amp; Drinks</button>
+            </div>
+
             <!-- Filter toolbar -->
-            <div class="dashboard-card" style="padding:12px; margin:0; display:flex; gap:10px; flex-wrap:wrap; position:relative;">
-                <div style="position:relative; flex:1.5; display:flex; align-items:center;">
-                    <input type="text" id="posFilterSearch" autocomplete="off" placeholder="Scan SKU/Barcode or type product name..." onkeyup="filterPOSCatalog();" style="width:100%; padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none;">
+            <div class="dashboard-card" style="padding:10px 12px; margin:0; display:flex; gap:10px; flex-wrap:wrap; position:relative; align-items:center;">
+                <div style="position:relative; flex:2; display:flex; align-items:center;">
+                    <i class="fas fa-barcode" style="position:absolute; left:12px; color:var(--color-text-muted); font-size:14px;"></i>
+                    <input type="text" id="posFilterSearch" autocomplete="off" placeholder="Scan SKU/Barcode or search product (F1)..." onkeyup="filterPOSCatalog();" style="width:100%; padding:8px 12px 8px 34px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
                     <div id="posAutocompleteDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1005; max-height:250px; overflow-y:auto; margin-top:2px;"></div>
                 </div>
                 
-                <select id="posFilterCat" onchange="filterPOSCatalog();" style="flex:1; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
+                <select id="posFilterCat" onchange="filterPOSCatalog();" style="flex:1; min-width:130px; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">All Categories</option>
                     <?php foreach ($categories as $cat): ?>
                         <option value="<?= $cat['id'] ?>"><?= e($cat['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <select id="posFilterBrand" onchange="filterPOSCatalog();" style="flex:1; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
+                <select id="posFilterBrand" onchange="filterPOSCatalog();" style="flex:1; min-width:110px; padding:8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:12px; outline:none; background:var(--color-surface); color:var(--color-text);">
                     <option value="">All Brands</option>
                     <?php foreach ($brands as $b): ?>
                         <option value="<?= $b['id'] ?>"><?= e($b['name']) ?></option>
@@ -146,7 +159,7 @@ try {
             </div>
 
             <!-- Touch product cells grid -->
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:10px; max-height: 520px; overflow-y: auto; padding:4px;" id="posCatalogGrid">
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap:10px; max-height: 520px; overflow-y: auto; padding:4px;" id="posCatalogGrid">
                 <?php foreach ($products as $p): 
                     $img = image_url($p['image'], 'products');
                 ?>
@@ -161,13 +174,13 @@ try {
                          data-image="<?= e($img) ?>"
                          data-cat="<?= $p['category_id'] ?: '' ?>"
                          data-brand="<?= $p['brand_id'] ?: '' ?>"
-                         onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e($p['name']) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>, '<?= e($img) ?>', '<?= e($p['sku'] ?? '') ?>');" 
-                         style="padding:10px; text-align:center; cursor:pointer; margin:0; transition: 0.1s;">
+                         onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e(addslashes($p['name'])) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>, '<?= e($img) ?>', '<?= e($p['sku'] ?? '') ?>');" 
+                         style="padding:10px; text-align:center; cursor:pointer; margin:0; transition: transform 0.1s ease, box-shadow 0.1s ease;">
                         
-                        <div style="width:100%; height:70px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--color-border); background:var(--color-surface); margin-bottom:6px;">
+                        <div style="width:100%; height:72px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--color-border); background:var(--color-surface); margin-bottom:6px;">
                             <img src="<?= e($img) ?>" alt="" style="width:100%; height:100%; object-fit:cover;">
                         </div>
-                        <strong style="font-size:11px; color:var(--color-text); display:block; height:32px; overflow:hidden; line-height:16px; margin-bottom:4px;"><?= e($p['name']) ?></strong>
+                        <strong style="font-size:11px; color:var(--color-text); display:block; height:32px; overflow:hidden; line-height:16px; margin-bottom:4px;" title="<?= e($p['name']) ?>"><?= e($p['name']) ?></strong>
                         <span style="font-size:12px; font-weight:800; color:var(--color-primary);">৳<?= number_format((float)$p['price'], 2) ?></span><br>
                         <span style="font-size:9px; color:var(--color-text-faint);">Stock: <?= $p['stock'] ?> units</span>
                     </div>
@@ -180,56 +193,80 @@ try {
             
             <!-- Cart & Customer Loyalty -->
             <div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--color-border); padding-bottom:6px; flex-wrap:wrap; gap:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--color-border); padding-bottom:8px; flex-wrap:wrap; gap:8px;">
                     <div>
-                        <h3 style="font-size:14px; font-weight:800; margin:0;"><i class="fas fa-shopping-basket"></i> POS Cart</h3>
-                        <span id="posCurrentCustomerLabel" style="font-size:10px; color:var(--color-primary); font-weight:700;">Walk-in Customer</span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <h3 style="font-size:14px; font-weight:800; margin:0;"><i class="fas fa-shopping-basket"></i> POS Cart</h3>
+                            <button type="button" onclick="resetToWalkinCustomer();" title="Reset to Walk-in Customer" class="btn btn-sm" style="font-size:10px; padding:2px 8px; border-radius:var(--radius-pill); background:rgba(0,0,0,0.06); border:1px solid var(--color-border); color:var(--color-text); font-weight:600;"><i class="fas fa-user-slash"></i> Walk-in</button>
+                        </div>
+                        <span id="posCurrentCustomerLabel" style="font-size:11px; color:var(--color-primary); font-weight:700;">Walk-in Customer</span>
                     </div>
-                    <!-- Customer search input and dropdown -->
-                    <div style="position:relative; width:160px;">
-                        <input type="text" id="posCustomerSearch" placeholder="Search Customer (F4)..." autocomplete="off" style="width:100%; padding:4px 8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:11px; outline:none;">
-                        <input type="hidden" id="posCustomerSelect" 
-                               value="<?= $defaultWalkin['id'] ?>" 
-                               data-wallet="<?= $defaultWalkin['wallet_balance'] ?>" 
-                               data-points="<?= $defaultWalkin['reward_points'] ?>" 
-                               data-name="Walk-in Customer"
-                               data-default-id="<?= $defaultWalkin['id'] ?>"
-                               data-default-wallet="<?= $defaultWalkin['wallet_balance'] ?>"
-                               data-default-points="<?= $defaultWalkin['reward_points'] ?>"
-                               data-default-name="Walk-in Customer">
-                        <div id="posCustomerAutocomplete" style="display:none; position:absolute; top:100%; right:0; width:220px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1006; max-height:200px; overflow-y:auto; margin-top:2px;"></div>
+                    <!-- Customer search input, autocomplete, and quick add -->
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="position:relative; width:150px;">
+                            <input type="text" id="posCustomerSearch" placeholder="Search Customer (F2)..." autocomplete="off" style="width:100%; padding:5px 8px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:11px; outline:none; background:var(--color-surface); color:var(--color-text);">
+                            <input type="hidden" id="posCustomerSelect" 
+                                   value="<?= $defaultWalkin['id'] ?>" 
+                                   data-wallet="<?= $defaultWalkin['wallet_balance'] ?>" 
+                                   data-points="<?= $defaultWalkin['reward_points'] ?>" 
+                                   data-name="Walk-in Customer"
+                                   data-default-id="<?= $defaultWalkin['id'] ?>"
+                                   data-default-wallet="<?= $defaultWalkin['wallet_balance'] ?>"
+                                   data-default-points="<?= $defaultWalkin['reward_points'] ?>"
+                                   data-default-name="Walk-in Customer">
+                            <div id="posCustomerAutocomplete" style="display:none; position:absolute; top:100%; right:0; width:240px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1006; max-height:220px; overflow-y:auto; margin-top:2px;"></div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal" style="border-radius:var(--radius-sm); font-size:11px; font-weight:700; padding:5px 8px; white-space:nowrap;" title="Register New Customer (F2)"><i class="fas fa-user-plus"></i></button>
                     </div>
                 </div>
 
-                <!-- Customer loyalty widgets status -->
-                <div id="loyaltyWidget" style="display:none; background:rgba(92,124,250,0.06); padding:8px; border-radius:var(--radius-sm); font-size:11px; margin-bottom:12px; justify-content:space-between;">
-                    <span>Wallet Balance: <strong id="lblWallet">৳0.00</strong></span>
-                    <span>Reward Points: <strong id="lblPoints">0 pts</strong></span>
+                <!-- Customer loyalty widgets status with 1-click action buttons -->
+                <div id="loyaltyWidget" style="display:none; background:rgba(92,124,250,0.08); padding:8px 12px; border-radius:var(--radius-sm); font-size:11px; margin-bottom:10px; justify-content:space-between; align-items:center; border:1px solid rgba(92,124,250,0.2);">
+                    <div>
+                        <span>Wallet: <strong id="lblWallet" style="color:var(--color-primary);">৳0.00</strong></span>
+                        <button type="button" onclick="quickApplyWallet();" class="btn btn-sm" style="font-size:9px; padding:1px 6px; margin-left:4px; border-radius:3px; background:#fcc419; color:#000; font-weight:700; border:none;" title="Apply Wallet balance in checkout">Use</button>
+                    </div>
+                    <div>
+                        <span>Points: <strong id="lblPoints" style="color:#e67700;">0 pts</strong></span>
+                        <button type="button" onclick="quickRedeemPoints();" class="btn btn-sm" style="font-size:9px; padding:1px 6px; margin-left:4px; border-radius:3px; background:#40c057; color:#fff; font-weight:700; border:none;" title="Redeem reward points as coupon">Redeem</button>
+                    </div>
                 </div>
 
                 <!-- Active checkout items list -->
-                <div id="posActiveCartList" style="max-height: 200px; overflow-y: auto; display:flex; flex-direction:column; gap:8px; margin-bottom:16px; border-bottom:1px dashed var(--color-border); padding-bottom:12px;">
+                <div id="posActiveCartList" style="max-height: 190px; overflow-y: auto; display:flex; flex-direction:column; gap:6px; margin-bottom:12px; border-bottom:1px dashed var(--color-border); padding-bottom:8px;">
                     <p style="text-align:center; color:var(--color-text-faint); font-size:11px; margin:16px 0;">Checkout list is empty.</p>
                 </div>
             </div>
 
-            <!-- Calculations, Suspends, Checkout buttons -->
+            <!-- Calculations, Quick discounts, Suspends, Checkout buttons -->
             <div>
-                <div style="font-size:12px; color:var(--color-text-muted); display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
+                <div style="font-size:12px; color:var(--color-text-muted); display:flex; flex-direction:column; gap:5px; margin-bottom:10px;">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Subtotal:</span>
                         <strong id="posCartSubtotal">৳0.00</strong>
                     </div>
 
+                    <!-- Quick discount preset chips for cashiers -->
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:11px;">Discount Preset:</span>
+                        <div style="display:flex; gap:3px; flex-wrap:wrap; justify-content:flex-end;">
+                            <button type="button" onclick="applyQuickDiscount('pct', 5);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); font-size:9px; font-weight:700; padding:1px 5px; border-radius:3px; cursor:pointer;">5%</button>
+                            <button type="button" onclick="applyQuickDiscount('pct', 10);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); font-size:9px; font-weight:700; padding:1px 5px; border-radius:3px; cursor:pointer;">10%</button>
+                            <button type="button" onclick="applyQuickDiscount('pct', 15);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); font-size:9px; font-weight:700; padding:1px 5px; border-radius:3px; cursor:pointer;">15%</button>
+                            <button type="button" onclick="applyQuickDiscount('fixed', 50);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); font-size:9px; font-weight:700; padding:1px 5px; border-radius:3px; cursor:pointer;">৳50</button>
+                            <button type="button" onclick="applyQuickDiscount('fixed', 100);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); font-size:9px; font-weight:700; padding:1px 5px; border-radius:3px; cursor:pointer;">৳100</button>
+                            <button type="button" onclick="applyQuickDiscount('fixed', 0);" style="border:1px solid var(--color-border); background:var(--color-surface); color:#e03131; font-size:9px; font-weight:700; padding:1px 5px; border-radius:3px; cursor:pointer;">Clear</button>
+                        </div>
+                    </div>
                     
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Discount Override (৳):</span>
-                        <input type="number" id="posCartDiscount" min="0" value="0" onchange="recalculatePOSBalances();" onkeyup="recalculatePOSBalances();" style="width:70px; padding:2px 6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); text-align:right;">
+                        <input type="number" id="posCartDiscount" min="0" value="0" onchange="recalculatePOSBalances();" onkeyup="recalculatePOSBalances();" style="width:70px; padding:2px 6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); text-align:right; font-size:11px; background:var(--color-surface); color:var(--color-text);">
                     </div>
 
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-                        <span>Coupon Discount (৳):</span>
-                        <input type="number" id="posCartCoupon" min="0" value="0" onchange="recalculatePOSBalances();" onkeyup="recalculatePOSBalances();" style="width:70px; padding:2px 6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); text-align:right;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Coupon / Points (৳):</span>
+                        <input type="number" id="posCartCoupon" min="0" value="0" onchange="recalculatePOSBalances();" onkeyup="recalculatePOSBalances();" style="width:70px; padding:2px 6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); text-align:right; font-size:11px; background:var(--color-surface); color:var(--color-text);">
                     </div>
 
                     <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-border); padding-top:6px; font-size:14px; color:var(--color-text);">
@@ -238,11 +275,9 @@ try {
                     </div>
                 </div>
 
-                <!-- Split Payment Modal triggers upon clicking Checkout below -->
-
                 <div style="display:grid; grid-template-columns: 1fr 2fr; gap:8px;" class="grid-2">
-                    <button type="button" onclick="suspendPOSCart();" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700; padding:10px; font-size:12px;"><i class="fas fa-hand-holding"></i> Hold</button>
-                    <button type="button" id="btnPOSCheckoutTrigger" disabled onclick="checkoutProcess();" class="btn btn-primary" style="border-radius:var(--radius-pill); font-weight:700; padding:10px; font-size:12px;"><i class="fas fa-shopping-bag"></i> Checkout & Print</button>
+                    <button type="button" onclick="suspendPOSCart();" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700; padding:10px; font-size:12px;"><i class="fas fa-hand-holding"></i> Hold (F3)</button>
+                    <button type="button" id="btnPOSCheckoutTrigger" disabled onclick="checkoutProcess();" class="btn btn-primary" style="border-radius:var(--radius-pill); font-weight:700; padding:10px; font-size:12px;"><i class="fas fa-cash-register"></i> Pay &amp; Print (F6)</button>
                 </div>
             </div>
 
@@ -256,6 +291,36 @@ window.touchCart = touchCart;
 window.csrfToken = '<?= csrf_token() ?>';
 window.POS_DECIMAL = <?= pos_decimal_qty_enabled($pdo) ? 'true' : 'false' ?>;
 window.POS_CAN_DISCOUNT = <?= (has_admin_permission('pos.discount') || has_admin_permission('pos.override')) ? 'true' : 'false' ?>;
+window.currentPosDept = 'all';
+
+const DEPT_MAP = {
+    produce: [1, 2],
+    dairy_bakery: [3, 4],
+    meat_fish: [7, 8, 37],
+    grocery: [10, 26, 27, 28, 29, 30],
+    clothing: [38],
+    household: [12, 13, 36],
+    snacks_drinks: [5, 6, 31, 32, 33]
+};
+
+function filterByDepartment(dept, btn) {
+    window.currentPosDept = dept;
+    document.querySelectorAll('.pos-dept-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'var(--color-surface)';
+        b.style.color = 'var(--color-text)';
+        b.style.border = '1px solid var(--color-border)';
+    });
+    if (btn) {
+        btn.classList.add('active');
+        btn.style.background = 'var(--color-primary)';
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+    }
+    filterPOSCatalog();
+}
+window.filterByDepartment = filterByDepartment;
+
 function escHtml(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function clearTouchCart() { Object.keys(touchCart).forEach(k => delete touchCart[k]); renderTouchCart(); }
 function lineNet(it) { return Math.max(0, it.price * it.qty - (it.line_discount || 0)); }
@@ -266,25 +331,87 @@ function filterPOSCatalog() {
     const brandEl = document.getElementById('posFilterBrand');
     if (!searchEl || !catEl || !brandEl) return;
     
-    const search = searchEl.value.toLowerCase();
+    const search = searchEl.value.toLowerCase().trim();
     const cat = catEl.value;
     const brand = brandEl.value;
+    const dept = window.currentPosDept || 'all';
+    const deptCats = (dept !== 'all' && DEPT_MAP[dept]) ? DEPT_MAP[dept] : null;
     
     const items = document.querySelectorAll('.touch-product-cell');
     items.forEach(el => {
-        const name = el.getAttribute('data-name');
-        const sku = el.getAttribute('data-sku');
-        const itemCat = el.getAttribute('data-cat');
-        const itemBrand = el.getAttribute('data-brand');
+        const name = el.getAttribute('data-name') || '';
+        const sku = el.getAttribute('data-sku') || '';
+        const barcode = el.getAttribute('data-barcode') || '';
+        const itemCat = parseInt(el.getAttribute('data-cat') || '0', 10);
+        const itemBrand = el.getAttribute('data-brand') || '';
         
         let match = true;
-        if (search && !name.includes(search) && !sku.includes(search)) match = false;
-        if (cat && itemCat !== cat) match = false;
+        if (search && !name.includes(search) && !sku.includes(search) && !barcode.includes(search)) match = false;
+        if (cat && String(itemCat) !== cat) match = false;
         if (brand && itemBrand !== brand) match = false;
+        if (deptCats && !deptCats.includes(itemCat)) match = false;
         
         el.style.display = match ? 'block' : 'none';
     });
 }
+
+function resetToWalkinCustomer() {
+    const selectEl = document.getElementById('posCustomerSelect');
+    const labelEl = document.getElementById('posCurrentCustomerLabel');
+    const searchEl = document.getElementById('posCustomerSearch');
+    const loyaltyWidget = document.getElementById('loyaltyWidget');
+    if (selectEl) {
+        selectEl.value = selectEl.getAttribute('data-default-id') || '0';
+        selectEl.setAttribute('data-wallet', selectEl.getAttribute('data-default-wallet') || '0.00');
+        selectEl.setAttribute('data-points', selectEl.getAttribute('data-default-points') || '0');
+        selectEl.setAttribute('data-name', 'Walk-in Customer');
+    }
+    if (labelEl) labelEl.innerText = 'Walk-in Customer';
+    if (searchEl) searchEl.value = '';
+    if (loyaltyWidget) loyaltyWidget.style.display = 'none';
+    if (window.posToast) window.posToast('Reset to Walk-in Customer', 'ok');
+}
+window.resetToWalkinCustomer = resetToWalkinCustomer;
+
+function applyQuickDiscount(type, val) {
+    let subtotal = 0;
+    Object.keys(touchCart).forEach(k => { subtotal += lineNet(touchCart[k]); });
+    if (subtotal <= 0 && val > 0) return;
+    let amt = 0;
+    if (type === 'pct') {
+        amt = Math.round((subtotal * (val / 100)) * 100) / 100;
+    } else {
+        amt = Math.min(val, subtotal);
+    }
+    const discountEl = document.getElementById('posCartDiscount');
+    if (discountEl) discountEl.value = amt.toFixed(2);
+    recalculatePOSBalances();
+}
+window.applyQuickDiscount = applyQuickDiscount;
+
+function quickApplyWallet() {
+    if (typeof checkoutProcess === 'function') checkoutProcess();
+    setTimeout(() => { if (typeof setPOSPaymentMode === 'function') setPOSPaymentMode('wallet'); }, 150);
+}
+window.quickApplyWallet = quickApplyWallet;
+
+function quickRedeemPoints() {
+    const selectEl = document.getElementById('posCustomerSelect');
+    if (!selectEl) return;
+    const points = parseInt(selectEl.getAttribute('data-points'), 10) || 0;
+    if (points <= 0) {
+        alert('Customer has no reward points to redeem.');
+        return;
+    }
+    let subtotal = 0;
+    Object.keys(touchCart).forEach(k => { subtotal += lineNet(touchCart[k]); });
+    const discount = Math.min(points, subtotal);
+    const couponEl = document.getElementById('posCartCoupon');
+    if (couponEl) couponEl.value = discount.toFixed(2);
+    recalculatePOSBalances();
+    if (window.posToast) window.posToast('Redeemed ' + discount + ' pts as discount', 'ok');
+}
+window.quickRedeemPoints = quickRedeemPoints;
 
 function updateLoyaltyUI() {
     const sel = document.getElementById('posCustomerSelect');
@@ -311,6 +438,7 @@ function updateLoyaltyUI() {
 
 function addTouchCartItem(id, name, price, stock, image = '', sku = '') {
     id = parseInt(id, 10);
+    if (window.posBeep) window.posBeep(880, 70);
     if (touchCart[id]) {
         touchCart[id].stock = stock;
         if (touchCart[id].qty + 1 <= stock + 1e-9) {
@@ -501,6 +629,93 @@ window.renderTouchCart = renderTouchCart;
 window.suspendPOSCart = suspendPOSCart;
 window.updateLoyaltyUI = updateLoyaltyUI;
 
+function setPOSPaymentMode(mode) {
+    document.querySelectorAll('.pos-paymode-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'var(--color-surface)';
+        b.style.color = 'var(--color-text)';
+        b.style.border = '1px solid var(--color-border)';
+    });
+    const activeBtn = document.querySelector(`.pos-paymode-btn[data-mode="${mode}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.style.background = (mode === 'cash' ? '#40c057' : (mode === 'bkash' ? '#e64980' : (mode === 'nagad' ? '#fd7e14' : (mode === 'rocket' ? '#845ef7' : (mode === 'card' ? '#228be6' : 'var(--color-primary)')))));
+        activeBtn.style.color = '#fff';
+        activeBtn.style.border = 'none';
+    }
+
+    const payableTotalEl = document.getElementById('modalPayableTotal');
+    const total = payableTotalEl ? parseFloat(payableTotalEl.innerText.replace(/[^\d.]/g, '')) || 0 : 0;
+    
+    const splitCash = document.getElementById('splitCash');
+    const splitCard = document.getElementById('splitCard');
+    const splitBkash = document.getElementById('splitBkash');
+    const splitWallet = document.getElementById('splitWallet');
+    const splitBank = document.getElementById('splitBank');
+    const quickCashBox = document.getElementById('quickCashTenderBox');
+
+    // Reset all fields
+    if (splitCash) splitCash.value = '0';
+    if (splitCard) splitCard.value = '0';
+    if (splitBkash) splitBkash.value = '0';
+    if (splitWallet) splitWallet.value = '0';
+    if (splitBank) splitBank.value = '0';
+
+    if (quickCashBox) quickCashBox.style.display = (mode === 'cash' || mode === 'split') ? 'block' : 'none';
+
+    if (mode === 'cash') {
+        if (splitCash) splitCash.value = total.toFixed(2);
+    } else if (mode === 'bkash') {
+        if (splitBkash) splitBkash.value = total.toFixed(2);
+        const prov = document.getElementById('splitMobileProvider');
+        if (prov) prov.value = 'bKash';
+        setTimeout(() => document.getElementById('splitBkashTxnId')?.focus(), 100);
+    } else if (mode === 'nagad') {
+        if (splitBkash) splitBkash.value = total.toFixed(2);
+        const prov = document.getElementById('splitMobileProvider');
+        if (prov) prov.value = 'Nagad';
+        setTimeout(() => document.getElementById('splitBkashTxnId')?.focus(), 100);
+    } else if (mode === 'rocket') {
+        if (splitBkash) splitBkash.value = total.toFixed(2);
+        const prov = document.getElementById('splitMobileProvider');
+        if (prov) prov.value = 'Rocket';
+        setTimeout(() => document.getElementById('splitBkashTxnId')?.focus(), 100);
+    } else if (mode === 'card') {
+        if (splitCard) splitCard.value = total.toFixed(2);
+        setTimeout(() => document.getElementById('splitCardRef')?.focus(), 100);
+    } else if (mode === 'wallet') {
+        const custSelect = document.getElementById('posCustomerSelect');
+        const walletBal = custSelect ? parseFloat(custSelect.getAttribute('data-wallet')) || 0 : 0;
+        const walletUsed = Math.min(walletBal, total);
+        if (splitWallet) splitWallet.value = walletUsed.toFixed(2);
+        if (walletUsed < total && splitCash) {
+            splitCash.value = (total - walletUsed).toFixed(2);
+        }
+    } else if (mode === 'split') {
+        if (splitCash) splitCash.value = total.toFixed(2);
+    }
+    if (window.updateModalChangeDue) window.updateModalChangeDue();
+}
+window.setPOSPaymentMode = setPOSPaymentMode;
+
+function tenderCashAdd(amt) {
+    const splitCash = document.getElementById('splitCash');
+    const payableTotalEl = document.getElementById('modalPayableTotal');
+    const total = payableTotalEl ? parseFloat(payableTotalEl.innerText.replace(/[^\d.]/g, '')) || 0 : 0;
+    if (!splitCash) return;
+    
+    if (amt === 'exact') {
+        splitCash.value = total.toFixed(2);
+    } else if (amt === 'clear') {
+        splitCash.value = '0';
+    } else {
+        const cur = parseFloat(splitCash.value) || 0;
+        splitCash.value = (cur + amt).toFixed(2);
+    }
+    if (window.updateModalChangeDue) window.updateModalChangeDue();
+}
+window.tenderCashAdd = tenderCashAdd;
+
 window.applyResumedCart = function (data) {
     sessionStorage.setItem('groco_pos_resume_cart', JSON.stringify(data));
     location.reload();
@@ -546,12 +761,12 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:var(--color-surface);">
             <div class="modal-header" style="border-bottom:1px solid var(--color-border); padding:16px 20px;">
-                <h5 class="modal-title" style="font-weight:800; font-size:15px; color:var(--color-text); margin:0;"><i class="fas fa-credit-card"></i> Split Payment Terminal</h5>
+                <h5 class="modal-title" style="font-weight:800; font-size:15px; color:var(--color-text); margin:0;"><i class="fas fa-credit-card"></i> Payment &amp; Tender Terminal</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size:12px; border:none; background:transparent; cursor:pointer;"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body" style="padding:20px;">
                 <!-- Summary of Payable -->
-                <div style="background:rgba(92,124,250,0.06); padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:16px; display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--color-text-muted);">
+                <div style="background:rgba(92,124,250,0.06); padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:14px; display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--color-text-muted);">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Customer Info:</span>
                         <span id="modalCustomerInfo" style="font-weight:700; color:var(--color-text);">Walk-in Customer</span>
@@ -565,16 +780,37 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span id="modalDiscount" style="font-weight:700; color:var(--color-text);">৳0.00</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
-                        <span>Coupon Discount:</span>
+                        <span>Coupon / Points:</span>
                         <span id="modalCoupon" style="font-weight:700; color:var(--color-text);">৳0.00</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>Service Charge:</span>
-                        <span id="modalServiceCharge" style="font-weight:700; color:var(--color-text);">৳0.00</span>
-                    </div>
                     <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--color-border); padding-top:6px; font-size:14px; font-weight:800; color:var(--color-text);">
-                        <span style="color:var(--color-text);">Grand Total:</span>
+                        <span style="color:var(--color-text);">Grand Total Due:</span>
                         <strong id="modalPayableTotal" style="color:var(--color-primary); font-size:16px;">৳0.00</strong>
+                    </div>
+                </div>
+
+                <!-- 1-Click Fast Payment Mode Switchers -->
+                <div style="display:flex; gap:5px; overflow-x:auto; margin-bottom:14px; padding-bottom:4px; scrollbar-width:thin;" id="posPaymentModePills">
+                    <button type="button" class="btn btn-sm pos-paymode-btn active" data-mode="cash" onclick="setPOSPaymentMode('cash');" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 12px; background:#40c057; color:#fff; border:none; white-space:nowrap;"><i class="fas fa-money-bill-wave"></i> Cash</button>
+                    <button type="button" class="btn btn-sm pos-paymode-btn" data-mode="bkash" onclick="setPOSPaymentMode('bkash');" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 12px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); white-space:nowrap;"><i class="fas fa-mobile-alt" style="color:#e64980;"></i> bKash</button>
+                    <button type="button" class="btn btn-sm pos-paymode-btn" data-mode="nagad" onclick="setPOSPaymentMode('nagad');" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 12px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); white-space:nowrap;"><i class="fas fa-bolt" style="color:#fd7e14;"></i> Nagad</button>
+                    <button type="button" class="btn btn-sm pos-paymode-btn" data-mode="rocket" onclick="setPOSPaymentMode('rocket');" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 12px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); white-space:nowrap;"><i class="fas fa-rocket" style="color:#845ef7;"></i> Rocket</button>
+                    <button type="button" class="btn btn-sm pos-paymode-btn" data-mode="card" onclick="setPOSPaymentMode('card');" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 12px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); white-space:nowrap;"><i class="fas fa-credit-card" style="color:#228be6;"></i> Card</button>
+                    <button type="button" class="btn btn-sm pos-paymode-btn" data-mode="wallet" onclick="setPOSPaymentMode('wallet');" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 12px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); white-space:nowrap;"><i class="fas fa-wallet" style="color:#fcc419;"></i> Wallet</button>
+                    <button type="button" class="btn btn-sm pos-paymode-btn" data-mode="split" onclick="setPOSPaymentMode('split');" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 12px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); white-space:nowrap;"><i class="fas fa-columns"></i> Split</button>
+                </div>
+
+                <!-- Fast Cash Tender Preset Chips (Bangladesh Retail Standard) -->
+                <div id="quickCashTenderBox" style="background:rgba(64,192,87,0.08); padding:8px 12px; border-radius:var(--radius-sm); margin-bottom:14px; border:1px solid rgba(64,192,87,0.2);">
+                    <span style="font-size:10px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:5px;">QUICK CASH TENDER:</span>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <button type="button" class="btn btn-sm" onclick="tenderCashAdd('exact');" style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; background:#40c057; color:#fff; border:none;">Exact</button>
+                        <button type="button" class="btn btn-sm" onclick="tenderCashAdd(50);" style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text);">+৳50</button>
+                        <button type="button" class="btn btn-sm" onclick="tenderCashAdd(100);" style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text);">+৳100</button>
+                        <button type="button" class="btn btn-sm" onclick="tenderCashAdd(500);" style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text);">+৳500</button>
+                        <button type="button" class="btn btn-sm" onclick="tenderCashAdd(1000);" style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text);">+৳1000</button>
+                        <button type="button" class="btn btn-sm" onclick="tenderCashAdd(2000);" style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text);">+৳2000</button>
+                        <button type="button" class="btn btn-sm" onclick="tenderCashAdd('clear');" style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; background:var(--color-surface); border:1px solid var(--color-border); color:#e03131;">Clear</button>
                     </div>
                 </div>
 
@@ -661,7 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <!-- Split calculations display -->
-                    <div style="margin-top:16px; border-top:1px dashed var(--color-border); padding-top:12px; font-size:12px; color:var(--color-text-muted); display:flex; flex-direction:column; gap:4px;">
+                    <div style="margin-top:14px; border-top:1px dashed var(--color-border); padding-top:10px; font-size:12px; color:var(--color-text-muted); display:flex; flex-direction:column; gap:4px;">
                         <div style="display:flex; justify-content:space-between;">
                             <span>Total Entered:</span>
                             <strong id="modalTotalEntered" style="color:var(--color-text);">৳0.00</strong>
@@ -676,9 +912,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
-                    <div style="display:flex; justify-content:end; gap:8px; margin-top:20px;">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size:12px; padding:6px 12px; border-radius:var(--radius-pill); font-weight:700;">Cancel</button>
-                        <button type="submit" id="btnConfirmPOSSale" class="btn btn-primary" disabled style="font-size:12px; padding:6px 16px; border-radius:var(--radius-pill); font-weight:700;">Confirm Sale</button>
+                    <!-- Large Prominent Change Return Banner for Cashiers -->
+                    <div id="modalChangeBanner" style="display:none; background:#2b8a3e; color:#fff; font-size:16px; font-weight:800; text-align:center; padding:10px 14px; border-radius:8px; margin-top:12px; letter-spacing:0.5px;">
+                        CHANGE TO RETURN: ৳<span id="modalChangeAmount">0.00</span>
+                    </div>
+
+                    <div style="display:flex; justify-content:end; gap:8px; margin-top:18px;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size:12px; padding:6px 14px; border-radius:var(--radius-pill); font-weight:700;">Cancel</button>
+                        <button type="submit" id="btnConfirmPOSSale" class="btn btn-primary" disabled style="font-size:12px; padding:6px 18px; border-radius:var(--radius-pill); font-weight:700;"><i class="fas fa-check-circle"></i> Confirm Sale</button>
                     </div>
                 </form>
             </div>
