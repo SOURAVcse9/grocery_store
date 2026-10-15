@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+if (!defined('GROCO_CLI_TEST_MODE')) {
+    define('GROCO_CLI_TEST_MODE', true);
+}
+
 require_once __DIR__ . '/../public/dbconnect.php';
 require_once __DIR__ . '/../public/includes/pos_autoload.php';
 
