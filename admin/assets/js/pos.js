@@ -932,6 +932,9 @@
     formData.append('note', paymentNote);
     formData.append('idempotency_key', window.posIdemKey);
     formData.append('csrf_token', window.csrfToken || '');
+    if (window.posScanStartTime) {
+      formData.append('scan_start_time', Math.floor(window.posScanStartTime / 1000).toString());
+    }
     
     const confirmBtn = document.getElementById('btnConfirmPOSSale');
     if (confirmBtn) {
@@ -1022,11 +1025,297 @@
     });
   }
 
+  // ==========================================================================
+  // RESEARCH INTEGRATIONS: Camera Scanning, Register Lock, and Customer CRM
+  // ==========================================================================
+
+  // 1. Camera Scanner (Santosa & Wirawan 2019)
+  let cameraStream = null;
+  let barcodeDetectorInstance = null;
+  let cameraScanInterval = null;
+
+  async function openCameraScanner() {
+    const modalEl = document.getElementById('cameraScanModal');
+    if (!modalEl) return;
+    const bsModal = typeof bootstrap !== 'undefined' ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+    if (bsModal) bsModal.show();
+
+    const videoEl = document.getElementById('posScannerVideo');
+    const statusEl = document.getElementById('cameraScanStatus');
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Camera access not supported in this browser/device. Use barcode scanner or manual search.</span>';
+      return;
+    }
+
+    try {
+      if (statusEl) statusEl.innerText = 'Requesting camera stream...';
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      if (videoEl) {
+        videoEl.srcObject = cameraStream;
+        await videoEl.play();
+      }
+      if (statusEl) statusEl.innerText = 'Position barcode or QR label within the frame...';
+
+      if ('BarcodeDetector' in window) {
+        try {
+          barcodeDetectorInstance = new window.BarcodeDetector({
+            formats: ['qr_code', 'ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e']
+          });
+          startBarcodeDetectionLoop(videoEl, statusEl);
+        } catch (e) {
+          console.warn('BarcodeDetector error:', e);
+          if (statusEl) statusEl.innerHTML = 'Camera active. Point barcode directly at camera (Native decoder not supported on this device).';
+        }
+      } else {
+        if (statusEl) statusEl.innerHTML = 'Camera stream active. (Native BarcodeDetector not supported in this browser; Chrome/Edge recommended for live QR decoding).';
+      }
+    } catch (err) {
+      console.error('Camera error:', err);
+      if (statusEl) statusEl.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-video-slash"></i> Camera error: ${err.message || 'Permission denied'}</span>`;
+    }
+  }
+
+  function startBarcodeDetectionLoop(videoEl, statusEl) {
+    if (cameraScanInterval) clearInterval(cameraScanInterval);
+    cameraScanInterval = setInterval(async () => {
+      if (!barcodeDetectorInstance || !videoEl || videoEl.readyState < 2) return;
+      try {
+        const barcodes = await barcodeDetectorInstance.detect(videoEl);
+        if (barcodes && barcodes.length > 0) {
+          const rawVal = barcodes[0].rawValue;
+          if (rawVal) {
+            clearInterval(cameraScanInterval);
+            cameraScanInterval = null;
+            posBeep(880, 100);
+            if (statusEl) statusEl.innerHTML = `<span style="color:#10b981; font-weight:800;">Scanned: ${rawVal}</span>`;
+            setTimeout(() => {
+              closeCameraScanner();
+              lookupPOSBarcode(rawVal);
+            }, 300);
+          }
+        }
+      } catch (err) {
+        // detection frame error
+      }
+    }, 250);
+  }
+
+  function closeCameraScanner() {
+    if (cameraScanInterval) {
+      clearInterval(cameraScanInterval);
+      cameraScanInterval = null;
+    }
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+    }
+    const videoEl = document.getElementById('posScannerVideo');
+    if (videoEl) videoEl.srcObject = null;
+    const modalEl = document.getElementById('cameraScanModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+    }
+  }
+
+  // 2. Register Lock / Pause (Antczak & Weron 2019 Table 2)
+  function lockRegisterModal() {
+    const lockEl = document.getElementById('registerLockModal');
+    const errEl = document.getElementById('unlockErrorMsg');
+    const pwdEl = document.getElementById('unlockPassword');
+    if (errEl) { errEl.style.display = 'none'; errEl.innerText = ''; }
+    if (pwdEl) pwdEl.value = '';
+    if (lockEl) {
+      lockEl.style.display = 'flex';
+      if (pwdEl) pwdEl.focus();
+    }
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+    const registerId = window.POS_REGISTER_ID || 0;
+    fetch('ajax/operator_events.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        action: 'OperatorLock',
+        register_id: registerId,
+        csrf_token: csrfToken
+      })
+    }).catch(e => console.warn('Lock log error:', e));
+  }
+
+  async function submitRegisterUnlock(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const pwdEl = document.getElementById('unlockPassword');
+    const errEl = document.getElementById('unlockErrorMsg');
+    const btnEl = document.getElementById('btnUnlockSubmit');
+    const pwd = pwdEl ? pwdEl.value : '';
+    if (!pwd) return;
+
+    if (btnEl) { btnEl.disabled = true; btnEl.innerText = 'Verifying...'; }
+    if (errEl) { errEl.style.display = 'none'; }
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+    const registerId = window.POS_REGISTER_ID || 0;
+
+    try {
+      const res = await fetch('ajax/operator_events.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'OperatorUnLock',
+          password: pwd,
+          register_id: registerId,
+          csrf_token: csrfToken
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const lockEl = document.getElementById('registerLockModal');
+        if (lockEl) lockEl.style.display = 'none';
+        if (pwdEl) pwdEl.value = '';
+        posToast('Register unlocked. Welcome back!', 'success');
+        focusScan();
+      } else {
+        if (errEl) {
+          errEl.innerText = data.error || 'Invalid password. Register remains locked.';
+          errEl.style.display = 'block';
+        }
+        if (pwdEl) { pwdEl.value = ''; pwdEl.focus(); }
+      }
+    } catch (err) {
+      if (errEl) {
+        errEl.innerText = 'Network error verifying credentials.';
+        errEl.style.display = 'block';
+      }
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.innerHTML = '<i class="fas fa-lock-open"></i> Unlock Register &amp; Resume';
+      }
+    }
+  }
+
+  // 3. Customer CRM History Modal (Matthew Cote 2015)
+  function openCustomerCRMModal() {
+    const custSelect = document.getElementById('posCustomerSelect');
+    const custId = custSelect ? parseInt(custSelect.value, 10) : 0;
+    if (!custId || custId <= 0) {
+      posToast('Please select a registered customer to view CRM profile.', 'warn');
+      const custSearch = document.getElementById('posCustomerSearch');
+      if (custSearch) custSearch.focus();
+      return;
+    }
+
+    const modalEl = document.getElementById('customerCrmModal');
+    if (!modalEl) return;
+    const bsModal = typeof bootstrap !== 'undefined' ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+    if (bsModal) bsModal.show();
+
+    const bodyEl = document.getElementById('crmModalBody');
+    if (bodyEl) {
+      bodyEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--color-text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:24px; margin-bottom:8px;"></i><p>Loading customer profile and order history...</p></div>';
+    }
+
+    fetch('ajax/customer_history.php?customer_id=' + custId)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success || !data.customer) {
+          if (bodyEl) bodyEl.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to load customer profile.'}</div>`;
+          return;
+        }
+
+        const c = data.customer;
+        const orders = data.recent_orders || [];
+
+        let ordersHtml = '';
+        if (orders.length === 0) {
+          ordersHtml = '<div style="padding:16px; text-align:center; color:var(--color-text-faint); font-style:italic;">No past purchase history on record.</div>';
+        } else {
+          ordersHtml = `
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:12px; margin-top:8px;">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--color-border); text-align:left; color:var(--color-text-muted);">
+                    <th style="padding:6px 8px;">Order #</th>
+                    <th style="padding:6px 8px;">Date</th>
+                    <th style="padding:6px 8px;">Items</th>
+                    <th style="padding:6px 8px; text-align:right;">Total</th>
+                    <th style="padding:6px 8px; text-align:center;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${orders.map(o => `
+                    <tr style="border-bottom:1px solid var(--color-border);">
+                      <td style="padding:6px 8px; font-weight:700;">#${o.id}</td>
+                      <td style="padding:6px 8px; color:var(--color-text-muted);">${o.created_at}</td>
+                      <td style="padding:6px 8px;">
+                        ${(o.items || []).map(it => `<span style="display:inline-block; background:var(--color-surface-hover, #f1f5f9); padding:1px 6px; border-radius:4px; font-size:11px; margin-right:4px; margin-bottom:2px;">${it.name} &times; ${it.quantity}</span>`).join('')}
+                      </td>
+                      <td style="padding:6px 8px; text-align:right; font-weight:700;">৳${parseFloat(o.total_amount).toFixed(2)}</td>
+                      <td style="padding:6px 8px; text-align:center;">
+                        <span style="display:inline-block; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:700; ${o.order_status === 'completed' || o.order_status === 'delivered' ? 'background:#d1fae5; color:#065f46;' : 'background:#fef3c7; color:#92400e;'}">${o.order_status}</span>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        }
+
+        if (bodyEl) {
+          bodyEl.innerHTML = `
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px; margin-bottom:16px;">
+              <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
+                <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Customer</div>
+                <div style="font-size:14px; font-weight:800; color:var(--color-text); margin-top:4px;">${c.name}</div>
+                <div style="font-size:11px; color:var(--color-text-muted);">${c.phone || c.email}</div>
+              </div>
+              <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
+                <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Lifetime Spent</div>
+                <div style="font-size:16px; font-weight:800; color:#047857; margin-top:4px;">৳${parseFloat(c.lifetime_spent).toFixed(2)}</div>
+                <div style="font-size:11px; color:var(--color-text-muted);">${c.total_orders} Orders</div>
+              </div>
+              <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
+                <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Wallet Balance</div>
+                <div style="font-size:16px; font-weight:800; color:#2563eb; margin-top:4px;">৳${parseFloat(c.wallet_balance).toFixed(2)}</div>
+                <div style="font-size:11px; color:var(--color-text-muted);">Stored Credit</div>
+              </div>
+              <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
+                <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Loyalty Points</div>
+                <div style="font-size:16px; font-weight:800; color:#d97706; margin-top:4px;">${c.reward_points}</div>
+                <div style="font-size:11px; color:var(--color-text-muted);">Points Available</div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <h6 style="font-size:13px; font-weight:800; color:var(--color-text); margin-bottom:8px;">
+                <i class="fas fa-history" style="color:var(--color-primary); margin-right:4px;"></i> Recent Order History (Last 8 Purchases)
+              </h6>
+              ${ordersHtml}
+            </div>
+          `;
+        }
+      })
+      .catch(err => {
+        if (bodyEl) bodyEl.innerHTML = `<div class="alert alert-danger">Error loading customer history: ${err.message}</div>`;
+      });
+  }
+
   // Export handlers to global window scope
   window.submitPOSCheckoutFinalist = submitPOSCheckoutFinalist;
   window.checkoutProcess = submitPOSCheckoutFinalist;
   window.confirmPOSSale = confirmPOSSale;
   window.updateModalChangeDue = updateModalChangeDue;
+  window.lookupPOSBarcode = lookupPOSBarcode;
+  window.openCameraScanner = openCameraScanner;
+  window.closeCameraScanner = closeCameraScanner;
+  window.lockRegisterModal = lockRegisterModal;
+  window.submitRegisterUnlock = submitRegisterUnlock;
+  window.openCustomerCRMModal = openCustomerCRMModal;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPOSHandlers);

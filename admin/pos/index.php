@@ -79,9 +79,12 @@ try {
     </div>
     
     <?php if ($activeShift): ?>
-        <div style="display:flex; gap:12px; align-items:center;">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button type="button" onclick="openCameraScanner();" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700;"><i class="fas fa-camera"></i> Camera Scan</button>
+            <button type="button" onclick="lockRegisterModal();" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700; color:#b45309;"><i class="fas fa-lock"></i> Lock (Break)</button>
             <a href="register.php" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700;"><i class="fas fa-cash-register"></i> Register drawer</a>
             <a href="hold-orders.php" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700;"><i class="fas fa-hand-holding"></i> Suspended Carts</a>
+            <a href="qr_labels.php" target="_blank" class="btn btn-secondary" style="border-radius:var(--radius-pill); font-weight:700;"><i class="fas fa-qrcode"></i> QR Labels</a>
         </div>
     <?php endif; ?>
 </div>
@@ -138,8 +141,11 @@ try {
             <!-- Filter toolbar -->
             <div class="dashboard-card" style="padding:10px 12px; margin:0; display:flex; gap:10px; flex-wrap:wrap; position:relative; align-items:center;">
                 <div style="position:relative; flex:2; display:flex; align-items:center;">
-                    <i class="fas fa-barcode" style="position:absolute; left:12px; color:var(--color-text-muted); font-size:14px;"></i>
-                    <input type="text" id="posFilterSearch" autocomplete="off" placeholder="Scan SKU/Barcode or search product (F1)..." onkeyup="filterPOSCatalog();" style="width:100%; padding:8px 12px 8px 34px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
+                    <i class="fas fa-barcode" style="position:absolute; left:12px; color:var(--color-text-muted); font-size:14px; pointer-events:none;"></i>
+                    <input type="text" id="posFilterSearch" autocomplete="off" placeholder="Scan SKU/Barcode or search product (F1)..." onkeyup="filterPOSCatalog();" style="width:100%; padding:8px 36px 8px 34px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
+                    <button type="button" onclick="openCameraScanner();" title="Scan with Device Camera (QR & Barcode)" style="position:absolute; right:8px; background:none; border:none; color:var(--color-primary); cursor:pointer; font-size:14px; padding:4px 6px;">
+                        <i class="fas fa-camera"></i>
+                    </button>
                     <div id="posAutocompleteDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1005; max-height:250px; overflow-y:auto; margin-top:2px;"></div>
                 </div>
                 
@@ -217,6 +223,7 @@ try {
                             <div id="posCustomerAutocomplete" style="display:none; position:absolute; top:100%; right:0; width:240px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:1006; max-height:220px; overflow-y:auto; margin-top:2px;"></div>
                         </div>
                         <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal" style="border-radius:var(--radius-sm); font-size:11px; font-weight:700; padding:5px 8px; white-space:nowrap;" title="Register New Customer (F2)"><i class="fas fa-user-plus"></i></button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="openCustomerCRMModal();" style="border-radius:var(--radius-sm); font-size:11px; font-weight:700; padding:5px 8px; white-space:nowrap;" title="View Customer Profile & Purchase History (CRM)"><i class="fas fa-history"></i> CRM</button>
                     </div>
                 </div>
 
@@ -322,7 +329,7 @@ function filterByDepartment(dept, btn) {
 window.filterByDepartment = filterByDepartment;
 
 function escHtml(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function clearTouchCart() { Object.keys(touchCart).forEach(k => delete touchCart[k]); renderTouchCart(); }
+function clearTouchCart() { Object.keys(touchCart).forEach(k => delete touchCart[k]); window.posScanStartTime = null; renderTouchCart(); }
 function lineNet(it) { return Math.max(0, it.price * it.qty - (it.line_discount || 0)); }
 
 function filterPOSCatalog() {
@@ -438,6 +445,9 @@ function updateLoyaltyUI() {
 
 function addTouchCartItem(id, name, price, stock, image = '', sku = '') {
     id = parseInt(id, 10);
+    if (!window.posScanStartTime || Object.keys(touchCart || {}).length === 0) {
+        window.posScanStartTime = Date.now();
+    }
     if (window.posBeep) window.posBeep(880, 70);
     if (touchCart[id]) {
         touchCart[id].stock = stock;
@@ -978,6 +988,79 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button type="submit" class="btn btn-primary" style="font-size:12px; padding:6px 16px; border-radius:var(--radius-pill); font-weight:700;">Save Customer</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Scanner Modal (Santosa & Wirawan 2019) -->
+<div class="modal fade" id="cameraScanModal" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+        <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:var(--color-surface); overflow:hidden;">
+            <div class="modal-header" style="border-bottom:1px solid var(--color-border); padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+                <h5 class="modal-title" style="font-weight:800; font-size:15px; color:var(--color-text); margin:0;">
+                    <i class="fas fa-camera" style="color:var(--color-primary); margin-right:6px;"></i> Scan Product QR / Barcode
+                </h5>
+                <button type="button" class="btn-close" onclick="closeCameraScanner();" style="border:none; background:transparent; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:16px; text-align:center;">
+                <div id="cameraViewport" style="position:relative; width:100%; height:260px; background:#000; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                    <video id="posScannerVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                    <!-- Targeting guide overlay -->
+                    <div style="position:absolute; inset:25px; border:2px dashed #10b981; border-radius:12px; pointer-events:none; box-shadow:0 0 0 9999px rgba(0,0,0,0.35);"></div>
+                </div>
+                <div id="cameraScanStatus" style="font-size:12px; font-weight:700; color:var(--color-text-muted); margin-top:10px;">
+                    Position barcode or QR label in front of camera
+                </div>
+                <div style="margin-top:14px; display:flex; justify-content:center;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeCameraScanner();" style="border-radius:var(--radius-pill); font-weight:700; padding:6px 16px;">
+                        Close Camera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Lock Modal (Antczak & Weron 2019 Table 2) -->
+<div id="registerLockModal" style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(15, 23, 42, 0.95); backdrop-filter:blur(8px); align-items:center; justify-content:center;">
+    <div style="max-width:380px; width:90%; background:var(--color-surface, #fff); border-radius:16px; padding:28px 24px; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+        <div style="width:64px; height:64px; background:#fef3c7; color:#b45309; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:28px; margin-bottom:16px;">
+            <i class="fas fa-lock"></i>
+        </div>
+        <h3 style="font-size:18px; font-weight:800; margin:0 0 6px 0; color:var(--color-text);">Register Locked for Break</h3>
+        <p style="font-size:12px; color:var(--color-text-muted); margin:0 0 20px 0;">
+            Station is paused (OperatorLock). Enter password to unlock.
+        </p>
+
+        <form id="frmUnlockRegister" onsubmit="submitRegisterUnlock(event);">
+            <div style="margin-bottom:16px; text-align:left;">
+                <label style="font-size:11px; font-weight:700; color:var(--color-text-muted); display:block; margin-bottom:4px;">Cashier Password</label>
+                <input type="password" id="unlockPassword" required placeholder="Enter password to resume..." style="width:100%; padding:10px 12px; border:1px solid var(--color-border); border-radius:8px; font-size:14px; outline:none; background:var(--color-surface); color:var(--color-text);">
+            </div>
+            <div id="unlockErrorMsg" style="display:none; color:#ef4444; font-size:12px; font-weight:700; margin-bottom:12px;"></div>
+            <button type="submit" id="btnUnlockSubmit" class="btn btn-primary" style="width:100%; padding:10px; border-radius:var(--radius-pill); font-weight:800; font-size:13px; background:#047857; color:#fff; border:none;">
+                <i class="fas fa-lock-open"></i> Unlock Register &amp; Resume
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Customer CRM History Modal (Matthew Cote 2015) -->
+<div class="modal fade" id="customerCrmModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:var(--radius-md); border:none; box-shadow:var(--shadow-lg); background:var(--color-surface);">
+            <div class="modal-header" style="border-bottom:1px solid var(--color-border); padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+                <h5 class="modal-title" style="font-weight:800; font-size:16px; color:var(--color-text); margin:0;">
+                    <i class="fas fa-user-tag" style="color:var(--color-primary); margin-right:6px;"></i> Customer Profile &amp; Purchase History (CRM)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="border:none; background:transparent; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:20px;" id="crmModalBody">
+                <div style="text-align:center; padding:30px; color:var(--color-text-muted);">
+                    <i class="fas fa-spinner fa-spin" style="font-size:24px; margin-bottom:8px;"></i>
+                    <p>Loading customer profile...</p>
+                </div>
             </div>
         </div>
     </div>
