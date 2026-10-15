@@ -21,15 +21,17 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../public/dbconnect.php';
 require_once __DIR__ . '/../middleware/auth_middleware.php';
 
-require_admin_permission('products.view');
+if (!has_admin_permission('products.view') && !has_admin_permission('pos.sale')) {
+    require_admin_permission('products.view');
+}
 
 $pdo = db();
 
 // Input parameters
-$productId   = (int) input('product_id', 0, 'get');
-$categoryId  = (int) input('category_id', 0, 'get');
+$productId   = (int) input('product_id', '0', 'get');
+$categoryId  = (int) input('category_id', '0', 'get');
 $selectedIds = input('ids', '', 'get');
-$copies      = max(1, min(50, (int) input('copies', 1, 'get')));
+$copies      = max(1, min(50, (int) input('copies', '1', 'get')));
 $labelSize   = input('size', 'standard', 'get'); // standard | compact | shelftalker
 
 // Build query
@@ -64,8 +66,8 @@ $stmt = $pdo->prepare("
 $stmt->execute($params);
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch categories for filter dropdown
-$categories = $pdo->query("SELECT id, name FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+// Fetch categories for filter dropdown (GroCo categories table uses is_active column)
+$categories = $pdo->query("SELECT id, name FROM categories WHERE is_active = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 $siteName = get_setting('site_name', 'GroCo Grocery Store');
 $currency = get_setting('currency_symbol', '৳');
@@ -287,11 +289,14 @@ require_once __DIR__ . '/../layouts/header.php';
                 (Ref: Santosa &amp; Wirawan 2019)
             </p>
         </div>
-        <div style="display:flex; gap:10px;">
-            <a href="<?= BASE_URL ?>/../admin/products/index.php" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Products
+        <div style="display:flex; gap:8px;">
+            <a href="<?= BASE_URL ?>/../admin/pos/index.php" class="btn btn-secondary" style="border:1px solid var(--color-border); font-size:12px; font-weight:700;">
+                <i class="fas fa-cash-register"></i> POS Terminal
             </a>
-            <button type="button" onclick="window.print();" class="btn btn-primary" style="background:#047857;">
+            <a href="<?= BASE_URL ?>/../admin/products/index.php" class="btn btn-secondary" style="border:1px solid var(--color-border); font-size:12px; font-weight:700;">
+                <i class="fas fa-boxes-stacked"></i> Products Catalog
+            </a>
+            <button type="button" onclick="window.print();" class="btn btn-primary" style="background:#047857; font-size:12px; font-weight:700; border:none;">
                 <i class="fas fa-print"></i> Print Labels Now
             </button>
         </div>

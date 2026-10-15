@@ -30,7 +30,7 @@ $pdo = db();
 
 // Filter parameters
 $range = input('range', '30d', 'get'); // today | 7d | 30d | custom
-$cashierId = (int) input('cashier_id', 0, 'get');
+$cashierId = (int) input('cashier_id', '0', 'get');
 $isExport = (input('export', '', 'get') === 'csv');
 
 $now = date('Y-m-d H:i:s');

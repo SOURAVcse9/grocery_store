@@ -27,9 +27,9 @@ require_admin_permission('products.view');
 $pdo = db();
 
 // Query Parameters
-$windowDays = max(7, min(90, (int) input('window', 30, 'get')));
-$leadTimeDays = max(1, min(30, (int) input('lead_time', 5, 'get'))); // Default 5 days (Cote 2015, p. 8)
-$categoryId = (int) input('category_id', 0, 'get');
+$windowDays = max(7, min(90, (int) input('window', '30', 'get')));
+$leadTimeDays = max(1, min(30, (int) input('lead_time', '5', 'get'))); // Default 5 days (Cote 2015, p. 8)
+$categoryId = (int) input('category_id', '0', 'get');
 $filterStatus = input('status', 'all', 'get'); // all | reorder_only | stockouts
 $search = trim(input('search', '', 'get'));
 $isExport = (input('export', '', 'get') === 'csv');

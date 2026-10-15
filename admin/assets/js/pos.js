@@ -447,12 +447,18 @@
         styleColor = '#adb5bd';
       }
 
+      const pImg = p.image || (window.POS_PLACEHOLDER_IMG || '');
       div.innerHTML = `
-        <div>
-          <strong style="color:${styleColor};">${p.name}</strong>${statusStr}<br>
-          <span style="font-size:10px; color:var(--color-text-faint);">SKU: ${p.sku} | Barcode: ${p.barcode}</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:30px; height:30px; border-radius:4px; overflow:hidden; border:1px solid var(--color-border); background:#fff; flex-shrink:0; display:flex; align-items:center; justify-content:center; padding:1px;">
+            <img src="${pImg}" alt="" onerror="this.onerror=null;this.src=(window.POS_PLACEHOLDER_IMG||'');" style="max-width:100%; max-height:100%; object-fit:contain;">
+          </div>
+          <div>
+            <strong style="color:${styleColor};">${p.name}</strong>${statusStr}<br>
+            <span style="font-size:10px; color:var(--color-text-faint);">SKU: ${p.sku} | Barcode: ${p.barcode}</span>
+          </div>
         </div>
-        <div style="font-weight:700; color:var(--color-primary);">৳${p.price.toFixed(2)}</div>
+        <div style="font-weight:700; color:var(--color-primary); white-space:nowrap;">৳${p.price.toFixed(2)}</div>
       `;
 
       div.addEventListener('click', () => {

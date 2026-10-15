@@ -72,6 +72,221 @@ try {
 }
 ?>
 
+<style>
+/* Enterprise POS Touch Terminal Responsive Layout (GroCo 2026) */
+.pos-terminal-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(360px, 1fr);
+    gap: var(--space-4, 16px);
+    align-items: start;
+}
+@media (max-width: 1200px) {
+    .pos-terminal-layout {
+        grid-template-columns: minmax(0, 1.25fr) minmax(340px, 1fr);
+        gap: 12px;
+    }
+}
+@media (max-width: 991px) {
+    .pos-terminal-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+/* Departmental Filter Pills - Smooth touch scrolling */
+#posDepartmentTabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 2px 2px 6px 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+}
+#posDepartmentTabs::-webkit-scrollbar {
+    height: 4px;
+}
+#posDepartmentTabs::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+}
+.pos-dept-btn {
+    flex-shrink: 0;
+    border-radius: var(--radius-pill, 9999px) !important;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 6px 14px;
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: all 0.15s ease-in-out;
+    user-select: none;
+}
+.pos-dept-btn:hover {
+    border-color: var(--color-primary);
+}
+.pos-dept-btn.active {
+    background: var(--color-primary) !important;
+    color: #fff !important;
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+}
+
+/* Catalog Product Grid */
+#posCatalogGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    max-height: calc(100vh - 280px);
+    min-height: 400px;
+    overflow-y: auto;
+    padding: 4px 2px;
+    scrollbar-width: thin;
+}
+@media (max-width: 768px) {
+    #posCatalogGrid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        max-height: 420px;
+        min-height: 300px;
+    }
+}
+.touch-product-cell {
+    border-radius: var(--radius-sm, 8px);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface, #fff);
+    padding: 10px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    user-select: none;
+}
+.touch-product-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    border-color: var(--color-primary);
+}
+.touch-product-cell:active {
+    transform: scale(0.97);
+}
+
+.pos-product-img-box {
+    width: 100%;
+    height: 76px;
+    border-radius: var(--radius-sm, 6px);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background: #ffffff;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+}
+.pos-product-img-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.15s ease;
+}
+.touch-product-cell:hover .pos-product-img-box img {
+    transform: scale(1.05);
+}
+
+/* POS Cart Panel - Sticky and full-height without clipping */
+.pos-cart-panel {
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 12px);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 580px;
+    max-height: calc(100vh - 110px);
+    position: sticky;
+    top: 75px;
+    margin: 0;
+}
+@media (max-width: 991px) {
+    .pos-cart-panel {
+        position: static;
+        min-height: auto;
+        max-height: none;
+    }
+}
+
+/* Scrollable Active Cart Items */
+#posActiveCartList {
+    flex: 1 1 auto;
+    min-height: 180px;
+    max-height: calc(100vh - 460px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--color-border);
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+}
+@media (max-width: 991px) {
+    #posActiveCartList {
+        max-height: 340px;
+    }
+}
+
+.pos-cart-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 11px;
+    border-bottom: 1px solid var(--color-border);
+    padding: 6px 0;
+    transition: background 0.1s ease;
+}
+.pos-qty-btn {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface, #fff);
+    color: var(--color-text);
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 0.1s;
+    user-select: none;
+    touch-action: manipulation;
+}
+.pos-qty-btn:active {
+    transform: scale(0.92);
+    background: var(--color-border);
+}
+.pos-qty-input {
+    width: 50px;
+    height: 28px;
+    padding: 2px 4px;
+    text-align: center;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-surface, #fff);
+    color: var(--color-text);
+    font-size: 12px;
+    font-weight: 700;
+}
+.pos-cart-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+}
+</style>
+
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4); flex-wrap:wrap; gap:16px;">
     <div>
         <h1 style="font-size:var(--fs-xl); font-weight:800; color:var(--color-text); margin:0;">POS Terminal</h1>
@@ -122,25 +337,25 @@ try {
     </div>
 <?php else: ?>
     <!-- Touch screen responsive layout -->
-    <div style="display:grid; grid-template-columns: 1.55fr 1fr; gap:var(--space-4);" class="admin-dashboard-layout">
+    <div class="pos-terminal-layout">
         
         <!-- Left: Products selector block -->
-        <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; flex-direction:column; gap:10px; min-width:0;">
             <!-- Retail Departmental Category Filter Pills (Shwapno / Clothing / Grocery) -->
-            <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin;" id="posDepartmentTabs">
-                <button type="button" class="btn btn-sm pos-dept-btn active" data-dept="all" onclick="filterByDepartment('all', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-primary); color:#fff; border:none; transition:0.15s;"><i class="fas fa-th-large"></i> All Items</button>
-                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="produce" onclick="filterByDepartment('produce', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🥦 Fresh Produce</button>
-                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="dairy_bakery" onclick="filterByDepartment('dairy_bakery', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🥛 Dairy &amp; Bakery</button>
-                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="meat_fish" onclick="filterByDepartment('meat_fish', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🥩 Meat &amp; Fish</button>
-                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="grocery" onclick="filterByDepartment('grocery', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🌾 Staples &amp; Grocery</button>
-                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="clothing" onclick="filterByDepartment('clothing', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">👗 Clothing &amp; Fashion</button>
-                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="household" onclick="filterByDepartment('household', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🧴 Household &amp; Care</button>
-                <button type="button" class="btn btn-sm pos-dept-btn" data-dept="snacks_drinks" onclick="filterByDepartment('snacks_drinks', this);" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; white-space:nowrap; padding:6px 14px; background:var(--color-surface); color:var(--color-text); border:1px solid var(--color-border); transition:0.15s;">🍪 Snacks &amp; Drinks</button>
+            <div id="posDepartmentTabs">
+                <button type="button" class="pos-dept-btn active" data-dept="all" onclick="filterByDepartment('all', this);"><i class="fas fa-th-large"></i> All Items</button>
+                <button type="button" class="pos-dept-btn" data-dept="produce" onclick="filterByDepartment('produce', this);">🥦 Fresh Produce</button>
+                <button type="button" class="pos-dept-btn" data-dept="dairy_bakery" onclick="filterByDepartment('dairy_bakery', this);">🥛 Dairy &amp; Bakery</button>
+                <button type="button" class="pos-dept-btn" data-dept="meat_fish" onclick="filterByDepartment('meat_fish', this);">🥩 Meat &amp; Fish</button>
+                <button type="button" class="pos-dept-btn" data-dept="grocery" onclick="filterByDepartment('grocery', this);">🌾 Staples &amp; Grocery</button>
+                <button type="button" class="pos-dept-btn" data-dept="clothing" onclick="filterByDepartment('clothing', this);">👗 Clothing &amp; Fashion</button>
+                <button type="button" class="pos-dept-btn" data-dept="household" onclick="filterByDepartment('household', this);">🧴 Household &amp; Care</button>
+                <button type="button" class="pos-dept-btn" data-dept="snacks_drinks" onclick="filterByDepartment('snacks_drinks', this);">🍪 Snacks &amp; Drinks</button>
             </div>
 
             <!-- Filter toolbar -->
             <div class="dashboard-card" style="padding:10px 12px; margin:0; display:flex; gap:10px; flex-wrap:wrap; position:relative; align-items:center;">
-                <div style="position:relative; flex:2; display:flex; align-items:center;">
+                <div style="position:relative; flex:2; min-width:200px; display:flex; align-items:center;">
                     <i class="fas fa-barcode" style="position:absolute; left:12px; color:var(--color-text-muted); font-size:14px; pointer-events:none;"></i>
                     <input type="text" id="posFilterSearch" autocomplete="off" placeholder="Scan SKU/Barcode or search product (F1)..." onkeyup="filterPOSCatalog();" style="width:100%; padding:8px 36px 8px 34px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:13px; outline:none; background:var(--color-surface); color:var(--color-text);">
                     <button type="button" onclick="openCameraScanner();" title="Scan with Device Camera (QR & Barcode)" style="position:absolute; right:8px; background:none; border:none; color:var(--color-primary); cursor:pointer; font-size:14px; padding:4px 6px;">
@@ -165,7 +380,7 @@ try {
             </div>
 
             <!-- Touch product cells grid -->
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap:10px; max-height: 520px; overflow-y: auto; padding:4px;" id="posCatalogGrid">
+            <div id="posCatalogGrid">
                 <?php foreach ($products as $p): 
                     $img = image_url($p['image'], 'products');
                 ?>
@@ -180,22 +395,23 @@ try {
                          data-image="<?= e($img) ?>"
                          data-cat="<?= $p['category_id'] ?: '' ?>"
                          data-brand="<?= $p['brand_id'] ?: '' ?>"
-                         onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e(addslashes($p['name'])) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>, '<?= e($img) ?>', '<?= e($p['sku'] ?? '') ?>');" 
-                         style="padding:10px; text-align:center; cursor:pointer; margin:0; transition: transform 0.1s ease, box-shadow 0.1s ease;">
+                         onclick="addTouchCartItem(<?= $p['id'] ?>, '<?= e(addslashes($p['name'])) ?>', <?= $p['price'] ?>, <?= $p['stock'] ?>, '<?= e($img) ?>', '<?= e($p['sku'] ?? '') ?>');">
                         
-                        <div style="width:100%; height:72px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--color-border); background:var(--color-surface); margin-bottom:6px;">
-                            <img src="<?= e($img) ?>" alt="" style="width:100%; height:100%; object-fit:cover;">
+                        <div class="pos-product-img-box">
+                            <img src="<?= e($img) ?>" alt="<?= e($p['name']) ?>" loading="lazy" onerror="this.onerror=null;this.src='<?= e(image_url('', 'products')) ?>';">
                         </div>
                         <strong style="font-size:11px; color:var(--color-text); display:block; height:32px; overflow:hidden; line-height:16px; margin-bottom:4px;" title="<?= e($p['name']) ?>"><?= e($p['name']) ?></strong>
-                        <span style="font-size:12px; font-weight:800; color:var(--color-primary);">৳<?= number_format((float)$p['price'], 2) ?></span><br>
-                        <span style="font-size:9px; color:var(--color-text-faint);">Stock: <?= $p['stock'] ?> units</span>
+                        <div>
+                            <span style="font-size:12px; font-weight:800; color:var(--color-primary);">৳<?= number_format((float)$p['price'], 2) ?></span><br>
+                            <span style="font-size:9px; color:var(--color-text-faint);">Stock: <?= $p['stock'] ?> units</span>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>
         </div>
 
         <!-- Right: Cart controls, Customer loyalty, checkout split -->
-        <div class="dashboard-card" style="padding:16px; margin:0; display:flex; flex-direction:column; height: 600px; justify-content:space-between;">
+        <div class="dashboard-card pos-cart-panel">
             
             <!-- Cart & Customer Loyalty -->
             <div>
@@ -246,7 +462,7 @@ try {
             </div>
 
             <!-- Calculations, Quick discounts, Suspends, Checkout buttons -->
-            <div>
+            <div class="pos-cart-footer">
                 <div style="font-size:12px; color:var(--color-text-muted); display:flex; flex-direction:column; gap:5px; margin-bottom:10px;">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Subtotal:</span>
@@ -296,18 +512,19 @@ try {
 let touchCart = {};
 window.touchCart = touchCart;
 window.csrfToken = '<?= csrf_token() ?>';
+window.POS_PLACEHOLDER_IMG = '<?= e(image_url('', 'products')) ?>';
 window.POS_DECIMAL = <?= pos_decimal_qty_enabled($pdo) ? 'true' : 'false' ?>;
 window.POS_CAN_DISCOUNT = <?= (has_admin_permission('pos.discount') || has_admin_permission('pos.override')) ? 'true' : 'false' ?>;
 window.currentPosDept = 'all';
 
 const DEPT_MAP = {
-    produce: [1, 2],
+    produce: [1, 2, 11],
     dairy_bakery: [3, 4],
     meat_fish: [7, 8, 37],
-    grocery: [10, 26, 27, 28, 29, 30],
+    grocery: [10, 26, 27, 28, 29, 30, 34, 35],
     clothing: [38],
-    household: [12, 13, 36],
-    snacks_drinks: [5, 6, 31, 32, 33]
+    household: [12, 13, 14, 15, 36],
+    snacks_drinks: [5, 6, 9, 31, 32, 33]
 };
 
 function filterByDepartment(dept, btn) {
@@ -316,13 +533,13 @@ function filterByDepartment(dept, btn) {
         b.classList.remove('active');
         b.style.background = 'var(--color-surface)';
         b.style.color = 'var(--color-text)';
-        b.style.border = '1px solid var(--color-border)';
+        b.style.borderColor = 'var(--color-border)';
     });
     if (btn) {
         btn.classList.add('active');
         btn.style.background = 'var(--color-primary)';
         btn.style.color = '#fff';
-        btn.style.border = 'none';
+        btn.style.borderColor = 'var(--color-primary)';
     }
     filterPOSCatalog();
 }
@@ -358,7 +575,7 @@ function filterPOSCatalog() {
         if (brand && itemBrand !== brand) match = false;
         if (deptCats && !deptCats.includes(itemCat)) match = false;
         
-        el.style.display = match ? 'block' : 'none';
+        el.style.display = match ? 'flex' : 'none';
     });
 }
 
@@ -527,33 +744,33 @@ function renderTouchCart() {
     keys.forEach(k => {
         const item = touchCart[k];
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex; gap:8px; align-items:center; font-size:11px; border-bottom:1px solid var(--color-border); padding:8px 0;';
+        row.className = 'pos-cart-row';
         
-        let priceDisplay = `৳${item.price}`;
+        let priceDisplay = `৳${item.price.toFixed(2)}`;
         if (canOverridePrice) {
-            priceDisplay = `<span onclick="triggerPriceOverride(${item.id});" style="text-decoration: underline; cursor: pointer; color: var(--color-primary);" title="Click to override price">৳${item.price} <i class="fas fa-edit" style="font-size: 8px;"></i></span>`;
+            priceDisplay = `<span onclick="triggerPriceOverride(${item.id});" style="text-decoration: underline; cursor: pointer; color: var(--color-primary);" title="Click to override price">৳${item.price.toFixed(2)} <i class="fas fa-edit" style="font-size: 8px;"></i></span>`;
         }
         
         const itemSubtotal = lineNet(item).toFixed(2);
-        const fallbackImg = '<?= BASE_URL ?>/../admin/assets/images/placeholder.png';
+        const fallbackImg = window.POS_PLACEHOLDER_IMG || '<?= e(image_url('', 'products')) ?>';
         const imgSrc = escHtml(item.image ? item.image : fallbackImg);
         const nm = escHtml(item.name);
         const qtyStep = window.POS_DECIMAL ? 'any' : '1';
 
         row.innerHTML = `
-            <div style="width:36px; height:36px; border-radius:4px; overflow:hidden; border:1px solid var(--color-border); flex-shrink:0;">
-                <img src="${imgSrc}" alt="" style="width:100%; height:100%; object-fit:cover;">
+            <div style="width:38px; height:38px; border-radius:6px; overflow:hidden; border:1px solid var(--color-border); background:#ffffff; flex-shrink:0; display:flex; align-items:center; justify-content:center; padding:2px;">
+                <img src="${imgSrc}" alt="${nm}" onerror="this.onerror=null;this.src='${fallbackImg}';" style="max-width:100%; max-height:100%; object-fit:contain;">
             </div>
             <div style="flex:1; min-width:0;">
-                <strong style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${nm}">${nm}</strong>
+                <strong style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;" title="${nm}">${nm}</strong>
                 <span style="font-size:9px; color:var(--color-text-faint);">SKU: ${escHtml(item.sku || 'N/A')} &bull; stock ${escHtml(item.stock)}</span>
             </div>
-            <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
-                <button type="button" aria-label="Decrease quantity" onclick="updateTouchQty(${item.id}, -1);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:26px; height:26px; border-radius:4px; cursor:pointer;">&minus;</button>
-                <input type="number" aria-label="Quantity" min="0" step="${qtyStep}" value="${item.qty}" onchange="setTouchQty(${item.id}, this.value);" style="width:58px; padding:3px; text-align:center; border:1px solid var(--color-border); border-radius:4px; background:var(--color-surface); color:var(--color-text); font-size:12px; font-weight:700;">
-                <button type="button" aria-label="Increase quantity" onclick="updateTouchQty(${item.id}, 1);" style="border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:26px; height:26px; border-radius:4px; cursor:pointer;">+</button>
+            <div style="display:flex; align-items:center; gap:3px; flex-shrink:0;">
+                <button type="button" aria-label="Decrease quantity" onclick="updateTouchQty(${item.id}, -1);" class="pos-qty-btn">&minus;</button>
+                <input type="number" aria-label="Quantity" min="0" step="${qtyStep}" value="${item.qty}" onchange="setTouchQty(${item.id}, this.value);" class="pos-qty-input">
+                <button type="button" aria-label="Increase quantity" onclick="updateTouchQty(${item.id}, 1);" class="pos-qty-btn">+</button>
             </div>
-            <div style="width:104px; text-align:right; font-size:10px; color:var(--color-text-muted); line-height:1.3; flex-shrink:0;">
+            <div style="width:100px; text-align:right; font-size:10px; color:var(--color-text-muted); line-height:1.3; flex-shrink:0;">
                 <div>৳${item.price.toFixed(2)} &times; ${escHtml(item.qty)}</div>
                 <div style="font-size:9px; color:var(--color-text-faint);">${window.POS_CAN_DISCOUNT ? `<a href="#" onclick="setLineDiscount(${item.id}); return false;" style="color:var(--color-primary);">Disc: ৳${(item.line_discount || 0).toFixed(2)}</a>` : 'Disc: ৳' + (item.line_discount || 0).toFixed(2)}</div>
                 <div style="font-weight:700; color:var(--color-text);">৳${itemSubtotal}</div>
