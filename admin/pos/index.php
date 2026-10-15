@@ -285,6 +285,30 @@ try {
     flex-shrink: 0;
     margin-top: auto;
 }
+
+/* Payment Terminal Responsive Rules (Bug E & I) */
+.pos-pay-row {
+    display: grid;
+    grid-template-columns: 1.4fr 2fr;
+    gap: 10px;
+    align-items: center;
+}
+@media (max-width: 480px) {
+    .pos-pay-row {
+        grid-template-columns: 1fr !important;
+        gap: 4px !important;
+    }
+    #checkoutPaymentModal .modal-body {
+        padding: 14px 12px !important;
+    }
+    #posPaymentModePills {
+        gap: 4px !important;
+    }
+    #posPaymentModePills .btn {
+        padding: 5px 8px !important;
+        font-size: 10px !important;
+    }
+}
 </style>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4); flex-wrap:wrap; gap:16px;">
@@ -1044,18 +1068,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <form id="frmPOSPayment" onsubmit="event.preventDefault(); confirmPOSSale();">
                     <div style="display:flex; flex-direction:column; gap:12px;">
                         <!-- Cash Row -->
-                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                        <div class="pos-pay-row">
                             <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-money-bill-wave" style="color:#40c057;"></i> Cash (৳)</label>
                             <input type="number" id="splitCash" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right;">
                         </div>
 
                         <!-- Card Row -->
-                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                        <div class="pos-pay-row">
                             <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-credit-card" style="color:#228be6;"></i> Card (৳)</label>
                             <input type="number" id="splitCard" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right; margin-bottom:4px;">
                         </div>
                         <div id="cardDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
-                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <div class="pos-pay-row">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Card Type *</label>
                                 <select id="splitCardType" class="form-control" style="font-size:11px; background:var(--color-surface); color:var(--color-text); height:auto; padding:4px 8px;">
                                     <option value="Visa">Visa</option>
@@ -1065,27 +1089,27 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <option value="Other">Other Card</option>
                                 </select>
                             </div>
-                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <div class="pos-pay-row">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Last 4 Digits *</label>
                                 <input type="text" id="splitCardNo" placeholder="E.g. 4321" class="form-control" style="font-size:11px;">
                             </div>
-                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <div class="pos-pay-row">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Reference / Txn ID *</label>
                                 <input type="text" id="splitCardRef" placeholder="Approval code / Txn Ref" class="form-control" style="font-size:11px;">
                             </div>
-                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <div class="pos-pay-row">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Bank Name *</label>
                                 <input type="text" id="splitCardBank" placeholder="E.g. DBBL, Brac Bank" class="form-control" style="font-size:11px;">
                             </div>
                         </div>
 
                         <!-- Mobile Banking Row -->
-                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                        <div class="pos-pay-row">
                             <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-mobile-alt" style="color:#e64980;"></i> Mobile Banking (৳)</label>
                             <input type="number" id="splitBkash" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right; margin-bottom:4px;">
                         </div>
                         <div id="mobileDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
-                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <div class="pos-pay-row">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Provider *</label>
                                 <select id="splitMobileProvider" class="form-control" style="font-size:11px; background:var(--color-surface); color:var(--color-text); height:auto; padding:4px 8px;">
                                     <option value="bKash">bKash</option>
@@ -1094,29 +1118,29 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <option value="Other">Other Mobile</option>
                                 </select>
                             </div>
-                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <div class="pos-pay-row">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Transaction ID *</label>
                                 <input type="text" id="splitBkashTxnId" placeholder="E.g. TRX-8921B" class="form-control" style="font-size:11px;">
                             </div>
                         </div>
 
                         <!-- Wallet Credit Row -->
-                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                        <div class="pos-pay-row">
                             <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-wallet" style="color:#fcc419;"></i> Wallet Credit (৳)</label>
                             <input type="number" id="splitWallet" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right;">
                         </div>
 
                         <!-- Bank Transfer Row -->
-                        <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                        <div class="pos-pay-row">
                             <label style="font-size:12px; font-weight:700; color:var(--color-text);"><i class="fas fa-university" style="color:#7950f2;"></i> Bank Transfer (৳)</label>
                             <input type="number" id="splitBank" min="0" step="0.01" value="0" class="form-control" style="font-size:13px; text-align:right;">
                         </div>
                         <div id="bankDetailsRow" style="display:none; flex-direction:column; gap:8px; background:#f8f9fa; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:8px;">
-                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <div class="pos-pay-row">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Bank Name *</label>
                                 <input type="text" id="splitBankName" placeholder="E.g. City Bank, HSBC" class="form-control" style="font-size:11px;">
                             </div>
-                            <div style="display:grid; grid-template-columns: 1.5fr 2fr; gap:10px; align-items:center;">
+                            <div class="pos-pay-row">
                                 <label style="font-size:10px; font-weight:700; color:var(--color-text-muted);">Transaction Ref *</label>
                                 <input type="text" id="splitBankRef" placeholder="Txn ID / reference code" class="form-control" style="font-size:11px;">
                             </div>

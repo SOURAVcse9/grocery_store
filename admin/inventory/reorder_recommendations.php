@@ -163,7 +163,7 @@ if ($isExport) {
 }
 
 // Fetch categories for filter dropdown
-$categories = $pdo->query("SELECT id, name FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$categories = $pdo->query("SELECT id, name FROM categories WHERE is_active = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 $currency = get_setting('currency_symbol', '৳');
 $pageTitle = 'Inventory Demand Forecasting & Reorder Recommendations';

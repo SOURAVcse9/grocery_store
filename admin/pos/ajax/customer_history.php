@@ -24,7 +24,7 @@ if (!is_admin_logged_in()) {
     exit;
 }
 
-if (!has_admin_permission('pos.sale') && !has_admin_permission('pos.access') && !has_admin_permission('pos.manage')) {
+if (!has_admin_permission('pos.sale') && !has_admin_permission('pos.access') && !has_admin_permission('pos.manage') && !has_admin_permission('pos.cash')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Forbidden']);
     exit;
@@ -68,7 +68,7 @@ try {
 
     // Recent receipts (up to 8)
     $stOrders = $pdo->prepare("
-        SELECT id, order_number, total_amount, payment_method, payment_status, status, created_at
+        SELECT id, order_number, total_amount, payment_method, payment_status, status, status AS order_status, created_at
         FROM orders
         WHERE user_id = ?
         ORDER BY created_at DESC
@@ -80,7 +80,7 @@ try {
     // For each order, fetch items
     $ordersWithItems = [];
     $stItems = $pdo->prepare("
-        SELECT product_name, product_sku, price, quantity, line_total
+        SELECT id, order_id, product_id, product_name, product_name AS name, product_sku, price, quantity, line_total
         FROM order_items
         WHERE order_id = ?
         ORDER BY id ASC
@@ -98,10 +98,13 @@ try {
         'customer' => [
             'id'             => (int) $customer['id'],
             'name'           => $customer['full_name'],
+            'full_name'      => $customer['full_name'],
             'email'          => $customer['email'],
-            'phone'          => $customer['phone'],
+            'phone'          => $customer['phone'] ?: 'N/A',
             'wallet_balance' => (float) ($customer['wallet_balance'] ?? 0),
             'reward_points'  => (int) ($customer['reward_points'] ?? 0),
+            'lifetime_spent' => (float) ($stats['total_spent'] ?? 0),
+            'total_orders'   => (int) ($stats['total_orders'] ?? 0),
             'registered_at'  => $customer['created_at'],
             'is_walkin'      => $isWalkin,
         ],

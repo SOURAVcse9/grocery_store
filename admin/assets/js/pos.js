@@ -361,15 +361,43 @@
       }
     });
 
-    // Autofocus barcode search input when modals are closed
+    // Modal focus & accessibility management (eliminates aria-hidden / focus collision)
     const custModalEl = document.getElementById('createCustomerModal');
     if (custModalEl) {
+      custModalEl.addEventListener('shown.bs.modal', () => {
+        document.getElementById('custNewName')?.focus();
+      });
       custModalEl.addEventListener('hidden.bs.modal', () => {
+        const custSearch = document.getElementById('posCustomerSearch');
+        if (custSearch) custSearch.focus();
+        else document.getElementById('posFilterSearch')?.focus();
+      });
+    }
+
+    const cameraModalEl = document.getElementById('cameraScanModal');
+    if (cameraModalEl) {
+      cameraModalEl.addEventListener('hidden.bs.modal', () => {
+        closeCameraScanner();
         document.getElementById('posFilterSearch')?.focus();
       });
     }
+
+    const crmModalEl = document.getElementById('customerCrmModal');
+    if (crmModalEl) {
+      crmModalEl.addEventListener('hidden.bs.modal', () => {
+        document.getElementById('posCustomerSearch')?.focus();
+      });
+    }
+
     const payModalEl = document.getElementById('checkoutPaymentModal');
     if (payModalEl) {
+      payModalEl.addEventListener('shown.bs.modal', () => {
+        const splitCash = document.getElementById('splitCash');
+        if (splitCash && !splitCash.disabled) {
+          splitCash.focus();
+          splitCash.select();
+        }
+      });
       payModalEl.addEventListener('hidden.bs.modal', () => {
         document.getElementById('posFilterSearch')?.focus();
       });
@@ -1050,7 +1078,7 @@
     const statusEl = document.getElementById('cameraScanStatus');
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Camera access not supported in this browser/device. Use barcode scanner or manual search.</span>';
+      if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Camera access not supported in this browser or device. Use a physical barcode scanner or manual search.</span>';
       return;
     }
 
@@ -1080,7 +1108,33 @@
       }
     } catch (err) {
       console.error('Camera error:', err);
-      if (statusEl) statusEl.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-video-slash"></i> Camera error: ${err.message || 'Permission denied'}</span>`;
+      let errorMsg = 'Unable to access camera.';
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorMsg = '<strong>Camera permission denied.</strong> Please click the site settings/lock icon in your browser address bar, set Camera to "Allow", and retry.';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        errorMsg = 'No video camera detected on this system. Please connect an external webcam or use a standard USB/Bluetooth barcode scanner.';
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        errorMsg = 'Camera is already in use by another application. Please close other software using the camera and retry.';
+      } else if (err.name === 'SecurityError') {
+        errorMsg = 'Camera access blocked by security policy. HTTPS or localhost is required.';
+      } else {
+        errorMsg = err.message || 'Permission denied or camera unavailable.';
+      }
+      if (statusEl) {
+        statusEl.innerHTML = `
+          <div style="background:#fff5f5; border:1px solid #ffe3e3; color:#c92a2a; padding:10px 14px; border-radius:8px; font-size:12px; line-height:1.5; margin-bottom:12px; text-align:left;">
+            <i class="fas fa-video-slash" style="margin-right:6px;"></i> ${errorMsg}
+          </div>
+          <div style="display:flex; justify-content:center; gap:8px;">
+            <button type="button" class="btn btn-sm btn-primary" onclick="openCameraScanner();" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 16px;">
+              <i class="fas fa-redo"></i> Retry Camera
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="closeCameraScanner();" style="border-radius:var(--radius-pill); font-size:11px; font-weight:700; padding:6px 16px;">
+              Close
+            </button>
+          </div>
+        `;
+      }
     }
   }
 
@@ -1115,7 +1169,9 @@
       cameraScanInterval = null;
     }
     if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream.getTracks().forEach(track => {
+        try { track.stop(); } catch (e) {}
+      });
       cameraStream = null;
     }
     const videoEl = document.getElementById('posScannerVideo');
@@ -1208,12 +1264,9 @@
   function openCustomerCRMModal() {
     const custSelect = document.getElementById('posCustomerSelect');
     const custId = custSelect ? parseInt(custSelect.value, 10) : 0;
-    if (!custId || custId <= 0) {
-      posToast('Please select a registered customer to view CRM profile.', 'warn');
-      const custSearch = document.getElementById('posCustomerSearch');
-      if (custSearch) custSearch.focus();
-      return;
-    }
+    const defaultId = custSelect ? parseInt(custSelect.getAttribute('data-default-id') || '0', 10) : 0;
+    const custName = custSelect ? (custSelect.getAttribute('data-name') || '') : '';
+    const isDefaultWalkin = (!custId || custId <= 0 || (defaultId > 0 && custId === defaultId) || custName.toLowerCase().includes('walk-in'));
 
     const modalEl = document.getElementById('customerCrmModal');
     if (!modalEl) return;
@@ -1221,24 +1274,57 @@
     if (bsModal) bsModal.show();
 
     const bodyEl = document.getElementById('crmModalBody');
-    if (bodyEl) {
-      bodyEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--color-text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:24px; margin-bottom:8px;"></i><p>Loading customer profile and order history...</p></div>';
+    if (!bodyEl) return;
+
+    if (isDefaultWalkin) {
+      bodyEl.innerHTML = `
+        <div style="text-align:center; padding:32px 20px;">
+          <div style="width:56px; height:56px; border-radius:50%; background:rgba(92,124,250,0.12); color:var(--color-primary); display:inline-flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px;">
+            <i class="fas fa-user-clock"></i>
+          </div>
+          <h5 style="font-weight:800; font-size:16px; color:var(--color-text); margin:0 0 6px 0;">Walk-in Customer (Standard Counter Sale)</h5>
+          <p style="font-size:13px; color:var(--color-text-muted); max-width:440px; margin:0 auto 18px auto; line-height:1.5;">
+            No persistent member profile is attached to walk-in transactions. Anonymous counter sales do not accumulate loyalty points or personal wallet credit.
+          </p>
+          <div style="display:flex; justify-content:center; gap:10px;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="bootstrap.Modal.getInstance(document.getElementById('customerCrmModal'))?.hide(); bootstrap.Modal.getOrCreateInstance(document.getElementById('createCustomerModal')).show();" style="border-radius:var(--radius-pill); font-weight:700; padding:6px 16px;">
+              <i class="fas fa-user-plus"></i> Register New Customer (F2)
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:var(--radius-pill); font-weight:700; padding:6px 16px;">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+      return;
     }
 
+    bodyEl.innerHTML = '<div style="text-align:center; padding:36px 20px; color:var(--color-text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px; color:var(--color-primary);"></i><p style="margin:0; font-weight:600;">Loading customer profile and order history...</p></div>';
+
     fetch('ajax/customer_history.php?customer_id=' + custId)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) {
+          throw new Error('HTTP error ' + r.status + ': ' + r.statusText);
+        }
+        return r.json();
+      })
       .then(data => {
-        if (!data.success || !data.customer) {
-          if (bodyEl) bodyEl.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to load customer profile.'}</div>`;
+        if (!data || !data.success || !data.customer) {
+          bodyEl.innerHTML = `<div class="alert alert-danger" style="margin:20px;"><i class="fas fa-circle-exclamation"></i> ${data?.error || 'Failed to load customer profile.'}</div>`;
           return;
         }
 
         const c = data.customer;
+        const stats = data.stats || {};
         const orders = data.recent_orders || [];
+        const lifetimeSpent = parseFloat(c.lifetime_spent ?? stats.total_spent ?? 0) || 0;
+        const totalOrders = parseInt(c.total_orders ?? stats.total_orders ?? 0, 10) || 0;
+        const walletBal = parseFloat(c.wallet_balance ?? 0) || 0;
+        const rewardPts = parseInt(c.reward_points ?? 0, 10) || 0;
 
         let ordersHtml = '';
         if (orders.length === 0) {
-          ordersHtml = '<div style="padding:16px; text-align:center; color:var(--color-text-faint); font-style:italic;">No past purchase history on record.</div>';
+          ordersHtml = '<div style="padding:20px; text-align:center; color:var(--color-text-faint); font-style:italic;">No past purchase history on record.</div>';
         } else {
           ordersHtml = `
             <div style="overflow-x:auto;">
@@ -1253,61 +1339,75 @@
                   </tr>
                 </thead>
                 <tbody>
-                  ${orders.map(o => `
+                  ${orders.map(o => {
+                    const statusStr = (o.order_status || o.status || 'completed').toLowerCase();
+                    const isSuccess = ['completed', 'delivered', 'paid'].includes(statusStr);
+                    const isCancel = ['cancelled', 'failed', 'refunded'].includes(statusStr);
+                    const pillBg = isSuccess ? '#d1fae5' : (isCancel ? '#fee2e2' : '#fef3c7');
+                    const pillColor = isSuccess ? '#065f46' : (isCancel ? '#b91c1c' : '#92400e');
+                    const items = o.items || [];
+                    return `
                     <tr style="border-bottom:1px solid var(--color-border);">
-                      <td style="padding:6px 8px; font-weight:700;">#${o.id}</td>
-                      <td style="padding:6px 8px; color:var(--color-text-muted);">${o.created_at}</td>
+                      <td style="padding:6px 8px; font-weight:700;">#${o.id || o.order_number}</td>
+                      <td style="padding:6px 8px; color:var(--color-text-muted);">${o.created_at || ''}</td>
                       <td style="padding:6px 8px;">
-                        ${(o.items || []).map(it => `<span style="display:inline-block; background:var(--color-surface-hover, #f1f5f9); padding:1px 6px; border-radius:4px; font-size:11px; margin-right:4px; margin-bottom:2px;">${it.name} &times; ${it.quantity}</span>`).join('')}
+                        ${items.map(it => `<span style="display:inline-block; background:var(--color-surface-hover, #f1f5f9); padding:1px 6px; border-radius:4px; font-size:11px; margin-right:4px; margin-bottom:2px;">${it.name || it.product_name || 'Item'} &times; ${it.quantity}</span>`).join('')}
                       </td>
-                      <td style="padding:6px 8px; text-align:right; font-weight:700;">৳${parseFloat(o.total_amount).toFixed(2)}</td>
+                      <td style="padding:6px 8px; text-align:right; font-weight:700;">৳${(parseFloat(o.total_amount) || 0).toFixed(2)}</td>
                       <td style="padding:6px 8px; text-align:center;">
-                        <span style="display:inline-block; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:700; ${o.order_status === 'completed' || o.order_status === 'delivered' ? 'background:#d1fae5; color:#065f46;' : 'background:#fef3c7; color:#92400e;'}">${o.order_status}</span>
+                        <span style="display:inline-block; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:700; background:${pillBg}; color:${pillColor};">${statusStr}</span>
                       </td>
                     </tr>
-                  `).join('')}
+                  `;}).join('')}
                 </tbody>
               </table>
             </div>
           `;
         }
 
-        if (bodyEl) {
-          bodyEl.innerHTML = `
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px; margin-bottom:16px;">
-              <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
-                <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Customer</div>
-                <div style="font-size:14px; font-weight:800; color:var(--color-text); margin-top:4px;">${c.name}</div>
-                <div style="font-size:11px; color:var(--color-text-muted);">${c.phone || c.email}</div>
-              </div>
-              <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
-                <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Lifetime Spent</div>
-                <div style="font-size:16px; font-weight:800; color:#047857; margin-top:4px;">৳${parseFloat(c.lifetime_spent).toFixed(2)}</div>
-                <div style="font-size:11px; color:var(--color-text-muted);">${c.total_orders} Orders</div>
-              </div>
-              <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
-                <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Wallet Balance</div>
-                <div style="font-size:16px; font-weight:800; color:#2563eb; margin-top:4px;">৳${parseFloat(c.wallet_balance).toFixed(2)}</div>
-                <div style="font-size:11px; color:var(--color-text-muted);">Stored Credit</div>
-              </div>
-              <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
-                <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Loyalty Points</div>
-                <div style="font-size:16px; font-weight:800; color:#d97706; margin-top:4px;">${c.reward_points}</div>
-                <div style="font-size:11px; color:var(--color-text-muted);">Points Available</div>
-              </div>
+        bodyEl.innerHTML = `
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px; margin-bottom:16px;">
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
+              <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Customer</div>
+              <div style="font-size:14px; font-weight:800; color:var(--color-text); margin-top:4px;">${c.name || c.full_name || 'Customer'}</div>
+              <div style="font-size:11px; color:var(--color-text-muted);">${c.phone && c.phone !== 'N/A' ? c.phone : (c.email || 'No contact')}</div>
             </div>
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
+              <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Lifetime Spent</div>
+              <div style="font-size:16px; font-weight:800; color:#047857; margin-top:4px;">৳${lifetimeSpent.toFixed(2)}</div>
+              <div style="font-size:11px; color:var(--color-text-muted);">${totalOrders} Orders</div>
+            </div>
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
+              <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Wallet Balance</div>
+              <div style="font-size:16px; font-weight:800; color:#2563eb; margin-top:4px;">৳${walletBal.toFixed(2)}</div>
+              <div style="font-size:11px; color:var(--color-text-muted);">Stored Credit</div>
+            </div>
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); padding:12px; border-radius:8px; text-align:center;">
+              <div style="font-size:10px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Loyalty Points</div>
+              <div style="font-size:16px; font-weight:800; color:#d97706; margin-top:4px;">${rewardPts}</div>
+              <div style="font-size:11px; color:var(--color-text-muted);">Points Available</div>
+            </div>
+          </div>
 
-            <div style="margin-top:12px;">
-              <h6 style="font-size:13px; font-weight:800; color:var(--color-text); margin-bottom:8px;">
-                <i class="fas fa-history" style="color:var(--color-primary); margin-right:4px;"></i> Recent Order History (Last 8 Purchases)
-              </h6>
-              ${ordersHtml}
-            </div>
-          `;
-        }
+          <div style="margin-top:12px;">
+            <h6 style="font-size:13px; font-weight:800; color:var(--color-text); margin-bottom:8px;">
+              <i class="fas fa-history" style="color:var(--color-primary); margin-right:4px;"></i> Recent Order History (Last 8 Purchases)
+            </h6>
+            ${ordersHtml}
+          </div>
+        `;
       })
       .catch(err => {
-        if (bodyEl) bodyEl.innerHTML = `<div class="alert alert-danger">Error loading customer history: ${err.message}</div>`;
+        bodyEl.innerHTML = `
+          <div style="padding:20px; text-align:center;">
+            <div style="color:#ef4444; font-size:32px; margin-bottom:10px;"><i class="fas fa-circle-exclamation"></i></div>
+            <p style="font-weight:700; color:var(--color-text); margin-bottom:6px;">Unable to load customer history</p>
+            <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:14px;">${err.message || 'An unexpected error occurred.'}</p>
+            <button type="button" class="btn btn-sm btn-primary" onclick="openCustomerCRMModal();" style="border-radius:var(--radius-pill); font-weight:700; padding:6px 16px;">
+              <i class="fas fa-redo"></i> Retry
+            </button>
+          </div>
+        `;
       });
   }
 
