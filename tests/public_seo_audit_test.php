@@ -229,6 +229,31 @@ assert_test(str_contains($productCardContent, 'loading="lazy"') && str_contains(
 $categoryCardContent = file_get_contents(__DIR__ . '/../public/components/category-card.php');
 assert_test(str_contains($categoryCardContent, 'alt="<?= e($imageAlt) ?>"') || str_contains($categoryCardContent, 'alt="<?= e($catName) ?>"'), 'category-card.php includes descriptive image alt attribute');
 
+// --------------------------------------------------------------------------
+// Group 9: Enhanced Rich Snippets (FAQPage & ItemList Schemas)
+// --------------------------------------------------------------------------
+echo "\n--- Group 9: Enhanced Rich Snippets (FAQPage & ItemList) ---\n";
+
+$sampleFaqs = [
+    ['question' => 'How long does grocery delivery take?', 'answer' => 'Delivery takes between 1 to 3 hours in Dhaka.'],
+    ['question' => 'What payment methods are supported?', 'answer' => 'We accept Cash on Delivery, bKash, and credit cards.']
+];
+$faqJson = get_json_ld_schema('faq_page', ['faqs' => $sampleFaqs]);
+$faqData = json_decode(strip_tags($faqJson), true);
+assert_test(is_array($faqData) && ($faqData['@type'] ?? '') === 'FAQPage', 'FAQPage JSON-LD schema is valid JSON with @type FAQPage');
+assert_test(count($faqData['mainEntity'] ?? []) === 2, 'FAQPage schema correctly includes 2 question entities');
+assert_test($faqData['mainEntity'][0]['name'] === 'How long does grocery delivery take?', 'FAQPage question entity preserves question text');
+
+$sampleItems = [
+    ['name' => 'Farm Fresh Eggs', 'slug' => 'farm-fresh-eggs'],
+    ['name' => 'Aarong Liquid Milk 1L', 'slug' => 'aarong-liquid-milk-1l']
+];
+$itemListJson = get_json_ld_schema('item_list', ['items' => $sampleItems]);
+$itemListData = json_decode(strip_tags($itemListJson), true);
+assert_test(is_array($itemListData) && ($itemListData['@type'] ?? '') === 'ItemList', 'ItemList JSON-LD schema is valid JSON with @type ItemList');
+assert_test(count($itemListData['itemListElement'] ?? []) === 2, 'ItemList schema contains 2 product carousel items');
+assert_test(str_contains($itemListData['itemListElement'][0]['url'], '/product/farm-fresh-eggs'), 'ItemList item URL resolves to canonical product route');
+
 echo "\n======================================================================\n";
 echo " SEO AUDIT TEST SUMMARY: {$passCount}/{$testCount} PASSED\n";
 if ($failCount === 0) {

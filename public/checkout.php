@@ -99,13 +99,13 @@ $extraScripts = [
     'js/checkout.js'
 ];
 
-require_once __DIR__ . '/header.php';
-
 // Prepare Breadcrumbs trail
 $breadcrumbs = [
     ['title' => 'Shopping Cart', 'link' => 'cart.php'],
     ['title' => 'Checkout']
 ];
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <!-- Breadcrumbs -->

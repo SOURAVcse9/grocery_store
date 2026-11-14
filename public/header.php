@@ -37,7 +37,7 @@ $__user               = current_user();
 // Page-level overrides: any page may set these BEFORE requiring header.php.
 $pageTitle       = $pageTitle ?? site_name() . ' — Fresh Groceries Delivered';
 $pageDescription = $pageDescription ?? 'Order fresh groceries, vegetables, dairy, and daily essentials online with fast delivery.';
-$pageCanonical   = $pageCanonical ?? current_url();
+$pageCanonical   = $pageCanonical ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="<?= e($lang) ?>">

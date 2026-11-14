@@ -197,8 +197,15 @@ try {
 }
 
 // Layout metadata
-$pageTitle = 'Search Results for "' . e($searchQuery) . '" — ' . site_name();
+$pageTitle = 'Search Results for "' . $searchQuery . '" — ' . site_name();
 $pageDescription = 'Search results matching your keyword in our grocery e-commerce catalog.';
+$pageRobots = 'noindex, follow';
+$pageCanonical = build_canonical_url('search.php', ['q' => $searchQuery]);
+
+// Prepare Breadcrumbs trail BEFORE header.php so meta-tags.php emits BreadcrumbList JSON-LD
+$breadcrumbs = [
+    ['title' => 'Search Results: "' . $searchQuery . '"']
+];
 
 $extraStylesheets = ['css/home.css', 'css/products.css', 'css/search.css'];
 $extraScripts = [
@@ -210,11 +217,6 @@ $extraScripts = [
 ];
 
 require_once __DIR__ . '/header.php';
-
-// Prepare Breadcrumbs trail
-$breadcrumbs = [
-    ['title' => 'Search Results: "' . $searchQuery . '"']
-];
 
 $popularSearches = ['Apples', 'Organic Milk', 'Bananas', 'Onions', 'Ghee', 'Rice', 'Lentils'];
 ?>

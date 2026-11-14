@@ -171,12 +171,12 @@ $extraScripts = [
     'js/quickview.js'
 ];
 
-require_once __DIR__ . '/header.php';
-
 // Prepare Breadcrumbs trail
 $breadcrumbs = [
     ['title' => 'Shopping Cart']
 ];
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <!-- Breadcrumbs -->

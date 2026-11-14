@@ -67,6 +67,13 @@ ServerSignature Off
     RewriteRule ^robots\.txt$ public/robots.php [L]
     RewriteRule ^search/?$ public/search.php [L,QSA]
     RewriteRule ^categories/?$ public/categories.php [L,QSA]
+    RewriteRule ^products(\.php)?/?$ public/products.php [L,QSA]
+    RewriteRule ^about(\.php)?/?$ public/about.php [L,QSA]
+    RewriteRule ^contact(\.php)?/?$ public/contact.php [L,QSA]
+    RewriteRule ^faq(\.php)?/?$ public/faq.php [L,QSA]
+    RewriteRule ^offers(\.php)?/?$ public/offers.php [L,QSA]
+    RewriteRule ^privacy(\.php)?/?$ public/privacy.php [L,QSA]
+    RewriteRule ^terms(\.php)?/?$ public/terms.php [L,QSA]
 
     # Clean SEO Product, Category, and Brand URLs
     RewriteRule ^product/([a-zA-Z0-9_-]+)/?$ public/product.php?slug=$1 [L,QSA]

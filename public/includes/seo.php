@@ -24,7 +24,8 @@ function get_canonical_base_url(): string
         return rtrim((string)APP_URL, '/');
     }
     if (defined('BASE_URL') && !empty(BASE_URL)) {
-        return rtrim((string)BASE_URL, '/');
+        $cleanBase = preg_replace('#/public$#i', '', BASE_URL);
+        return rtrim((string)$cleanBase, '/');
     }
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'groco.site.je';
@@ -50,26 +51,26 @@ function build_canonical_url(?string $path = null, array $params = []): string
 
     // Clean canonical product URL
     if (($script === 'product.php' || $script === 'product') && !empty($params['slug'])) {
-        return product_url((string)$params['slug']);
+        return $baseUrl . '/product/' . rawurlencode((string)$params['slug']);
     }
 
     // Clean canonical category/brand/catalog URLs
     if ($script === 'products.php' || $script === 'products') {
         if (!empty($params['category'])) {
-            $url = category_url((string)$params['category']);
+            $url = $baseUrl . '/category/' . rawurlencode((string)$params['category']);
             if (isset($params['page']) && (int)$params['page'] > 1) {
                 $url .= '?page=' . (int)$params['page'];
             }
             return $url;
         }
         if (!empty($params['brand'])) {
-            $url = brand_url((string)$params['brand']);
+            $url = $baseUrl . '/brand/' . rawurlencode((string)$params['brand']);
             if (isset($params['page']) && (int)$params['page'] > 1) {
                 $url .= '?page=' . (int)$params['page'];
             }
             return $url;
         }
-        $url = site_url('products.php');
+        $url = $baseUrl . '/products.php';
         if (isset($params['page']) && (int)$params['page'] > 1) {
             $url .= '?page=' . (int)$params['page'];
         }
@@ -78,7 +79,7 @@ function build_canonical_url(?string $path = null, array $params = []): string
 
     // Clean canonical search URL
     if ($script === 'search.php' || $script === 'search') {
-        $url = site_url('search');
+        $url = $baseUrl . '/search';
         if (!empty($params['q'])) {
             $url .= '?q=' . urlencode((string)$params['q']);
         }
@@ -87,7 +88,7 @@ function build_canonical_url(?string $path = null, array $params = []): string
 
     // Categories overview page
     if ($script === 'categories.php' || $script === 'categories') {
-        return site_url('categories');
+        return $baseUrl . '/categories';
     }
 
     // Homepage
@@ -420,6 +421,28 @@ function get_json_ld_schema(string $type, array $data = []): string
         $schema = array_merge($schema, [
             '@type' => 'ItemList',
             'itemListElement' => $items
+        ]);
+    }
+
+    elseif (($type === 'faq' || $type === 'faq_page') && !empty($data['faqs'])) {
+        $questions = [];
+        foreach ($data['faqs'] as $faq) {
+            $q = trim((string)($faq['question'] ?? ''));
+            $a = trim(strip_tags((string)($faq['answer'] ?? '')));
+            if ($q === '' || $a === '') continue;
+            $questions[] = [
+                '@type' => 'Question',
+                'name'  => $q,
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text'  => $a
+                ]
+            ];
+        }
+
+        $schema = array_merge($schema, [
+            '@type' => 'FAQPage',
+            'mainEntity' => $questions
         ]);
     }
 

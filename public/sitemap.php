@@ -41,9 +41,9 @@ foreach ($staticPages as $page => $meta) {
     if (empty($page)) {
         $loc = $baseUrl . '/';
     } elseif ($page === 'categories') {
-        $loc = site_url('categories');
+        $loc = $baseUrl . '/categories';
     } else {
-        $loc = site_url($page);
+        $loc = $baseUrl . '/' . ltrim($page, '/');
     }
     $pages[] = [
         'loc'        => $loc,
@@ -73,7 +73,7 @@ try {
             ];
         }
         $pages[] = [
-            'loc'        => category_url($c['slug']),
+            'loc'        => $baseUrl . '/category/' . rawurlencode((string)$c['slug']),
             'lastmod'    => $lastmod,
             'changefreq' => 'daily',
             'priority'   => '0.8',
@@ -99,7 +99,7 @@ try {
             ];
         }
         $pages[] = [
-            'loc'        => brand_url($b['slug']),
+            'loc'        => $baseUrl . '/brand/' . rawurlencode((string)$b['slug']),
             'lastmod'    => $lastmod,
             'changefreq' => 'weekly',
             'priority'   => '0.7',
@@ -125,7 +125,7 @@ try {
             ];
         }
         $pages[] = [
-            'loc'        => product_url($p['slug']),
+            'loc'        => $baseUrl . '/product/' . rawurlencode((string)$p['slug']),
             'lastmod'    => $lastmod,
             'changefreq' => 'daily',
             'priority'   => '0.9',
