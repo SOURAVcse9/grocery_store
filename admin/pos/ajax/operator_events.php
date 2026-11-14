@@ -52,7 +52,7 @@ if (!verify_csrf($csrfToken)) {
     exit;
 }
 
-$admin = current_admin_user();
+$admin = current_admin();
 $adminId = (int) ($admin['id'] ?? 0);
 $pdo = db();
 

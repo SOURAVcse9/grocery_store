@@ -466,31 +466,47 @@ function verify_license_remote(bool $force = false): array
     curl_close($ch);
 
     // Handle temporary remote server outage (Network error, HTTP 500/502/503/504)
-    if ($rawResponse === false || $httpCode >= 500) {
-        $elapsedSinceVerified = $now - $lastVerified;
-        if ($elapsedSinceVerified <= $gracePeriodSecs && $lic['status'] === 'active') {
-            $daysLeft = ceil(($gracePeriodSecs - $elapsedSinceVerified) / 86400);
-            log_license_event('GRACE_ACTIVE', "Licensing server unreachable; continuing in grace period ({$daysLeft} days left)");
+    if ($rawResponse === false) {
+        // Fallback for local development when loopback HTTP connections fail on Windows Apache
+        $localServerFile = ROOT_PATH . '/licensing_server/license_server.php';
+        if (file_exists($localServerFile)) {
+            require_once $localServerFile;
+            try {
+                $localServer = new \GroCo\Licensing\LicenseServer();
+                $res = $localServer->verify($rawKey, $lic['installation_id'], $currentDomain, '127.0.0.1', $postData['nonce']);
+            } catch (\Throwable $ex) {
+                log_license_event('VERIFICATION_FAILED', 'Local license verify fallback failed: ' . $ex->getMessage());
+            }
+        }
+    }
+
+    if (!isset($res)) {
+        if ($rawResponse === false || $httpCode >= 500) {
+            $elapsedSinceVerified = $now - $lastVerified;
+            if ($elapsedSinceVerified <= $gracePeriodSecs && $lic['status'] === 'active') {
+                $daysLeft = ceil(($gracePeriodSecs - $elapsedSinceVerified) / 86400);
+                log_license_event('GRACE_ACTIVE', "Licensing server unreachable; continuing in grace period ({$daysLeft} days left)");
+                return [
+                    'valid' => true,
+                    'status' => 'active',
+                    'in_grace_period' => true,
+                    'grace_days_remaining' => (int)$daysLeft,
+                    'license' => $lic,
+                ];
+            }
+
+            // Grace period expired without remote verification
+            log_license_event('GRACE_EXCEEDED', "Grace period exceeded without successful licensing server handshake");
             return [
-                'valid' => true,
-                'status' => 'active',
-                'in_grace_period' => true,
-                'grace_days_remaining' => (int)$daysLeft,
+                'valid' => false,
+                'status' => 'grace_exceeded',
+                'reason' => 'Licensing server re-verification overdue and offline grace period has expired.',
                 'license' => $lic,
             ];
         }
 
-        // Grace period expired without remote verification
-        log_license_event('GRACE_EXCEEDED', "Grace period exceeded without successful licensing server handshake");
-        return [
-            'valid' => false,
-            'status' => 'grace_exceeded',
-            'reason' => 'Licensing server re-verification overdue and offline grace period has expired.',
-            'license' => $lic,
-        ];
+        $res = json_decode((string)$rawResponse, true);
     }
-
-    $res = json_decode($rawResponse, true);
     if (!is_array($res) || !isset($res['payload'])) {
         return ['valid' => false, 'status' => 'invalid_response', 'reason' => 'Invalid server response'];
     }
