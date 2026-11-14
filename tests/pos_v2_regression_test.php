@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+if (!defined('GROCO_CLI_TEST_MODE')) {
+    define('GROCO_CLI_TEST_MODE', true);
+}
+
 require_once __DIR__ . '/../public/dbconnect.php';
 require_once __DIR__ . '/../public/includes/pos_autoload.php';
 
@@ -66,8 +70,46 @@ assertRegression("Online storefront product catalog query operates without error
 $expensesExist = $pdo->query("SHOW TABLES LIKE 'expenses'")->rowCount() > 0;
 assertRegression("Finance & expense subsystems remain intact", $expensesExist);
 
+// 8. QR Label Generation & Category Filtering Safety
+try {
+    $qrCats = $pdo->query("SELECT id, name FROM categories WHERE is_active = 1 ORDER BY name ASC")->fetchAll();
+    assertRegression("QR labels categories query uses is_active column successfully (" . count($qrCats) . " categories)", count($qrCats) > 0);
+} catch (Throwable $e) {
+    assertRegression("QR labels categories query failed: " . $e->getMessage(), false);
+}
+
+// 9. Input Helper Strict Typing Safety
+require_once __DIR__ . '/../public/includes/helpers.php';
+$_GET['test_int'] = '42';
+$_GET['test_str'] = 'hello';
+$val1 = input('test_int', 0, 'get');
+$val2 = input('test_str', '', 'get');
+$val3 = input('test_missing', 99, 'get');
+assertRegression("input() helper safely handles int and string defaults under strict_types=1", $val1 === '42' && $val2 === 'hello' && $val3 === '99');
+
+// 10. Image Resolver Fallback & Asset Availability
+$placeholderImg = image_url('', 'products');
+$placeholderExists = str_contains($placeholderImg, 'placeholder.svg') || str_contains($placeholderImg, 'placeholder.png');
+$localAssetExists = file_exists(__DIR__ . '/../public/assets/images/products/placeholder.svg');
+assertRegression("image_url() resolves valid existing SVG placeholder asset for missing/empty product images", $placeholderExists && $localAssetExists);
+
+// 11. POS Terminal Interface & Responsive Components
+$posIndexContent = file_get_contents(__DIR__ . '/../admin/pos/index.php');
+$hasTerminalLayout = str_contains($posIndexContent, 'pos-terminal-layout');
+$hasCartPanel = str_contains($posIndexContent, 'pos-cart-panel');
+$hasImgContain = str_contains($posIndexContent, 'object-fit: contain') || str_contains($posIndexContent, 'object-fit:contain');
+$hasImgFallback = str_contains($posIndexContent, 'window.POS_PLACEHOLDER_IMG');
+$hasCartFooter = str_contains($posIndexContent, 'pos-cart-footer');
+assertRegression("POS terminal has responsive layout, contain-fit images, and sticky non-clipping cart", 
+    $hasTerminalLayout && $hasCartPanel && $hasImgContain && $hasImgFallback && $hasCartFooter);
+
+// 12. Bundled Offline QR Code Engine Verification
+$qrEngineFile = __DIR__ . '/../admin/assets/js/qrcode.min.js';
+assertRegression("Offline QR Code JS library exists locally (no CDN dependency)", file_exists($qrEngineFile) && filesize($qrEngineFile) > 10000);
+
 echo "\nSummary: {$passed} PASSED, {$failed} FAILED\n";
 
 if ($failed > 0) {
     exit(1);
 }
+

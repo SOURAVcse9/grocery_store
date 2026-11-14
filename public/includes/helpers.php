@@ -303,8 +303,9 @@ function is_active_page(string $page): bool
  * NOT escape for HTML output (use e() at render time) and does NOT
  * validate — see includes/validation.php for that.
  */
-function input(string $key, string $default = '', string $method = 'post'): string
+function input(string $key, string|int|float|null $default = '', string $method = 'post'): string
 {
+    $defaultStr = (string)($default ?? '');
     $source = $method === 'get' ? $_GET : $_POST;
     if (empty($source) && $method === 'post' && !empty($_SERVER['CONTENT_TYPE']) && str_contains($_SERVER['CONTENT_TYPE'], 'application/json')) {
         static $jsonInput = null;
@@ -313,9 +314,9 @@ function input(string $key, string $default = '', string $method = 'post'): stri
         }
         $source = $jsonInput;
     }
-    $value = $source[$key] ?? $default;
+    $value = $source[$key] ?? $defaultStr;
 
-    return is_scalar($value) ? trim((string) $value) : $default;
+    return is_scalar($value) ? trim((string) $value) : $defaultStr;
 }
 
 /**

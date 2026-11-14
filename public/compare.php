@@ -58,12 +58,12 @@ $pageDescription = 'Compare prices, weights, brands, and ratings of different fr
 $extraStylesheets = ['css/compare.css', 'css/cart.css'];
 $extraScripts = ['js/compare.js'];
 
-require_once __DIR__ . '/header.php';
-
 // Prepare Breadcrumbs trail
 $breadcrumbs = [
     ['title' => 'Product Comparison']
 ];
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <!-- Breadcrumbs -->

@@ -137,6 +137,23 @@ if ($isProductPage && isset($product)) {
 if (!empty($breadcrumbs) && is_array($breadcrumbs)) {
     echo get_json_ld_schema('breadcrumbs', ['breadcrumbs' => $breadcrumbs]);
 }
+
+// 4. FAQ Schema for Frequently Asked Questions Page
+if ($scriptName === 'faq.php') {
+    try {
+        $faqsForSchema = db()->query("SELECT question, answer FROM faqs WHERE is_active = 1 ORDER BY category ASC, sort_order ASC LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($faqsForSchema)) {
+            echo get_json_ld_schema('faq_page', ['faqs' => $faqsForSchema]);
+        }
+    } catch (Throwable $e) {
+        // Silently omit FAQ schema if database unavailable
+    }
+}
+
+// 5. Category / Catalog ItemList Schema for Google Product Carousel
+if (($isCategoryPage || $isShopPage) && !empty($products) && is_array($products)) {
+    echo get_json_ld_schema('item_list', ['items' => array_slice($products, 0, 24)]);
+}
 ?>
 
 <?php 

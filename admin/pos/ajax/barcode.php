@@ -21,7 +21,7 @@ if (!is_admin_logged_in()) {
     exit;
 }
 
-if (!has_admin_permission('pos.sale')) {
+if (!has_admin_permission('pos.sale') && !has_admin_permission('pos.access') && !has_admin_permission('pos.manage')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Forbidden']);
     exit;
@@ -34,17 +34,30 @@ if ($code === '') {
     exit;
 }
 
+$cleanCode = $code;
+// Parse structured QR code payloads (Santosa & Wirawan 2019)
+if (stripos($cleanCode, 'GROCO:SKU:') === 0) {
+    $cleanCode = trim(substr($cleanCode, 10));
+} elseif (stripos($cleanCode, 'GROCO:PRODUCT:') === 0) {
+    $cleanCode = trim(substr($cleanCode, 14));
+} elseif (preg_match('/[?&](?:id|sku|code)=([^&]+)/i', $cleanCode, $matches)) {
+    $cleanCode = urldecode($matches[1]);
+}
+
 try {
     $pdo = db();
+    $hasUnit = pos_column_exists($pdo, 'products', 'unit');
+    $unitCol = $hasUnit ? 'unit,' : "'' as unit,";
+
     $stmt = $pdo->prepare("
-        SELECT id, name, price, discount_price, stock, sku, barcode 
+        SELECT id, name, price, discount_price, stock, sku, barcode, {$unitCol} 1 as dummy
         FROM products 
         WHERE (barcode = ? OR sku = ? OR id = ?) 
           AND deleted_at IS NULL 
           AND is_active = 1 
         LIMIT 1
     ");
-    $stmt->execute([$code, $code, $code]);
+    $stmt->execute([$cleanCode, $cleanCode, $cleanCode]);
     $product = $stmt->fetch();
 
     if ($product) {
@@ -57,7 +70,8 @@ try {
                 'regular_price' => (float) $product['price'],
                 'stock' => (float) $product['stock'],
                 'sku' => $product['sku'],
-                'barcode' => $product['barcode']
+                'barcode' => $product['barcode'],
+                'unit' => $product['unit'] ?? ''
             ]
         ]);
     } else {

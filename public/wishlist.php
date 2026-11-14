@@ -59,12 +59,12 @@ $pageDescription = 'Manage your saved grocery items list, view current prices, a
 $extraStylesheets = ['css/wishlist.css', 'css/cart.css'];
 $extraScripts = ['js/wishlist.js'];
 
-require_once __DIR__ . '/header.php';
-
 // Prepare Breadcrumbs trail
 $breadcrumbs = [
     ['title' => 'My Wishlist']
 ];
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <!-- Breadcrumbs -->

@@ -520,10 +520,14 @@ function pos_checkout(PDO $pdo, array $in, int $adminId, callable $can): array
             $insLog->execute([$l['id'], $adminId, -$l['qty'], $rem, "POS sale {$orderNumber}"]);
         }
 
-        // ---- Ledger: ONE entry per tender (not a blanket 'pos_split') -------
-        $ledgerMap = ['cash' => ['cash', $pay['cash'] - $change], 'card' => ['card', $pay['card']], 'bkash' => ['mobile_banking', $pay['bkash']],
-                      'bank' => ['bank_transfer', $pay['bank']], 'wallet' => ['wallet', $pay['wallet']]];
         $insLedger = $pdo->prepare("INSERT INTO transactions (type, category_id, amount, reference, payment_method, reconciled, created_at) VALUES ('income', NULL, ?, ?, ?, 1, NOW())");
+        $ledgerMap = [
+            ['cash', $pay['cash'] - $change],
+            ['card', $pay['card']],
+            ['mobile_banking', $pay['bkash']],
+            ['bank_transfer', $pay['bank']],
+            ['wallet', $pay['wallet']],
+        ];
         $ledgerRows = 0;
         foreach ($ledgerMap as [$pm, $amt]) {
             $amt = pos_round((float) $amt);
@@ -534,6 +538,93 @@ function pos_checkout(PDO $pdo, array $in, int $adminId, callable $can): array
         }
         if ($ledgerRows === 0 && $total > 0) {
             throw new PosException('No payment was recorded.');
+        }
+
+        // ---- Dual-write to relational pos_transactions, pos_transaction_items, and pos_payments ---
+        if (pos_table_exists($pdo, 'pos_transactions')) {
+            $nowTs = time();
+            $rawStart = $in['scan_start_time'] ?? ($in['begin_time'] ?? null);
+            $beginTs = ($rawStart !== null && is_numeric($rawStart) && (int)$rawStart > 0 && (int)$rawStart <= $nowTs)
+                ? (int) $rawStart
+                : max(1, $nowTs - min(90, max(5, count($lines) * 6)));
+            $tranSec = max(1, $nowTs - $beginTs);
+
+            // Calculate break/idle time since previous transaction on this register (Antczak & Weron 2019 Table 1)
+            $regId = (int) ($shift['register_id'] ?? 1);
+            $stPrev = $pdo->prepare("SELECT UNIX_TIMESTAMP(end_time) FROM pos_transactions WHERE register_id = ? AND end_time IS NOT NULL ORDER BY id DESC LIMIT 1");
+            $stPrev->execute([$regId]);
+            $prevEnd = $stPrev->fetchColumn();
+            $breakSec = ($prevEnd && (int)$prevEnd > 0 && $beginTs >= (int)$prevEnd) ? min(3600, (int)$beginTs - (int)$prevEnd) : 0;
+
+            $totalUnits = 0.0;
+            foreach ($lines as $l) {
+                $totalUnits += (float) $l['qty'];
+            }
+
+            $isCashTender = ($pay['cash'] > 0) ? 1 : 0;
+            $isCardTender = (($pay['card'] + $pay['bkash'] + $pay['bank'] + $pay['wallet']) > 0) ? 1 : 0;
+
+            try {
+                $stTx = $pdo->prepare("
+                    INSERT INTO pos_transactions (
+                        transaction_number, order_id, store_id, register_id, terminal_id, shift_id, cashier_id, customer_id,
+                        status, subtotal, discount_amount, tax_amount, total_amount, paid_amount, change_amount, rounding_amount,
+                        notes, begin_time, end_time, tran_time, break_time, art_num, is_cash, is_card, created_at
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?,
+                        'completed', ?, ?, ?, ?, ?, ?, 0.00,
+                        ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), ?, ?, ?, ?, ?, NOW()
+                    )
+                ");
+                $stTx->execute([
+                    $orderNumber, $orderId, (int)($shift['store_id'] ?? 1), $regId, (int)($shift['terminal_id'] ?? 1),
+                    (int)$shift['id'], $adminId, $customerId,
+                    $gross, $totalDiscount, $vat, $total, $paidTotal, $change,
+                    $fullNote, $beginTs, $nowTs, $tranSec, $breakSec, (int)round($totalUnits), $isCashTender, $isCardTender
+                ]);
+                $posTxId = (int) $pdo->lastInsertId();
+
+                if ($posTxId > 0 && pos_table_exists($pdo, 'pos_transaction_items')) {
+                    $stTxItem = $pdo->prepare("
+                        INSERT INTO pos_transaction_items (
+                            transaction_id, product_id, product_name, product_sku, unit_price, quantity,
+                            discount_amount, tax_amount, line_total, regular_price, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0.00, ?, ?, NOW())
+                    ");
+                    foreach ($lines as $l) {
+                        $stTxItem->execute([
+                            $posTxId, $l['id'], $l['name'], $l['sku'], $l['unit'], $l['qty'],
+                            $l['line_discount'], $l['net'], $l['unit']
+                        ]);
+                    }
+                }
+
+                if ($posTxId > 0 && pos_table_exists($pdo, 'pos_payments')) {
+                    $stPay = $pdo->prepare("
+                        INSERT INTO pos_payments (
+                            transaction_id, payment_method, amount, tendered_amount, change_amount, created_at
+                        ) VALUES (?, ?, ?, ?, ?, NOW())
+                    ");
+                    if ($pay['cash'] > 0) {
+                        $cashActual = pos_round($pay['cash'] - $change);
+                        $stPay->execute([$posTxId, 'cash', $cashActual, $pay['cash'], $change]);
+                    }
+                    if ($pay['card'] > 0) {
+                        $stPay->execute([$posTxId, 'card', $pay['card'], $pay['card'], 0.00]);
+                    }
+                    if ($pay['bkash'] > 0) {
+                        $stPay->execute([$posTxId, 'bkash', $pay['bkash'], $pay['bkash'], 0.00]);
+                    }
+                    if ($pay['bank'] > 0) {
+                        $stPay->execute([$posTxId, 'bank_transfer', $pay['bank'], $pay['bank'], 0.00]);
+                    }
+                    if ($pay['wallet'] > 0) {
+                        $stPay->execute([$posTxId, 'wallet', $pay['wallet'], $pay['wallet'], 0.00]);
+                    }
+                }
+            } catch (Throwable $ignoreTx) {
+                error_log('[pos_checkout] Non-fatal relational pos_transactions write warning: ' . $ignoreTx->getMessage());
+            }
         }
 
         $pdo->commit();
@@ -643,6 +734,13 @@ function pos_open_shift(PDO $pdo, int $adminId, float $openingCash): int
         $pdo->prepare("INSERT INTO pos_shifts (admin_id, opening_cash, status, start_time, created_at) VALUES (?, ?, 'open', NOW(), NOW())")
             ->execute([$adminId, pos_round($openingCash)]);
         $id = (int) $pdo->lastInsertId();
+
+        if (pos_table_exists($pdo, 'pos_operator_logs')) {
+            $pdo->prepare("INSERT INTO pos_operator_logs (operator_id, workstation_id, event_type, event_time, metadata, created_at)
+                           VALUES (?, 1, 'OperatorSignOn', NOW(), ?, NOW())")
+                ->execute([$adminId, json_encode(['shift_id' => $id, 'opening_cash' => pos_round($openingCash)])]);
+        }
+
         $pdo->commit();
         return $id;
     } catch (Throwable $e) {
@@ -671,6 +769,13 @@ function pos_close_shift(PDO $pdo, int $adminId, float $actualCash): array
         $sum = pos_shift_summary($pdo, $shift);
         $pdo->prepare("UPDATE pos_shifts SET end_time = NOW(), closing_cash = ?, actual_cash = ?, status = 'closed' WHERE id = ? AND status = 'open'")
             ->execute([$sum['expected_cash'], pos_round($actualCash), $shift['id']]);
+
+        if (pos_table_exists($pdo, 'pos_operator_logs')) {
+            $pdo->prepare("INSERT INTO pos_operator_logs (operator_id, workstation_id, event_type, event_time, metadata, created_at)
+                           VALUES (?, 1, 'OperatorSignOff', NOW(), ?, NOW())")
+                ->execute([$adminId, json_encode(['shift_id' => (int)$shift['id'], 'actual_cash' => pos_round($actualCash), 'expected_cash' => $sum['expected_cash']])]);
+        }
+
         $pdo->commit();
         return ['shift_id' => (int) $shift['id'], 'expected' => $sum['expected_cash'], 'actual' => pos_round($actualCash),
                 'difference' => pos_round($actualCash - $sum['expected_cash']), 'summary' => $sum];
@@ -880,6 +985,11 @@ function pos_process_return(PDO $pdo, int $orderId, array $returns, string $meth
             $pdo->prepare("UPDATE orders SET payment_status = 'refunded' WHERE id = ?")->execute([$orderId]);
         }
 
+        if (pos_table_exists($pdo, 'pos_transactions')) {
+            $newStatus = $all ? 'returned' : 'partial_return';
+            $pdo->prepare("UPDATE pos_transactions SET status = ? WHERE order_id = ?")->execute([$newStatus, $orderId]);
+        }
+
         $pdo->commit();
         return ['return_id' => $returnId, 'refund' => $refund, 'order_number' => $order['order_number']];
     } catch (Throwable $e) {
@@ -944,6 +1054,11 @@ function pos_void_sale(PDO $pdo, int $orderId, string $reason, int $adminId): ar
             ->execute(["\n[VOID by admin #{$adminId}: {$reason}]", $orderId]);
         $pdo->prepare("INSERT INTO transactions (type, category_id, amount, reference, payment_method, reconciled, created_at) VALUES ('expense', NULL, ?, ?, 'void_reversal', 1, NOW())")
             ->execute([(float) $order['total_amount'], "VOID reversal of {$order['order_number']}: {$reason}"]);
+
+        if (pos_table_exists($pdo, 'pos_transactions')) {
+            $pdo->prepare("UPDATE pos_transactions SET status = 'voided' WHERE order_id = ?")->execute([$orderId]);
+        }
+
         $pdo->commit();
         return ['order_number' => $order['order_number'], 'total' => (float) $order['total_amount']];
     } catch (Throwable $e) {

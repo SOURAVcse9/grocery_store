@@ -276,7 +276,7 @@ try {
 // Page layout meta & SEO details
 $pageTitle = !empty($product['seo_title']) ? $product['seo_title'] : (!empty($product['meta_title']) ? $product['meta_title'] : ($product['name'] . ' | ' . site_name()));
 $pageDescription = !empty($product['seo_description']) ? $product['seo_description'] : (!empty($product['meta_description']) ? $product['meta_description'] : ($product['short_description'] ?? truncate($product['description'] ?? '', 160)));
-$pageCanonical = product_url($product['slug']);
+$pageCanonical = build_canonical_url('product.php', ['slug' => $product['slug']]);
 $pageImage = !empty($product['og_image']) ? image_url($product['og_image'], 'products') : (!empty($gallery) ? image_url($gallery[0], 'products') : image_url($product['thumbnail'], 'products'));
 $ogTitle = !empty($product['og_title']) ? $product['og_title'] : $pageTitle;
 $ogDescription = !empty($product['og_description']) ? $product['og_description'] : $pageDescription;

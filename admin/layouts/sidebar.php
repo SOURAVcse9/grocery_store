@@ -43,9 +43,15 @@ $currentUri = $_SERVER['REQUEST_URI'];
             <!-- Products -->
             <?php if (has_admin_permission('products.view')): ?>
                 <li>
-                    <a href="<?= BASE_URL ?>/../admin/products/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/products/') ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>/../admin/products/index.php" class="sidebar-link <?= (str_contains($currentUri, 'admin/products/') && !str_contains($currentUri, 'qr_labels.php')) ? 'active' : '' ?>">
                         <i class="fas fa-boxes-stacked"></i>
                         <span>Products</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>/../admin/products/qr_labels.php" class="sidebar-link <?= str_contains($currentUri, 'qr_labels.php') ? 'active' : '' ?>">
+                        <i class="fas fa-qrcode"></i>
+                        <span>Print QR Labels</span>
                     </a>
                 </li>
             <?php endif; ?>
@@ -66,6 +72,22 @@ $currentUri = $_SERVER['REQUEST_URI'];
                     <a href="<?= BASE_URL ?>/../admin/brands/index.php" class="sidebar-link <?= str_contains($currentUri, 'admin/brands/') ? 'active' : '' ?>">
                         <i class="fas fa-tags"></i>
                         <span>Brands</span>
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <!-- Inventory & Stock Management -->
+            <?php if (has_admin_permission('products.view')): ?>
+                <li>
+                    <a href="<?= BASE_URL ?>/../admin/inventory/index.php" class="sidebar-link <?= (str_contains($currentUri, 'admin/inventory/') && !str_contains($currentUri, 'reorder_recommendations.php')) ? 'active' : '' ?>">
+                        <i class="fas fa-warehouse"></i>
+                        <span>Inventory Ledger</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>/../admin/inventory/reorder_recommendations.php" class="sidebar-link <?= str_contains($currentUri, 'reorder_recommendations.php') ? 'active' : '' ?>">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Reorder Intelligence</span>
                     </a>
                 </li>
             <?php endif; ?>
@@ -123,9 +145,15 @@ $currentUri = $_SERVER['REQUEST_URI'];
             <!-- Reports -->
             <?php if (has_admin_permission('reports.view')): ?>
                 <li>
-                    <a href="<?= BASE_URL ?>/../admin/reports/dashboard.php" class="sidebar-link <?= str_contains($currentUri, 'admin/reports/') ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>/../admin/reports/dashboard.php" class="sidebar-link <?= (str_contains($currentUri, 'admin/reports/') && !str_contains($currentUri, 'cashier_analytics.php')) ? 'active' : '' ?>">
                         <i class="fas fa-chart-line"></i>
                         <span>Reports</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>/../admin/reports/cashier_analytics.php" class="sidebar-link <?= str_contains($currentUri, 'cashier_analytics.php') ? 'active' : '' ?>">
+                        <i class="fas fa-user-clock"></i>
+                        <span>Cashier Analytics</span>
                     </a>
                 </li>
             <?php endif; ?>

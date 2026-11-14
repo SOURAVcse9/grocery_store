@@ -122,11 +122,11 @@ try {
         <div style="position:relative; display:inline-block;" class="profile-dropdown-wrapper">
             <div class="topbar-user-profile" id="btnProfileDropdown">
                 <div class="topbar-avatar">
-                    <img src="<?= e($__admin_avatar) ?>" alt="<?= e($__admin['full_name']) ?>">
+                    <img src="<?= e($__admin_avatar ?? asset('images/users/placeholder.png')) ?>" alt="<?= e($__admin['full_name'] ?? 'Admin') ?>">
                 </div>
                 <div class="topbar-user-info hide-mobile">
-                    <span class="topbar-username"><?= e($__admin['full_name']) ?></span>
-                    <span class="topbar-role-badge"><?= e($__admin['role_name']) ?></span>
+                    <span class="topbar-username"><?= e($__admin['full_name'] ?? 'Administrator') ?></span>
+                    <span class="topbar-role-badge"><?= e($__admin['role_name'] ?? 'Staff') ?></span>
                 </div>
                 <i class="fas fa-chevron-down" style="font-size:10px; color:var(--admin-color-text-faint);"></i>
             </div>

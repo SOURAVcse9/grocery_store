@@ -32,6 +32,11 @@ $query = trim(input('barcode', '', 'get'));
 if ($query === '') {
     $query = trim(input('q', '', 'get'));
 }
+if (stripos($query, 'GROCO:SKU:') === 0) {
+    $query = trim(substr($query, 10));
+} elseif (stripos($query, 'GROCO:PRODUCT:') === 0) {
+    $query = trim(substr($query, 14));
+}
 $query = function_exists('mb_substr') ? mb_substr($query, 0, 100, 'UTF-8') : substr($query, 0, 100);
 if ($query === '') {
     echo json_encode(['success' => true, 'products' => []]);

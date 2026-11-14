@@ -192,7 +192,7 @@ try {
         $bannerText = !empty($catRow['description']) ? $catRow['description'] : ('Order fresh ' . $catName . ' online at best prices in Bangladesh with fast home delivery.');
         $pageTitle = !empty($catRow['meta_title']) ? $catRow['meta_title'] : ($catName . ' | Buy Fresh Groceries Online | ' . site_name());
         $pageDescription = !empty($catRow['meta_description']) ? $catRow['meta_description'] : format_meta_description($bannerText);
-        $pageCanonical = category_url($categorySlug, $page);
+        $pageCanonical = build_canonical_url('products.php', ['category' => $categorySlug, 'page' => $page]);
         $ogTitle = $pageTitle;
         $ogDescription = $pageDescription;
         if (!empty($catRow['image'])) {
@@ -213,7 +213,7 @@ try {
         $bannerText = !empty($brandRow['description']) ? $brandRow['description'] : ('Shop authentic ' . $brandName . ' products online with fast home delivery in Bangladesh.');
         $pageTitle = !empty($brandRow['meta_title']) ? $brandRow['meta_title'] : ($brandName . ' Products | Buy Online | ' . site_name());
         $pageDescription = !empty($brandRow['meta_description']) ? $brandRow['meta_description'] : format_meta_description($bannerText);
-        $pageCanonical = brand_url($brandSlug, $page);
+        $pageCanonical = build_canonical_url('products.php', ['brand' => $brandSlug, 'page' => $page]);
         $ogTitle = $pageTitle;
         $ogDescription = $pageDescription;
         if (!empty($brandRow['logo'])) {
@@ -225,12 +225,12 @@ try {
         $bannerText = 'Showing products matching your search query: "' . $searchQuery . '"';
         $pageTitle = 'Search results for "' . $searchQuery . '" | ' . site_name();
         $pageDescription = format_meta_description('Browse grocery search results for ' . $searchQuery . ' at ' . site_name() . '.');
-        $pageCanonical = search_url($searchQuery);
+        $pageCanonical = build_canonical_url('search.php', ['q' => $searchQuery]);
         $pageRobots = 'noindex, follow';
     } else {
         $pageTitle = 'All Groceries & Daily Essentials | ' . site_name();
         $pageDescription = format_meta_description($bannerText);
-        $pageCanonical = ($page > 1) ? url_for('products.php?page=' . $page) : url_for('products.php');
+        $pageCanonical = build_canonical_url('products.php', ['page' => $page]);
     }
 
 } catch (PDOException $e) {
